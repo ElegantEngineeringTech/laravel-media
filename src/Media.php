@@ -6,8 +6,6 @@ use Finller\LaravelMedia\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -66,7 +64,7 @@ class Media extends Model
         'conversions' => AsArrayObject::class,
     ];
 
-    function model(): MorphTo
+    public function model(): MorphTo
     {
         return $this->morphTo();
     }

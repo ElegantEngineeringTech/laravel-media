@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  */
 trait HasMedia
 {
-    function media(): MorphMany
+    public function media(): MorphMany
     {
         return $this->morphMany(config('media-library.media_model'), 'model');
     }

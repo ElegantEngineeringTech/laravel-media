@@ -2,9 +2,9 @@
 
 namespace Finller\LaravelMedia\Tests;
 
+use Finller\LaravelMedia\LaravelMediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Finller\LaravelMedia\LaravelMediaServiceProvider;
 
 class TestCase extends Orchestra
 {

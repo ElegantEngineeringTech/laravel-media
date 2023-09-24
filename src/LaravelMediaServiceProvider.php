@@ -2,9 +2,9 @@
 
 namespace Finller\LaravelMedia;
 
+use Finller\LaravelMedia\Commands\LaravelMediaCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Finller\LaravelMedia\Commands\LaravelMediaCommand;
 
 class LaravelMediaServiceProvider extends PackageServiceProvider
 {
