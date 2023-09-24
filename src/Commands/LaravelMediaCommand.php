@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Finller\LaravelMedia\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelMediaCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-media';
 
     public $description = 'My command';
 
