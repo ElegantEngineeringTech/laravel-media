@@ -8,35 +8,34 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('media', function (Blueprint $table) {
-            $table->id();
-            $table->uuid('uuid')->unique();
-
+        Schema::table('media', function (Blueprint $table) {
+            $table->dropColumn('responsive_images');
 
             $table->string('path');
             $table->string('type');
-            $table->string('name');
-            $table->string('file_name');
-            $table->string('mime')->nullable();
             $table->string('extension')->nullable();
-            $table->unsignedBigInteger('size');
-
             $table->unsignedBigInteger('width')->nullable();
             $table->unsignedBigInteger('height')->nullable();
             $table->string('aspect_ratio')->nullable();
             $table->string('orientation')->nullable();
             $table->string('average_color')->nullable();
-            $table->unsignedInteger('order')->nullable()->index();
-
-            $table->string('disk');
-
-            $table->string('collection')->nullable();
-            $table->json('conversions')->nullable();
             $table->json('metadata')->nullable();
+        });
+    }
 
-            $table->morphs('model');
+    public function down(){
+        Schema::table('media', function (Blueprint $table) {
+            $table->json('responsive_images');
 
-            $table->timestamps();
+            $table->dropColumn('path');
+            $table->dropColumn('type');
+            $table->dropColumn('extension');
+            $table->dropColumn('width');
+            $table->dropColumn('height');
+            $table->dropColumn('aspect_ratio');
+            $table->dropColumn('orientation');
+            $table->dropColumn('average_color');
+            $table->dropColumn('metadata');
         });
     }
 };

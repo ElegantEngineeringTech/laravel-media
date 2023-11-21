@@ -10,14 +10,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @var int $id
- * @var string $uuid
+ * @var ?string $uuid
  * @var string $disk
  * @var string $path
  * @var string $type
  * @var string $name
  * @var string $file_name
  * @var int $size
- * @var ?string $mime
+ * @var ?string $mime_type
  * @var ?string $extension
  * @var ?string $collection
  * @var ?int $width
@@ -25,8 +25,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @var ?string $aspect_ratio
  * @var ?string $orientation
  * @var ?string $average_color
- * @var ?int $order
- * @var ?ArrayObject $conversions
+ * @var ?int $order_column
+ * @var ?ArrayObject $generated_conversions
  * @var ?ArrayObject $metadata
  */
 class Media extends Model
@@ -36,32 +36,14 @@ class Media extends Model
     /**
      * @var array<int, string>
      */
-    protected $fillable = [
-        'disk',
-        'path',
-        'type',
-        'name',
-        'file_name',
-        'size',
-        'mime',
-        'extension',
-        'collection',
-        'width',
-        'height',
-        'aspect_ratio',
-        'orientation',
-        'average_color',
-        'order',
-        'conversions',
-        'metadata',
-    ];
+    protected $guarded = [];
 
     /**
      * @var array<string, string>
      */
     protected $casts = [
         'metadata' => AsArrayObject::class,
-        'conversions' => AsArrayObject::class,
+        'generated_conversions' => AsArrayObject::class,
     ];
 
     public function model(): MorphTo
