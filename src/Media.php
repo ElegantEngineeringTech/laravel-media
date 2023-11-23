@@ -7,27 +7,28 @@ use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Facades\Storage;
 
 /**
- * @var int $id
- * @var ?string $uuid
- * @var string $disk
- * @var string $path
- * @var string $type
- * @var string $name
- * @var string $file_name
- * @var int $size
- * @var ?string $mime_type
- * @var ?string $extension
- * @var ?string $collection
- * @var ?int $width
- * @var ?int $height
- * @var ?string $aspect_ratio
- * @var ?string $orientation
- * @var ?string $average_color
- * @var ?int $order_column
- * @var ?ArrayObject $generated_conversions
- * @var ?ArrayObject $metadata
+ * @property int $id
+ * @property ?string $uuid
+ * @property string $disk
+ * @property string $path
+ * @property string $type
+ * @property string $name
+ * @property string $file_name
+ * @property int $size
+ * @property ?string $mime_type
+ * @property ?string $extension
+ * @property ?string $collection
+ * @property ?int $width
+ * @property ?int $height
+ * @property ?string $aspect_ratio
+ * @property ?string $orientation
+ * @property ?string $average_color
+ * @property ?int $order_column
+ * @property ?ArrayObject $generated_conversions
+ * @property ?ArrayObject $metadata
  */
 class Media extends Model
 {
@@ -49,5 +50,10 @@ class Media extends Model
     public function model(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    function getUrl()
+    {
+        return Storage::disk($this->disk)->url($this->path);
     }
 }
