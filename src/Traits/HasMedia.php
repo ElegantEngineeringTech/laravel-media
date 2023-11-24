@@ -15,7 +15,7 @@ trait HasMedia
         return $this->morphMany(config('media-library.media_model'), 'model');
     }
 
-    function getMediaCollections(): Collection
+    public function getMediaCollections(): Collection
     {
         return collect([]);
     }

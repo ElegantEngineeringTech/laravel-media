@@ -2,18 +2,20 @@
 
 namespace Finller\LaravelMedia\Database\Factories;
 
+use Finller\LaravelMedia\Media;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-/*
-class ModelFactory extends Factory
+/**
+ * @template Media
+ */
+class MediaFactory extends Factory
 {
-    protected $model = YourModel::class;
+    protected $model = Media::class;
 
     public function definition()
     {
         return [
-
+            'generated_conversions' => [],
         ];
     }
 }
-*/

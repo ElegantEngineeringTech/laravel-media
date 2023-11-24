@@ -28,9 +28,9 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        /*
-        $migration = include __DIR__.'/../database/migrations/create_laravel-media_table.php.stub';
+        $migration = include __DIR__.'/../database/migrations/1_create_media_table.php.stub';
         $migration->up();
-        */
+        $migration = include __DIR__.'/../database/migrations/2_add_columns_to_media_table.php.stub';
+        $migration->up();
     }
 }
