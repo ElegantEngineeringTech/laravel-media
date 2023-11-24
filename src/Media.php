@@ -66,7 +66,7 @@ class Media extends Model
         return data_get($this->generated_conversions, $this->getConversionKey($conversion));
     }
 
-    function hasGeneratedConversion(string $conversion): bool
+    public function hasGeneratedConversion(string $conversion): bool
     {
         return (bool) $this->getGeneratedConversion($conversion);
     }
@@ -93,7 +93,7 @@ class Media extends Model
         return Storage::disk($this->disk)->url($this->getPath($conversion));
     }
 
-    function addGeneratedConversion(string $name, GeneratedConversion $generatedConversion, string $parent = null): static
+    public function addGeneratedConversion(string $name, GeneratedConversion $generatedConversion, string $parent = null): static
     {
         if ($parent) {
             $conversion = $this->getGeneratedConversion($parent);
@@ -105,7 +105,7 @@ class Media extends Model
         return $this;
     }
 
-    function storeFileFromUpload(UploadedFile $file, ?string $path = null, ?string $name = null)
+    public function storeFileFromUpload(UploadedFile $file, string $path = null, string $name = null)
     {
         $this->name = Str::slug(
             $name ?? $file->getClientOriginalName(),
@@ -122,12 +122,12 @@ class Media extends Model
             path: $this->path,
             name: $this->name,
             options: [
-                'disk' => $this->disk
+                'disk' => $this->disk,
             ]
         );
     }
 
-    function storeFile(string|UploadedFile $file, ?string $name = null)
+    public function storeFile(string|UploadedFile $file, string $name = null)
     {
         if ($file instanceof UploadedFile) {
             return $this->storeFileFromUpload($file, $name);

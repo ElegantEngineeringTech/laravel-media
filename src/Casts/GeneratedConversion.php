@@ -14,7 +14,7 @@ use Illuminate\Support\Collection;
 class GeneratedConversion implements Arrayable
 {
     public function __construct(
-        public GeneratedConversionState $state = GeneratedConversionState::Pending,
+        public GeneratedConversionState $state,
         public string $file_name,
         public ?string $path = null,
         public MediaType $type = MediaType::Other,

@@ -56,7 +56,6 @@ it('retrieve the correct generated conversion path', function () use ($generated
     expect($media->getPath('poster.480p'))->toBe('/poster/conversions/480p/poster-480p.png');
 });
 
-
 it('add the correct generated conversion', function () use ($generated_conversions) {
 
     /** @var Media $media */
