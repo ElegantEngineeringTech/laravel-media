@@ -4,6 +4,7 @@ namespace Finller\LaravelMedia;
 
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Casts\GeneratedConversions;
+use Finller\LaravelMedia\Enums\GeneratedConversionState;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Traits\HasUuid;
@@ -11,8 +12,10 @@ use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
@@ -89,6 +92,23 @@ class Media extends Model
     }
 
     /**
+     * Generate the default path to the file
+     */
+    protected function generatePath(): string
+    {
+        return $this->generateBasePath().$this->file_name;
+    }
+
+    protected function generateBasePath(string $conversion = null): string
+    {
+        if ($conversion) {
+            return "/{$this->uuid}/conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
+        }
+
+        return "/{$this->uuid}/";
+    }
+
+    /**
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
      */
@@ -117,10 +137,10 @@ class Media extends Model
     public function storeFileFromUpload(
         UploadedFile $file,
         string $collection_name = null,
-        string $path = null,
+        string $basePath = null,
         string $name = null,
         string $disk = null,
-    ) {
+    ): static {
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
         $this->disk = $disk ?? $this->disk ?? config('filesystems.default');
 
@@ -141,7 +161,7 @@ class Media extends Model
         );
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = $path ? "{$path}/$this->file_name}" : "/{$this->uuid}/{$this->file_name}";
+        $this->path = $basePath ? "{$basePath}/{$this->file_name}" : $this->generatePath();
 
         $file->storeAs(
             path: $this->path,
@@ -156,11 +176,57 @@ class Media extends Model
         return $this;
     }
 
-    public function storeFile(string|UploadedFile $file, string $name = null)
+    public function storeFile(string|UploadedFile $file, string $name = null): static
     {
         if ($file instanceof UploadedFile) {
             return $this->storeFileFromUpload($file, $name);
         }
+
+        return $this;
+    }
+
+    public function storeConversion(
+        HttpFile|string $file,
+        string $conversion,
+        string $name = null,
+        string $basePath = null,
+    ): static {
+        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
+
+        $extension = $file->guessExtension();
+        $name = File::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
+        $file_name = "{$name}.{$extension}";
+
+        $mime_type = $file->getMimeType();
+        $type = MediaType::tryFromMimeType($mime_type);
+        $dimension = File::dimension($file->getPathname(), type: $type);
+
+        $generatedConversion = new GeneratedConversion(
+            name: $name,
+            extension: $extension,
+            file_name: $file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
+            mime_type: $mime_type,
+            type: $type,
+            state: GeneratedConversionState::Success,
+            disk: $this->disk,
+            height: $dimension?->getHeight(),
+            width: $dimension->getWidth(),
+            aspect_ratio: $dimension?->getRatio(forceStandards: false)->getValue(),
+            size: $file->getSize(),
+        );
+
+        $this->addGeneratedConversion($conversion, $generatedConversion);
+
+        Storage::disk($generatedConversion->disk)->putFileAs(
+            SupportFile::dirname($generatedConversion->path),
+            $file,
+            $generatedConversion->file_name
+        );
+
+        $this->save();
+
+        return $this;
     }
 }
 

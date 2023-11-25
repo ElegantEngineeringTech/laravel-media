@@ -1,5 +1,6 @@
 <?php
 
+use FFMpeg\Coordinate\Dimension;
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Database\Factories\MediaFactory;
 use Finller\LaravelMedia\Enums\GeneratedConversionState;
@@ -7,21 +8,6 @@ use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-
-$generated_conversions = [
-    'poster' => [
-        'state' => GeneratedConversionState::Success,
-        'file_name' => 'poster.png',
-        'path' => '/poster/poster.png',
-        'conversions' => [
-            '480p' => [
-                'state' => GeneratedConversionState::Success,
-                'file_name' => 'poster-480p.png',
-                'path' => '/poster/conversions/480p/poster-480p.png',
-            ],
-        ],
-    ],
-];
 
 it('retrieve the correct generated conversion key', function () {
     /** @var Media $media */
@@ -32,11 +18,13 @@ it('retrieve the correct generated conversion key', function () {
     expect($media->getConversionKey('poster.square.480p'))->toBe('poster.conversions.square.conversions.480p');
 });
 
-it('retrieve the correct generated conversion', function () use ($generated_conversions) {
+it('retrieve the correct generated conversion', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
-    $media->generated_conversions = $generated_conversions;
+    $media->generated_conversions = collect([
+        'poster' => MediaFactory::generatedConversion(),
+    ]);
 
     expect($media->hasGeneratedConversion('poster'))->toBe(true);
     expect($media->hasGeneratedConversion('poster.480p'))->toBe(true);
@@ -47,36 +35,43 @@ it('retrieve the correct generated conversion', function () use ($generated_conv
     expect($media->getGeneratedConversion('poster.480p.foo'))->toBe(null);
 });
 
-it('retrieve the correct generated conversion path', function () use ($generated_conversions) {
-
+it('retrieve the correct generated conversion path', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
-    $media->generated_conversions = $generated_conversions;
+    $media->generated_conversions = collect([
+        'poster' => MediaFactory::generatedConversion(),
+    ]);
 
     expect($media->getPath('poster'))->toBe('/poster/poster.png');
     expect($media->getPath('poster.480p'))->toBe('/poster/conversions/480p/poster-480p.png');
 });
 
-it('add the correct generated conversion', function () use ($generated_conversions) {
+it('add the correct generated conversion', function () {
 
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
-    $media->generated_conversions = $generated_conversions;
+    $media->generated_conversions = collect([
+        'poster' => MediaFactory::generatedConversion(),
+    ]);
 
     $media->addGeneratedConversion('optimized', new GeneratedConversion(
         file_name: 'optimized.png',
+        name: 'optimized',
         state: GeneratedConversionState::Pending,
         path: '/optimized/optimized.png',
         type: MediaType::Image,
+        disk: config('media.disk')
     ));
 
     $media->addGeneratedConversion('poster-optimized', new GeneratedConversion(
         file_name: 'poster-optimized.png',
+        name: 'poster-optimized',
         state: GeneratedConversionState::Pending,
         path: 'poster/conversions/optimized/poster-optimized.png',
         type: MediaType::Image,
+        disk: config('media.disk')
     ), 'poster');
 
     expect($media->hasGeneratedConversion('optimized'))->toBe(true);
@@ -89,7 +84,7 @@ it('store an uploaded image', function () {
 
     Storage::fake('media');
 
-    $file = UploadedFile::fake()->image('avatar.jpg', width: 19, height: 10);
+    $file = UploadedFile::fake()->image('avatar.jpg', width: 16, height: 9);
 
     $media->storeFileFromUpload(
         file: $file,
@@ -98,8 +93,53 @@ it('store an uploaded image', function () {
         disk: 'media'
     );
 
+    expect($media->width)->toBe(16);
+    expect($media->height)->toBe(9);
+    expect($media->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($media->collection_name)->toBe('avatar');
+    expect($media->name)->toBe('foo');
     expect($media->file_name)->toBe('foo.jpg');
     expect($media->type)->toBe(MediaType::Image);
+    expect($media->path)->toBe("/{$media->uuid}/foo.jpg");
 
     Storage::disk('media')->assertExists($media->path);
+});
+
+it('store a conversion file', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $media->storeFileFromUpload(
+        file: UploadedFile::fake()->image('avatar.jpg', width: 16, height: 9),
+        collection_name: 'avatar',
+        name: 'avatar',
+        disk: 'media'
+    );
+
+    $file = UploadedFile::fake()->image('avatar-poster.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $file->getPathname(),
+        conversion: 'poster',
+        name: 'avatar-poster'
+    );
+
+    $generatedConversion = $media->getGeneratedConversion('poster');
+
+    expect($generatedConversion)->toBeInstanceof(GeneratedConversion::class);
+
+    expect($generatedConversion->width)->toBe(16);
+    expect($generatedConversion->height)->toBe(9);
+    expect($generatedConversion->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($generatedConversion->name)->toBe('avatar-poster');
+    expect($generatedConversion->file_name)->toBe('avatar-poster.jpg');
+    expect($generatedConversion->type)->toBe(MediaType::Image);
+    expect($generatedConversion->path)->toBe("/{$media->uuid}/conversions/poster/avatar-poster.jpg");
+    expect($generatedConversion->path)->toBe($media->getPath('poster'));
+
+    Storage::disk('media')->assertExists($generatedConversion->path);
+
+    dump($media->toArray());
 });
