@@ -3,7 +3,6 @@
 namespace Finller\LaravelMedia\Database\Factories;
 
 use Finller\LaravelMedia\Casts\GeneratedConversion;
-use Finller\LaravelMedia\Enums\GeneratedConversionState;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Media;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,7 +27,7 @@ class MediaFactory extends Factory
     public static function generatedConversion()
     {
         return new GeneratedConversion(
-            state: GeneratedConversionState::Success,
+            state: 'success',
             type: MediaType::Image,
             file_name: 'poster.png',
             name: 'poster',
@@ -36,7 +35,7 @@ class MediaFactory extends Factory
             disk: config('media.disk'),
             conversions: collect([
                 '480p' => new GeneratedConversion(
-                    state: GeneratedConversionState::Success,
+                    state: 'success',
                     type: MediaType::Image,
                     file_name: 'poster-480p.png',
                     name: 'poster-480p',

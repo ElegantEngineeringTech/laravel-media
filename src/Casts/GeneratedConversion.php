@@ -2,7 +2,6 @@
 
 namespace Finller\LaravelMedia\Casts;
 
-use Finller\LaravelMedia\Enums\GeneratedConversionState;
 use Finller\LaravelMedia\Enums\MediaType;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
@@ -26,7 +25,7 @@ class GeneratedConversion implements Arrayable
         public ?int $width = null,
         public ?float $aspect_ratio = null,
         public ?string $average_color = null,
-        public GeneratedConversionState $state = GeneratedConversionState::Pending,
+        public ?string $state = null,
         public Collection $conversions = new Collection()
     ) {
     }
@@ -36,7 +35,7 @@ class GeneratedConversion implements Arrayable
         return new self(
             file_name: Arr::get($attributes, 'file_name'),
             name: Arr::get($attributes, 'name'),
-            state: GeneratedConversionState::from(Arr::get($attributes, 'state')),
+            state: Arr::get($attributes, 'state'),
             type: ($type = Arr::get($attributes, 'type')) ? MediaType::from($type) : MediaType::Other,
             disk: Arr::get($attributes, 'disk'),
             path: Arr::get($attributes, 'path'),

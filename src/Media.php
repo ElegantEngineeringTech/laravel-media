@@ -4,7 +4,6 @@ namespace Finller\LaravelMedia;
 
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Casts\GeneratedConversions;
-use Finller\LaravelMedia\Enums\GeneratedConversionState;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Traits\HasUuid;
@@ -208,7 +207,7 @@ class Media extends Model
             path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
             mime_type: $mime_type,
             type: $type,
-            state: GeneratedConversionState::Success,
+            state: 'success',
             disk: $this->disk,
             height: $dimension?->getHeight(),
             width: $dimension->getWidth(),

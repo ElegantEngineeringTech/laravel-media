@@ -3,13 +3,12 @@
 use FFMpeg\Coordinate\Dimension;
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Database\Factories\MediaFactory;
-use Finller\LaravelMedia\Enums\GeneratedConversionState;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('retrieve the correct generated conversion key', function () {
+it('retrieve the generated conversion key', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
@@ -18,7 +17,7 @@ it('retrieve the correct generated conversion key', function () {
     expect($media->getConversionKey('poster.square.480p'))->toBe('poster.conversions.square.conversions.480p');
 });
 
-it('retrieve the correct generated conversion', function () {
+it('retrieve the generated conversion', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
@@ -35,7 +34,7 @@ it('retrieve the correct generated conversion', function () {
     expect($media->getGeneratedConversion('poster.480p.foo'))->toBe(null);
 });
 
-it('retrieve the correct generated conversion path', function () {
+it('retrieve the generated conversion path', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
@@ -47,7 +46,7 @@ it('retrieve the correct generated conversion path', function () {
     expect($media->getPath('poster.480p'))->toBe('/poster/conversions/480p/poster-480p.png');
 });
 
-it('add the correct generated conversion', function () {
+it('add the generated conversion', function () {
 
     /** @var Media $media */
     $media = MediaFactory::new()->make();
@@ -59,7 +58,7 @@ it('add the correct generated conversion', function () {
     $media->addGeneratedConversion('optimized', new GeneratedConversion(
         file_name: 'optimized.png',
         name: 'optimized',
-        state: GeneratedConversionState::Pending,
+        state: 'pending',
         path: '/optimized/optimized.png',
         type: MediaType::Image,
         disk: config('media.disk')
@@ -68,7 +67,7 @@ it('add the correct generated conversion', function () {
     $media->addGeneratedConversion('poster-optimized', new GeneratedConversion(
         file_name: 'poster-optimized.png',
         name: 'poster-optimized',
-        state: GeneratedConversionState::Pending,
+        state: 'pending',
         path: 'poster/conversions/optimized/poster-optimized.png',
         type: MediaType::Image,
         disk: config('media.disk')
@@ -76,6 +75,17 @@ it('add the correct generated conversion', function () {
 
     expect($media->hasGeneratedConversion('optimized'))->toBe(true);
     expect($media->hasGeneratedConversion('poster.poster-optimized'))->toBe(true);
+});
+
+it('update a conversion', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    $media->generated_conversions = collect([
+        'poster' => MediaFactory::generatedConversion(),
+    ]);
+
+    expect($media->getGeneratedConversion('poster')?->state)->tobe('success');
 });
 
 it('store an uploaded image', function () {
