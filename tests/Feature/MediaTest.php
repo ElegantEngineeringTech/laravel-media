@@ -64,14 +64,14 @@ it('add the generated conversion', function () {
         disk: config('media.disk')
     ));
 
-    $media->addGeneratedConversion('poster-optimized', new GeneratedConversion(
+    $media->addGeneratedConversion('poster.poster-optimized', new GeneratedConversion(
         file_name: 'poster-optimized.png',
         name: 'poster-optimized',
         state: 'pending',
         path: 'poster/conversions/optimized/poster-optimized.png',
         type: MediaType::Image,
         disk: config('media.disk')
-    ), 'poster');
+    ));
 
     expect($media->hasGeneratedConversion('optimized'))->toBe(true);
     expect($media->hasGeneratedConversion('poster.poster-optimized'))->toBe(true);
@@ -85,7 +85,17 @@ it('update a conversion', function () {
         'poster' => MediaFactory::generatedConversion(),
     ]);
 
-    expect($media->getGeneratedConversion('poster')?->state)->tobe('success');
+    $generatedConversion = $media->getGeneratedConversion('poster');
+    $media->save();
+
+    expect($generatedConversion->state)->tobe('success');
+
+    $generatedConversion->state = 'failure';
+    $media->save();
+
+    $media->refresh();
+
+    expect($generatedConversion->state)->tobe('failure');
 });
 
 it('store an uploaded image', function () {
@@ -94,12 +104,12 @@ it('store an uploaded image', function () {
 
     Storage::fake('media');
 
-    $file = UploadedFile::fake()->image('avatar.jpg', width: 16, height: 9);
+    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
 
     $media->storeFileFromUpload(
         file: $file,
         collection_name: 'avatar',
-        name: 'foo',
+        name: 'avatar',
         disk: 'media'
     );
 
@@ -107,31 +117,33 @@ it('store an uploaded image', function () {
     expect($media->height)->toBe(9);
     expect($media->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
     expect($media->collection_name)->toBe('avatar');
-    expect($media->name)->toBe('foo');
-    expect($media->file_name)->toBe('foo.jpg');
+    expect($media->name)->toBe('avatar');
+    expect($media->file_name)->toBe('avatar.jpg');
     expect($media->type)->toBe(MediaType::Image);
-    expect($media->path)->toBe("/{$media->uuid}/foo.jpg");
+    expect($media->path)->toBe("/{$media->uuid}/avatar.jpg");
 
     Storage::disk('media')->assertExists($media->path);
 });
 
-it('store a conversion image', function () {
+it('store a conversion image of a media', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
     Storage::fake('media');
 
+    $orginial = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
+
     $media->storeFileFromUpload(
-        file: UploadedFile::fake()->image('avatar.jpg', width: 16, height: 9),
+        file: $orginial,
         collection_name: 'avatar',
         name: 'avatar',
         disk: 'media'
     );
 
-    $file = UploadedFile::fake()->image('avatar-poster.jpg', width: 16, height: 9);
+    $poster = UploadedFile::fake()->image('foo-poster.jpg', width: 16, height: 9);
 
     $media->storeConversion(
-        file: $file->getPathname(),
+        file: $poster->getPathname(),
         conversion: 'poster',
         name: 'avatar-poster'
     );
@@ -148,6 +160,51 @@ it('store a conversion image', function () {
     expect($generatedConversion->type)->toBe(MediaType::Image);
     expect($generatedConversion->path)->toBe("/{$media->uuid}/conversions/poster/avatar-poster.jpg");
     expect($generatedConversion->path)->toBe($media->getPath('poster'));
+
+    Storage::disk('media')->assertExists($generatedConversion->path);
+});
+
+it('store a conversion image of a conversion', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $media->storeFileFromUpload(
+        file: UploadedFile::fake()->image('foo.jpg', width: 16, height: 9),
+        collection_name: 'avatar',
+        name: 'avatar',
+        disk: 'media'
+    );
+
+    $poster = UploadedFile::fake()->image('foo-poster.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $poster->getPathname(),
+        conversion: 'poster',
+        name: 'avatar-poster'
+    );
+
+    $small = UploadedFile::fake()->image('foo-poster-small.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $small->getPathname(),
+        conversion: 'poster.small',
+        name: 'avatar-poster-small'
+    );
+
+    $generatedConversion = $media->getGeneratedConversion('poster.small');
+
+    expect($generatedConversion)->toBeInstanceof(GeneratedConversion::class);
+
+    expect($generatedConversion->width)->toBe(16);
+    expect($generatedConversion->height)->toBe(9);
+    expect($generatedConversion->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($generatedConversion->name)->toBe('avatar-poster-small');
+    expect($generatedConversion->file_name)->toBe('avatar-poster-small.jpg');
+    expect($generatedConversion->type)->toBe(MediaType::Image);
+    expect($generatedConversion->path)->toBe("/{$media->uuid}/conversions/poster/conversions/small/avatar-poster-small.jpg");
+    expect($generatedConversion->path)->toBe($media->getPath('poster.small'));
 
     Storage::disk('media')->assertExists($generatedConversion->path);
 });

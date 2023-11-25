@@ -17,6 +17,12 @@ class MediaFactory extends Factory
     public function definition()
     {
         return [
+            'name' => 'empty',
+            'file_name' => 'empty.jpg',
+            'size' => 10,
+            'path' => "/uuid/empty.jpg",
+            'type' => MediaType::Image,
+            'collection_name' => config('media.default_collection_name'),
             'disk' => config('media.disk'),
             'model_id' => 0,
             'model_type' => '\App\Models\Fake',

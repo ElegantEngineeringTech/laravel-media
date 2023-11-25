@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
@@ -95,13 +96,13 @@ class Media extends Model
      */
     protected function generatePath(): string
     {
-        return $this->generateBasePath().$this->file_name;
+        return $this->generateBasePath() . $this->file_name;
     }
 
     protected function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "/{$this->uuid}/conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
+            return "/{$this->uuid}/conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
         }
 
         return "/{$this->uuid}/";
@@ -116,14 +117,18 @@ class Media extends Model
         return Storage::disk($this->disk)->url($this->getPath($conversion));
     }
 
-    public function addGeneratedConversion(string $name, GeneratedConversion $generatedConversion, string $parent = null): static
+    public function addGeneratedConversion(string $name, GeneratedConversion $generatedConversion): static
     {
-        if ($parent) {
-            $conversion = $this->getGeneratedConversion($parent);
-            $conversion->conversions->put($name, $generatedConversion);
-        }
+        $genealogy = explode('.', $name);
 
-        $this->generated_conversions->put($name, $generatedConversion);
+        if (count($genealogy) > 1) {
+            $child = Arr::last($genealogy);
+            $parents = implode('.', array_slice($genealogy, 0, count($genealogy) - 1));
+            $conversion = $this->getGeneratedConversion($parents);
+            $conversion->conversions->put($child, $generatedConversion);
+        } else {
+            $this->generated_conversions->put($name, $generatedConversion);
+        }
 
         return $this;
     }
@@ -175,10 +180,15 @@ class Media extends Model
         return $this;
     }
 
-    public function storeFile(string|UploadedFile $file, string $name = null): static
-    {
+    public function storeFile(
+        string|UploadedFile $file,
+        string $collection_name = null,
+        string $basePath = null,
+        string $name = null,
+        string $disk = null
+    ): static {
         if ($file instanceof UploadedFile) {
-            return $this->storeFileFromUpload($file, $name);
+            return $this->storeFileFromUpload($file, $collection_name, $basePath, $name, $disk);
         }
 
         return $this;
@@ -204,7 +214,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
             mime_type: $mime_type,
             type: $type,
             state: 'success',
