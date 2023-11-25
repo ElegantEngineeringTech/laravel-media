@@ -2,16 +2,23 @@
 
 namespace Finller\LaravelMedia\Casts;
 
+use Carbon\Carbon;
 use Finller\LaravelMedia\Enums\MediaType;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File as SupportFile;
+use Illuminate\Support\Facades\Storage;
 
 /**
- * @property null|Collection<string, GeneratedConversion> $conversions
+ * @property null|Collection<string, GeneratedConversion> $generated_conversions
  */
 class GeneratedConversion implements Arrayable
 {
+    public Carbon $created_at;
+
+    public Carbon $state_set_at;
+
     public function __construct(
         public string $file_name,
         public string $name,
@@ -26,8 +33,12 @@ class GeneratedConversion implements Arrayable
         public ?float $aspect_ratio = null,
         public ?string $average_color = null,
         public ?string $state = null,
-        public Collection $conversions = new Collection()
+        public Collection $generated_conversions = new Collection(),
+        Carbon $created_at = null,
+        Carbon $state_set_at = null,
     ) {
+        $this->created_at = $created_at ?? now();
+        $this->state_set_at = $state_set_at ?? now();
     }
 
     public static function make(array $attributes): self
@@ -36,6 +47,7 @@ class GeneratedConversion implements Arrayable
             file_name: Arr::get($attributes, 'file_name'),
             name: Arr::get($attributes, 'name'),
             state: Arr::get($attributes, 'state'),
+            state_set_at: Carbon::parse(Arr::get($attributes, 'state_set_at', now())),
             type: ($type = Arr::get($attributes, 'type')) ? MediaType::from($type) : MediaType::Other,
             disk: Arr::get($attributes, 'disk'),
             path: Arr::get($attributes, 'path'),
@@ -46,8 +58,24 @@ class GeneratedConversion implements Arrayable
             width: Arr::get($attributes, 'width'),
             aspect_ratio: Arr::get($attributes, 'aspect_ratio'),
             average_color: Arr::get($attributes, 'average_color'),
-            conversions: collect(Arr::get($attributes, 'conversions', []))->map(fn ($item) => self::make($item)),
+            generated_conversions: collect(Arr::get($attributes, 'generated_conversions', []))->map(fn ($item) => self::make($item)),
+            created_at: Carbon::parse(Arr::get($attributes, 'created_at', now())),
         );
+    }
+
+    function delete(): static
+    {
+        if ($this->path) {
+            Storage::disk($this->disk)->deleteDirectory(
+                SupportFile::dirname($this->path)
+            );
+            $this->path = null;
+        }
+
+        $this->generated_conversions->each(fn (self $generatedConversion) => $generatedConversion->delete());
+        $this->generated_conversions = collect();
+
+        return $this;
     }
 
     public function toArray(): array

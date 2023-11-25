@@ -20,7 +20,7 @@ class MediaFactory extends Factory
             'name' => 'empty',
             'file_name' => 'empty.jpg',
             'size' => 10,
-            'path' => "/uuid/empty.jpg",
+            'path' => '/uuid/empty.jpg',
             'type' => MediaType::Image,
             'collection_name' => config('media.default_collection_name'),
             'disk' => config('media.disk'),
@@ -39,13 +39,13 @@ class MediaFactory extends Factory
             name: 'poster',
             path: '/poster/poster.png',
             disk: config('media.disk'),
-            conversions: collect([
+            generated_conversions: collect([
                 '480p' => new GeneratedConversion(
                     state: 'success',
                     type: MediaType::Image,
                     file_name: 'poster-480p.png',
                     name: 'poster-480p',
-                    path: '/poster/conversions/480p/poster-480p.png',
+                    path: '/poster/generated_conversions/480p/poster-480p.png',
                     disk: config('media.disk'),
                 ),
             ])

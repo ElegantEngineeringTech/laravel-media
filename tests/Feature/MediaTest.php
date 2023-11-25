@@ -13,8 +13,8 @@ it('retrieve the generated conversion key', function () {
     $media = MediaFactory::new()->make();
 
     expect($media->getConversionKey('poster'))->toBe('poster');
-    expect($media->getConversionKey('poster.480p'))->toBe('poster.conversions.480p');
-    expect($media->getConversionKey('poster.square.480p'))->toBe('poster.conversions.square.conversions.480p');
+    expect($media->getConversionKey('poster.480p'))->toBe('poster.generated_conversions.480p');
+    expect($media->getConversionKey('poster.square.480p'))->toBe('poster.generated_conversions.square.generated_conversions.480p');
 });
 
 it('retrieve the generated conversion', function () {
@@ -43,7 +43,7 @@ it('retrieve the generated conversion path', function () {
     ]);
 
     expect($media->getPath('poster'))->toBe('/poster/poster.png');
-    expect($media->getPath('poster.480p'))->toBe('/poster/conversions/480p/poster-480p.png');
+    expect($media->getPath('poster.480p'))->toBe('/poster/generated_conversions/480p/poster-480p.png');
 });
 
 it('add the generated conversion', function () {
@@ -55,7 +55,7 @@ it('add the generated conversion', function () {
         'poster' => MediaFactory::generatedConversion(),
     ]);
 
-    $media->addGeneratedConversion('optimized', new GeneratedConversion(
+    $media->putGeneratedConversion('optimized', new GeneratedConversion(
         file_name: 'optimized.png',
         name: 'optimized',
         state: 'pending',
@@ -64,11 +64,11 @@ it('add the generated conversion', function () {
         disk: config('media.disk')
     ));
 
-    $media->addGeneratedConversion('poster.poster-optimized', new GeneratedConversion(
+    $media->putGeneratedConversion('poster.poster-optimized', new GeneratedConversion(
         file_name: 'poster-optimized.png',
         name: 'poster-optimized',
         state: 'pending',
-        path: 'poster/conversions/optimized/poster-optimized.png',
+        path: 'poster/generated_conversions/optimized/poster-optimized.png',
         type: MediaType::Image,
         disk: config('media.disk')
     ));
@@ -158,7 +158,7 @@ it('store a conversion image of a media', function () {
     expect($generatedConversion->name)->toBe('avatar-poster');
     expect($generatedConversion->file_name)->toBe('avatar-poster.jpg');
     expect($generatedConversion->type)->toBe(MediaType::Image);
-    expect($generatedConversion->path)->toBe("/{$media->uuid}/conversions/poster/avatar-poster.jpg");
+    expect($generatedConversion->path)->toBe("/{$media->uuid}/generated_conversions/poster/avatar-poster.jpg");
     expect($generatedConversion->path)->toBe($media->getPath('poster'));
 
     Storage::disk('media')->assertExists($generatedConversion->path);
@@ -203,8 +203,95 @@ it('store a conversion image of a conversion', function () {
     expect($generatedConversion->name)->toBe('avatar-poster-small');
     expect($generatedConversion->file_name)->toBe('avatar-poster-small.jpg');
     expect($generatedConversion->type)->toBe(MediaType::Image);
-    expect($generatedConversion->path)->toBe("/{$media->uuid}/conversions/poster/conversions/small/avatar-poster-small.jpg");
+    expect($generatedConversion->path)->toBe("/{$media->uuid}/generated_conversions/poster/generated_conversions/small/avatar-poster-small.jpg");
     expect($generatedConversion->path)->toBe($media->getPath('poster.small'));
 
     Storage::disk('media')->assertExists($generatedConversion->path);
+});
+
+it('delete a media generated conversion with its own conversions', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $media->storeFileFromUpload(
+        file: UploadedFile::fake()->image('foo.jpg', width: 16, height: 9),
+        collection_name: 'avatar',
+        name: 'avatar',
+        disk: 'media'
+    );
+
+    $poster = UploadedFile::fake()->image('foo-poster.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $poster->getPathname(),
+        conversion: 'poster',
+        name: 'avatar-poster'
+    );
+
+    $small = UploadedFile::fake()->image('foo-poster-small.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $small->getPathname(),
+        conversion: 'poster.small',
+        name: 'avatar-poster-small'
+    );
+
+    $generatedConversion = $media->getGeneratedConversion('poster');
+    $nestedGeneratedConversion = $media->getGeneratedConversion('poster.small');
+
+    Storage::disk('media')->assertExists($generatedConversion->path);
+    Storage::disk('media')->assertExists($nestedGeneratedConversion->path);
+
+    $media->deleteGeneratedConversion('poster');
+
+    expect($media->getGeneratedConversion('poster'))->toBe(null);
+
+    Storage::disk('media')->assertMissing($generatedConversion->path);
+    Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
+});
+
+
+it('delete all files when model deleted', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $media->storeFileFromUpload(
+        file: UploadedFile::fake()->image('foo.jpg', width: 16, height: 9),
+        collection_name: 'avatar',
+        name: 'avatar',
+        disk: 'media'
+    );
+
+    $poster = UploadedFile::fake()->image('foo-poster.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $poster->getPathname(),
+        conversion: 'poster',
+        name: 'avatar-poster'
+    );
+
+    $small = UploadedFile::fake()->image('foo-poster-small.jpg', width: 16, height: 9);
+
+    $media->storeConversion(
+        file: $small->getPathname(),
+        conversion: 'poster.small',
+        name: 'avatar-poster-small'
+    );
+
+    $generatedConversion = $media->getGeneratedConversion('poster');
+    $nestedGeneratedConversion = $media->getGeneratedConversion('poster.small');
+
+    Storage::disk('media')->assertExists($media->path);
+    Storage::disk('media')->assertExists($generatedConversion->path);
+    Storage::disk('media')->assertExists($nestedGeneratedConversion->path);
+
+    $media->delete();
+
+    Storage::disk('media')->assertMissing($media->path);
+    Storage::disk('media')->assertMissing($generatedConversion->path);
+    Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
 });
