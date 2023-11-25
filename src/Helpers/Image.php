@@ -8,7 +8,7 @@ use Spatie\Image\Image as SpatieImage;
 
 class Image implements HasDimension
 {
-    static function dimension(string $path): Dimension
+    public static function dimension(string $path): Dimension
     {
         $file = SpatieImage::load($path);
 
@@ -18,7 +18,7 @@ class Image implements HasDimension
         );
     }
 
-    static function ratio(string $path, bool $forceStandards = true): AspectRatio
+    public static function ratio(string $path, bool $forceStandards = true): AspectRatio
     {
         return static::dimension($path)->getRatio($forceStandards);
     }

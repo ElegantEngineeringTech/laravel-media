@@ -109,17 +109,17 @@ class Media extends Model
         return $this;
     }
 
-    function humanReadableSize(): string
+    public function humanReadableSize(): string
     {
         return Number::fileSize($this->size);
     }
 
-    function storeFileFromUpload(
+    public function storeFileFromUpload(
         UploadedFile $file,
-        ?string $collection_name = null,
-        ?string $path = null,
-        ?string $name = null,
-        ?string $disk = null,
+        string $collection_name = null,
+        string $path = null,
+        string $name = null,
+        string $disk = null,
     ) {
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
         $this->disk = $disk ?? $this->disk ?? config('filesystems.default');

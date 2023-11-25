@@ -9,7 +9,7 @@ use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
 class Video implements HasDimension
 {
-    static function dimension(string $path): Dimension
+    public static function dimension(string $path): Dimension
     {
         $file = FFProbe::create([
             'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
@@ -23,12 +23,12 @@ class Video implements HasDimension
             ->getDimensions();
     }
 
-    static function ratio(string $path, bool $forceStandards = true): AspectRatio
+    public static function ratio(string $path, bool $forceStandards = true): AspectRatio
     {
         return static::dimension($path)->getRatio($forceStandards);
     }
 
-    static function duration(string $path): float
+    public static function duration(string $path): float
     {
         return FFMpeg::open($path)->getDurationInMiliseconds();
     }

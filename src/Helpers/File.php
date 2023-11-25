@@ -7,7 +7,7 @@ use Finller\LaravelMedia\Enums\MediaType;
 
 class File
 {
-    static function dimension(string $path, ?MediaType $type = null,  ?string $mime_type = null): ?Dimension
+    public static function dimension(string $path, MediaType $type = null, string $mime_type = null): ?Dimension
     {
         $type ??= MediaType::tryFromMimeType($mime_type ?? mime_content_type($path));
 

@@ -2,5 +2,5 @@
 
 // config for Finller/LaravelMedia
 return [
-    'default_collection_name' => 'default'
+    'default_collection_name' => 'default',
 ];

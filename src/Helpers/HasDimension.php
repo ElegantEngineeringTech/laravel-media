@@ -7,6 +7,7 @@ use FFMpeg\Coordinate\Dimension;
 
 interface HasDimension
 {
-    static function dimension(string $path): Dimension;
-    static function ratio(string $path, bool $forceStandards = true): AspectRatio;
+    public static function dimension(string $path): Dimension;
+
+    public static function ratio(string $path, bool $forceStandards = true): AspectRatio;
 }

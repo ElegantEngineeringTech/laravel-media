@@ -10,8 +10,7 @@ enum MediaType: string
     case Pdf = 'pdf';
     case Other = 'other';
 
-
-    static function tryFromMimeType(string $mimeType)
+    public static function tryFromMimeType(string $mimeType)
     {
         if (str_starts_with($mimeType, 'video/')) {
             return self::Video;

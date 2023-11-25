@@ -18,7 +18,7 @@ trait HasUuid
     //     });
     // }
 
-    function initializeHasUuid()
+    public function initializeHasUuid()
     {
         if (blank($this->uuid)) {
             $this->uuid = (string) Str::uuid();

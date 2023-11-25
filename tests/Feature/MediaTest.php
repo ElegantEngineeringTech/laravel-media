@@ -83,7 +83,6 @@ it('add the correct generated conversion', function () use ($generated_conversio
     expect($media->hasGeneratedConversion('poster.poster-optimized'))->toBe(true);
 });
 
-
 it('store an uploaded image', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
