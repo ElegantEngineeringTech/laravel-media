@@ -15,6 +15,8 @@ class MediaFactory extends Factory
     public function definition()
     {
         return [
+            'model_id' => 0,
+            'model_type' => '\App\Models\Fake',
             'generated_conversions' => [],
         ];
     }

@@ -4,6 +4,8 @@ namespace Finller\LaravelMedia;
 
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Casts\GeneratedConversions;
+use Finller\LaravelMedia\Enums\MediaType;
+use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
@@ -12,23 +14,24 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 
 /**
  * @property int $id
- * @property ?string $uuid
+ * @property string $uuid
  * @property string $disk
  * @property string $path
- * @property string $type
+ * @property MediaType $type
  * @property string $name
  * @property string $file_name
  * @property int $size
  * @property ?string $mime_type
  * @property ?string $extension
- * @property ?string $collection
+ * @property ?string $collection_name
  * @property ?int $width
  * @property ?int $height
- * @property ?string $aspect_ratio
+ * @property ?float $aspect_ratio
  * @property ?string $average_color
  * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
@@ -47,6 +50,7 @@ class Media extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'type' => MediaType::class,
         'metadata' => AsArrayObject::class,
         'generated_conversions' => GeneratedConversions::class,
     ];
@@ -105,26 +109,51 @@ class Media extends Model
         return $this;
     }
 
-    public function storeFileFromUpload(UploadedFile $file, string $path = null, string $name = null)
+    function humanReadableSize(): string
     {
+        return Number::fileSize($this->size);
+    }
+
+    function storeFileFromUpload(
+        UploadedFile $file,
+        ?string $collection_name = null,
+        ?string $path = null,
+        ?string $name = null,
+        ?string $disk = null,
+    ) {
+        $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
+        $this->disk = $disk ?? $this->disk ?? config('filesystems.default');
+
+        $this->mime_type = $file->getMimeType() ?? $file->getClientMimeType();
+        $this->extension = $file->guessExtension() ?? $file->clientExtension();
+        $this->size = $file->getSize();
+        $this->type = MediaType::tryFromMimeType($this->mime_type);
+
+        $dimension = File::dimension($file->getPathname(), type: $this->type);
+
+        $this->height = $dimension?->getHeight();
+        $this->width = $dimension?->getWidth();
+        $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
+
         $this->name = Str::slug(
             $name ?? $file->getClientOriginalName(),
             dictionary: ['@' => 'at', '+' => '-']
         );
 
-        $this->mime_type = $file->getMimeType() ?? $file->getClientMimeType();
-        $this->extension = $file->guessExtension() ?? $file->clientExtension();
-        $this->size = $file->getSize();
-
-        $this->path = $path ?? "/{$this->uuid}/{$this->name}.{$this->extension}";
+        $this->file_name = "{$this->name}.{$this->extension}";
+        $this->path = $path ? "{$path}/$this->file_name}" : "/{$this->uuid}/{$this->file_name}";
 
         $file->storeAs(
             path: $this->path,
-            name: $this->name,
+            name: $this->file_name,
             options: [
                 'disk' => $this->disk,
             ]
         );
+
+        $this->save();
+
+        return $this;
     }
 
     public function storeFile(string|UploadedFile $file, string $name = null)

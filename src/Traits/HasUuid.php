@@ -2,7 +2,6 @@
 
 namespace Finller\LaravelMedia\Traits;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -10,12 +9,19 @@ use Illuminate\Support\Str;
  */
 trait HasUuid
 {
-    public static function bootHasUuid()
+    // public static function bootHasUuid()
+    // {
+    //     static::creating(function (Model $model) {
+    //         if (empty($model->uuid)) {
+    //             $model->uuid = (string) Str::uuid(); // @phpstan-ignore-line
+    //         }
+    //     });
+    // }
+
+    function initializeHasUuid()
     {
-        static::creating(function (Model $model) {
-            if (empty($model->uuid)) {
-                $model->uuid = (string) Str::uuid(); // @phpstan-ignore-line
-            }
-        });
+        if (blank($this->uuid)) {
+            $this->uuid = (string) Str::uuid();
+        }
     }
 }

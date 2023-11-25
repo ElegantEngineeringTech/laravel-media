@@ -10,13 +10,15 @@ return new class extends Migration
     {
         Schema::table('media', function (Blueprint $table) {
             $table->dropColumn('responsive_images');
+            $table->dropColumn('manipulations');
+            $table->dropColumn('custom_properties');
 
             $table->string('path');
             $table->string('type');
             $table->string('extension')->nullable();
             $table->unsignedBigInteger('width')->nullable();
             $table->unsignedBigInteger('height')->nullable();
-            $table->string('aspect_ratio')->nullable();
+            $table->decimal('aspect_ratio', 19, 6)->nullable();
             $table->string('orientation')->nullable();
             $table->string('average_color')->nullable();
             $table->json('metadata')->nullable();

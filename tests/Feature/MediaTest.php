@@ -5,6 +5,8 @@ use Finller\LaravelMedia\Database\Factories\MediaFactory;
 use Finller\LaravelMedia\Enums\GeneratedConversionState;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Media;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 $generated_conversions = [
     'poster' => [
@@ -79,4 +81,26 @@ it('add the correct generated conversion', function () use ($generated_conversio
 
     expect($media->hasGeneratedConversion('optimized'))->toBe(true);
     expect($media->hasGeneratedConversion('poster.poster-optimized'))->toBe(true);
+});
+
+
+it('store an uploaded image', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $file = UploadedFile::fake()->image('avatar.jpg', width: 19, height: 10);
+
+    $media->storeFileFromUpload(
+        file: $file,
+        collection_name: 'avatar',
+        name: 'foo',
+        disk: 'media'
+    );
+
+    expect($media->file_name)->toBe('foo.jpg');
+    expect($media->type)->toBe(MediaType::Image);
+
+    Storage::disk('media')->assertExists($media->path);
 });
