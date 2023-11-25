@@ -105,7 +105,7 @@ it('store an uploaded image', function () {
     Storage::disk('media')->assertExists($media->path);
 });
 
-it('store a conversion file', function () {
+it('store a conversion image', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
@@ -140,6 +140,4 @@ it('store a conversion file', function () {
     expect($generatedConversion->path)->toBe($media->getPath('poster'));
 
     Storage::disk('media')->assertExists($generatedConversion->path);
-
-    dump($media->toArray());
 });
