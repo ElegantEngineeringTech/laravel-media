@@ -252,7 +252,6 @@ it('delete a media generated conversion with its own conversions', function () {
     Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
 });
 
-
 it('delete all files when model deleted', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();

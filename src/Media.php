@@ -66,7 +66,6 @@ class Media extends Model
         });
     }
 
-
     public function model(): MorphTo
     {
         return $this->morphTo();
@@ -105,13 +104,13 @@ class Media extends Model
      */
     protected function generatePath(): string
     {
-        return $this->generateBasePath() . $this->file_name;
+        return $this->generateBasePath().$this->file_name;
     }
 
     protected function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "/{$this->uuid}/generated_conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
+            return "/{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
         }
 
         return "/{$this->uuid}/";
@@ -157,7 +156,7 @@ class Media extends Model
         return $this;
     }
 
-    function forgetGeneratedConversion(string $conversion): static
+    public function forgetGeneratedConversion(string $conversion): static
     {
         $genealogy = explode('.', $conversion);
 
@@ -254,7 +253,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
             mime_type: $mime_type,
             type: $type,
             state: 'success',
@@ -278,28 +277,30 @@ class Media extends Model
         return $this;
     }
 
-
-    function deleteDirectory(): static
+    public function deleteDirectory(): static
     {
         Storage::disk($this->disk)->deleteDirectory(
             SupportFile::dirname($this->path)
         );
+
         return $this;
     }
 
-    function deleteGeneratedConversion(string $converion): static
+    public function deleteGeneratedConversion(string $converion): static
     {
         $this->getGeneratedConversion($converion)?->delete();
         $this->forgetGeneratedConversion($converion);
         $this->save();
+
         return $this;
     }
 
-    function deleteGeneratedConversions(): static
+    public function deleteGeneratedConversions(): static
     {
         $this->generated_conversions->each(fn (GeneratedConversion $generatedConversion) => $generatedConversion->delete());
         $this->generated_conversions = collect();
         $this->save();
+
         return $this;
     }
 }

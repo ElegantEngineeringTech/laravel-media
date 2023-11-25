@@ -63,7 +63,7 @@ class GeneratedConversion implements Arrayable
         );
     }
 
-    function delete(): static
+    public function delete(): static
     {
         if ($this->path) {
             Storage::disk($this->disk)->deleteDirectory(
