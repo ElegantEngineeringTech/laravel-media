@@ -63,7 +63,7 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
     {
         $conversion = $this->getConversion();
 
-        if (!$conversion?->conversions->isNotEmpty()) {
+        if (! $conversion?->conversions->isNotEmpty()) {
             return;
         }
 

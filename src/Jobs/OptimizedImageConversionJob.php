@@ -18,7 +18,7 @@ class OptimizedImageConversionJob extends ConversionJob
         public ?int $height = null,
         public string $fitMethod = Manipulations::FIT_MAX,
         public array $optimizationOptions = [],
-        ?string $fileName = null,
+        string $fileName = null,
     ) {
         parent::__construct($media, $conversion);
 
@@ -29,7 +29,7 @@ class OptimizedImageConversionJob extends ConversionJob
     {
         $path = $this->media->makeTemporaryFileCopy($this->temporaryDirectory);
 
-        $newPath = File::dirname($path) . DIRECTORY_SEPARATOR . $this->fileName;
+        $newPath = File::dirname($path).DIRECTORY_SEPARATOR.$this->fileName;
 
         Image::load($path)
             ->manipulate(function (Manipulations $manipulations) {

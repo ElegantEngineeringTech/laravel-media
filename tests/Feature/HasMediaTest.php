@@ -4,7 +4,6 @@ use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Database\Factories\MediaFactory;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Media;
-use Finller\LaravelMedia\MediaConversion;
 use Finller\LaravelMedia\Tests\Models\Test;
 use Finller\LaravelMedia\Tests\Models\TestWithNestedConversions;
 use Illuminate\Http\UploadedFile;

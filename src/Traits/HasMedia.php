@@ -104,7 +104,7 @@ trait HasMedia
 
         $collection = $this->getMediaCollections()->get($collection_name);
 
-        if (!$collection) {
+        if (! $collection) {
             $class = static::class;
             throw new Exception("The media collection {$collection_name} is not registered for {$class}");
         }
@@ -126,7 +126,6 @@ trait HasMedia
 
         $this->dispatchConversions($media);
 
-
         return $media;
     }
 
@@ -134,7 +133,7 @@ trait HasMedia
     {
         $conversion = $this->getMediaConversion($media, $conversionName);
 
-        if (!$conversion) {
+        if (! $conversion) {
             return $this;
         }
 
@@ -143,7 +142,6 @@ trait HasMedia
         $media
             ->putGeneratedConversion($conversion->name, new GeneratedConversion(state: 'pending'))
             ->save();
-
 
         dispatch($conversion->job);
 
