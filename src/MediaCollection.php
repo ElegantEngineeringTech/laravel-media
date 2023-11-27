@@ -11,7 +11,8 @@ class MediaCollection
 {
     public function __construct(
         public ?array $acceptedMimeTypes = null,
-        public Collection $conversions = new Collection()
+        public bool $single = false,
+        public bool $public = false,
     ) {
     }
 }

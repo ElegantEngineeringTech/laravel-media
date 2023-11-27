@@ -5,6 +5,7 @@ namespace Finller\LaravelMedia\Traits;
 use Finller\LaravelMedia\Jobs\ConversionJob;
 use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
+use Finller\LaravelMedia\MediaConversion;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -27,6 +28,15 @@ trait HasMedia
         return collect([]);
     }
 
+    /**
+     * @return Collection<string, MediaConversion>
+     */
+    function getMediaConversions(Media $media): Collection
+    {
+        $conversions = collect([]);
+        return $conversions;
+    }
+
     public function addMedia(string|UploadedFile $file, string $collection_name = null): static
     {
         $collection_name ??= config('media.default_collection_name');
@@ -40,20 +50,20 @@ trait HasMedia
         return $this;
     }
 
-    public function dispatchConversions(Media $media, string $collection_name): static
+    public function dispatchConversions(Media $media): static
     {
-        $collection = $this->getMediaCollections()->get($collection_name);
+        $conversions = $this->getMediaConversions($media);
 
-        if (! $collection) {
+        if ($conversions->isEmpty()) {
             return $this;
         }
 
-        foreach ($collection->conversions as $conversion) {
+        foreach ($conversions as $name => $conversion) {
             if ($conversion->job instanceof ConversionJob) {
                 dispatch($conversion->job);
             } else {
                 $job = $conversion->job;
-                dispatch(new $job($media, $conversion->name));
+                dispatch(new $job($media, $name));
             }
         }
 
