@@ -7,6 +7,7 @@ use Finller\LaravelMedia\Casts\GeneratedConversions;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Traits\HasUuid;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Model;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
+use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 /**
  * @property int $id
@@ -56,6 +58,10 @@ class Media extends Model
         'type' => MediaType::class,
         'metadata' => AsArrayObject::class,
         'generated_conversions' => GeneratedConversions::class,
+    ];
+
+    protected $attributes = [
+        'generated_conversions' => '[]'
     ];
 
     public static function booted()
@@ -99,21 +105,19 @@ class Media extends Model
         return $this->path;
     }
 
-    /**
-     * Generate the default path to the file
-     */
-    protected function generatePath(): string
-    {
-        return $this->generateBasePath().$this->file_name;
-    }
 
     protected function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "/{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
+            return "/{$this->uuid}/generated_conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
         }
 
         return "/{$this->uuid}/";
+    }
+
+    function getDisk(): Filesystem
+    {
+        return Storage::disk($this->disk);
     }
 
     /**
@@ -121,14 +125,28 @@ class Media extends Model
      */
     public function readStream()
     {
-        return Storage::disk($this->disk)->readStream($this->path);
+        return $this->getDisk()->readStream($this->path);
     }
 
+    /**
+     * @param string $path including the file name
+     */
     public function copyFileTo(string $path): static
     {
         file_put_contents($path, $this->readStream());
 
         return $this;
+    }
+
+    function makeTemporaryFileCopy(?TemporaryDirectory $temporaryDirectory = null): string|false
+    {
+        $temporaryDirectory ??= (new TemporaryDirectory())->deleteWhenDestroyed()->create();
+
+        $path = $temporaryDirectory->path($this->file_name);
+
+        $this->copyFileTo($path);
+
+        return $path;
     }
 
     /**
@@ -137,7 +155,7 @@ class Media extends Model
      */
     public function getUrl(string $conversion = null)
     {
-        return Storage::disk($this->disk)->url($this->getPath($conversion));
+        return $this->getDisk()->url($this->getPath($conversion));
     }
 
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
@@ -199,15 +217,15 @@ class Media extends Model
         $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
 
         $this->name = Str::slug(
-            $name ?? $file->getClientOriginalName(),
+            $name ?? SupportFile::name($file->getClientOriginalName()),
             dictionary: ['@' => 'at', '+' => '-']
         );
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = $basePath ? "{$basePath}/{$this->file_name}" : $this->generatePath();
+        $this->path = ($basePath ?? $this->generateBasePath()) . $this->file_name;
 
         $file->storeAs(
-            path: $this->path,
+            path: SupportFile::dirname($this->path),
             name: $this->file_name,
             options: [
                 'disk' => $this->disk,
@@ -253,7 +271,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
             mime_type: $mime_type,
             type: $type,
             state: 'success',
@@ -279,7 +297,7 @@ class Media extends Model
 
     public function deleteDirectory(): static
     {
-        Storage::disk($this->disk)->deleteDirectory(
+        $this->getDisk()->deleteDirectory(
             SupportFile::dirname($this->path)
         );
 

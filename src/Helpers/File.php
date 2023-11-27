@@ -4,8 +4,11 @@ namespace Finller\LaravelMedia\Helpers;
 
 use FFMpeg\Coordinate\Dimension;
 use Finller\LaravelMedia\Enums\MediaType;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Facades\File as SupportFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class File
 {
@@ -31,5 +34,13 @@ class File
             $fileName,
             dictionary: ['@' => 'at', '+' => '-']
         );
+    }
+
+    public static function makeTemporaryDisk(TemporaryDirectory $directory): Filesystem
+    {
+        return Storage::build([
+            'driver' => 'local',
+            'root' => $directory->path(),
+        ]);
     }
 }

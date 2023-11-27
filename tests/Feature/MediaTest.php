@@ -4,9 +4,11 @@ use FFMpeg\Coordinate\Dimension;
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Database\Factories\MediaFactory;
 use Finller\LaravelMedia\Enums\MediaType;
+use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('retrieve the generated conversion key', function () {
     /** @var Media $media */
@@ -81,24 +83,30 @@ it('update a conversion', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
-    $media->generated_conversions = collect([
-        'poster' => MediaFactory::generatedConversion(),
-    ]);
+    $media
+        ->putGeneratedConversion('poster', new GeneratedConversion(
+            file_name: 'poster.png',
+            name: 'poster',
+            state: 'success',
+            path: '/optimized/poster.png',
+            type: MediaType::Image,
+            disk: config('media.disk')
+        ))
+        ->save();
 
     $generatedConversion = $media->getGeneratedConversion('poster');
-    $media->save();
 
-    expect($generatedConversion->state)->tobe('success');
+    expect($generatedConversion->state)->toBe('success');
 
-    $generatedConversion->state = 'failure';
+    $generatedConversion->state = 'failed';
     $media->save();
 
     $media->refresh();
 
-    expect($generatedConversion->state)->tobe('failure');
+    expect($generatedConversion->state)->tobe('failed');
 });
 
-it('store an uploaded image', function () {
+it('store a renamed uploaded image', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
@@ -121,6 +129,26 @@ it('store an uploaded image', function () {
     expect($media->file_name)->toBe('avatar.jpg');
     expect($media->type)->toBe(MediaType::Image);
     expect($media->path)->toBe("/{$media->uuid}/avatar.jpg");
+
+    Storage::disk('media')->assertExists($media->path);
+});
+
+it('store an uploaded image', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
+
+    $media->storeFileFromUpload(
+        file: $file,
+        disk: 'media'
+    );
+
+    expect($media->name)->toBe('foo');
+    expect($media->file_name)->toBe('foo.jpg');
+    expect($media->path)->toBe("/{$media->uuid}/foo.jpg");
 
     Storage::disk('media')->assertExists($media->path);
 });
@@ -293,4 +321,34 @@ it('delete all files when model deleted', function () {
     Storage::disk('media')->assertMissing($media->path);
     Storage::disk('media')->assertMissing($generatedConversion->path);
     Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
+});
+
+
+it('copy the file to a temporary directory', function () {
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $file = UploadedFile::fake()->image('foo.jpg');
+
+    $media->storeFileFromUpload(
+        file: $file,
+        disk: 'media'
+    );
+
+    expect($media->getDisk()->exists($media->path))->toBe(true);
+
+    $temporaryDirectory = (new TemporaryDirectory())->create();
+
+    $path = $media->makeTemporaryFileCopy($temporaryDirectory);
+
+    expect($path)->toBeString();
+
+    expect(is_file($path))->tobe(true);
+
+    $temporaryDirectory->delete();
+
+    expect(is_file($path))->tobe(false);
 });

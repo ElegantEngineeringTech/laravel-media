@@ -15,11 +15,9 @@ class OptimizedImageConversionJob extends ConversionJob
 
     public function handle()
     {
-        $temporaryFilePath = $this->temporaryDirectory->path('file');
+        $path = $this->media->makeTemporaryFileCopy($this->temporaryDirectory);
 
-        $this->media->copyFileTo($temporaryFilePath);
-
-        Image::load($temporaryFilePath)
+        Image::load($path)
             ->manipulate(function (Manipulations $manipulations) {
                 if ($this->width || $this->height) {
                     $manipulations->fit(Manipulations::FIT_MAX, $this->width, $this->height);
@@ -29,6 +27,6 @@ class OptimizedImageConversionJob extends ConversionJob
             })
             ->save();
 
-        $this->media->storeConversion($temporaryFilePath, $this->conversion, $this->media->name);
+        $this->media->storeConversion($path, $this->conversion, $this->media->name);
     }
 }

@@ -6,6 +6,7 @@ use Finller\LaravelMedia\Jobs\ConversionJob;
 use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -17,7 +18,15 @@ trait HasMedia
 {
     public function media(): MorphMany
     {
-        return $this->morphMany(config('media-library.media_model'), 'model');
+        return $this->morphMany(config('media.model'), 'model');
+    }
+
+    /** 
+     * @return EloquentCollection<int, Media>
+     */
+    function getMedia(?string $collection_name = null): EloquentCollection
+    {
+        return $this->media->where('collection_name', $collection_name);
     }
 
     /**
@@ -38,13 +47,20 @@ trait HasMedia
         return $conversions;
     }
 
-    public function addMedia(string|UploadedFile $file, string $collection_name = null): static
+    public function saveMedia(string|UploadedFile $file, string $collection_name = null, ?string $name = null, ?string $disk = null): static
     {
         $collection_name ??= config('media.default_collection_name');
 
         $media = new Media();
 
-        $media->storeFile($file);
+        $media->model()->associate($this);
+
+        $media->storeFile(
+            file: $file,
+            collection_name: $collection_name,
+            name: $name,
+            disk: $disk
+        );
 
         $this->dispatchConversions($media, $collection_name);
 
