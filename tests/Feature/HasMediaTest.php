@@ -4,7 +4,7 @@ use Finller\LaravelMedia\Tests\Models\Test;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('create a media and store the files', function () {
+it('create a media, store files and generate conversions', function () {
     Storage::fake('media');
 
     $model = new Test();
@@ -14,11 +14,19 @@ it('create a media and store the files', function () {
 
     $model->saveMedia(
         file: $file,
-        collection_name: 'avatar',
+        collection_name: 'files',
         disk: 'media'
     );
 
-    $media = $model->getMedia('avatar')->first();
+    $media = $model->getMedia('files')->first();
 
     Storage::disk('media')->assertExists($media->path);
+
+    expect($media->generated_conversions->count())->toBe(1);
+
+    $generatedConversion = $media->getGeneratedConversion('optimized');
+
+    expect($generatedConversion)->not->toBe(null);
+
+    Storage::disk('media')->assertExists($generatedConversion->path);
 });

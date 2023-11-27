@@ -6,6 +6,7 @@ use Finller\LaravelMedia\Jobs\ConversionJob;
 use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
@@ -30,11 +31,33 @@ trait HasMedia
     }
 
     /**
+     * @return Arrayable<MediaCollection>|iterable<MediaCollection>|null
+     */
+    protected function registerMediaCollections(): Arrayable|iterable|null
+    {
+        return collect();
+    }
+
+    /**
+     * @return Arrayable<MediaConversion>|iterable<MediaConversion>|null
+     */
+    protected function registerMediaConversions(Media $media): Arrayable|iterable|null
+    {
+        return collect();
+    }
+
+    /**
      * @return Collection<string, MediaCollection>
      */
     public function getMediaCollections(): Collection
     {
-        return collect([]);
+        return collect($this->registerMediaCollections())
+            ->push(new MediaCollection(
+                name: config('media.default_collection_name'),
+                single: false,
+                public: false
+            ))
+            ->keyBy('name');
     }
 
     /**
@@ -42,14 +65,37 @@ trait HasMedia
      */
     public function getMediaConversions(Media $media): Collection
     {
-        $conversions = collect([]);
-
-        return $conversions;
+        return collect($this->registerMediaConversions($media))->keyBy('name');
     }
 
-    public function saveMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): static
+    function hasMediaCollection(string $collection_name): bool
+    {
+        return $this->getMediaCollections()->has($collection_name);
+    }
+
+    function clearMediaCollection(string $collection_name): static
+    {
+        $this->getMedia($collection_name)->each(function (Media $media) {
+            $media->delete();
+        });
+
+        return $this;
+    }
+
+    public function saveMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): Media
     {
         $collection_name ??= config('media.default_collection_name');
+
+        $collection = $this->getMediaCollections()->get($collection_name);
+
+        if (!$collection) {
+            $class = static::class;
+            throw new Exception("The media collection {$collection_name} is not registered for {$class}");
+        }
+
+        if ($collection->single) {
+            $this->clearMediaCollection($collection_name);
+        }
 
         $media = new Media();
 
@@ -64,7 +110,7 @@ trait HasMedia
 
         $this->dispatchConversions($media, $collection_name);
 
-        return $this;
+        return $media;
     }
 
     public function dispatchConversions(Media $media): static

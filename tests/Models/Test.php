@@ -8,6 +8,7 @@ use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
 use Finller\LaravelMedia\Traits\HasMedia;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -23,21 +24,24 @@ class Test extends Model
     protected $guarded = [];
 
     /**
-     * @return Collection<string, MediaCollection>
+     * @return Collection<MediaCollection>
      */
-    public function getMediaCollections(): Collection
+    protected function registerMediaCollections(): Collection
     {
         return collect([
-            'files' => new MediaCollection(
+            new MediaCollection(
+                name: 'files',
                 single: false,
                 public: false,
             ),
         ]);
     }
 
-    public function getMediaConversions(Media $media): Collection
+    /**
+     * @return Collection<MediaConversion>
+     */
+    protected function registerMediaConversions(Media $media): Collection
     {
-
         $conversions = collect();
 
         if ($media->type === MediaType::Image) {
@@ -49,6 +53,6 @@ class Test extends Model
             );
         }
 
-        return $conversions->keyBy('name');
+        return $conversions;
     }
 }

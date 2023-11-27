@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 class MediaCollection
 {
     public function __construct(
+        public string $name,
         public ?array $acceptedMimeTypes = null,
         public bool $single = false,
         public bool $public = false,
