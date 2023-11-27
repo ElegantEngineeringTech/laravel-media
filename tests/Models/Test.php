@@ -10,7 +10,6 @@ use Finller\LaravelMedia\MediaConversion;
 use Finller\LaravelMedia\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 /**
  * @property ?string $uuid
@@ -32,11 +31,11 @@ class Test extends Model
             'files' => new MediaCollection(
                 single: false,
                 public: false,
-            )
+            ),
         ]);
     }
 
-    function getMediaConversions(Media $media): Collection
+    public function getMediaConversions(Media $media): Collection
     {
 
         $conversions = collect();

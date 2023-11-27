@@ -31,9 +31,10 @@ trait HasMedia
     /**
      * @return Collection<string, MediaConversion>
      */
-    function getMediaConversions(Media $media): Collection
+    public function getMediaConversions(Media $media): Collection
     {
         $conversions = collect([]);
+
         return $conversions;
     }
 
