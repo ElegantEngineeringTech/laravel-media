@@ -21,4 +21,4 @@ it('create a media and store the files', function () {
     $media = $model->getMedia('avatar')->first();
 
     Storage::disk('media')->assertExists($media->path);
-})->only();
+});
