@@ -41,6 +41,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
+ * @property Model $model
  */
 class Media extends Model
 {

@@ -20,10 +20,10 @@ class GeneratedConversion implements Arrayable
     public Carbon $state_set_at;
 
     public function __construct(
-        public string $file_name,
-        public string $name,
-        public MediaType $type,
-        public string $disk,
+        public ?string $file_name = null,
+        public ?string $name = null,
+        public ?MediaType $type = null,
+        public ?string $disk = null,
         public ?string $path = null,
         public ?string $mime_type = null,
         public ?string $extension = null,
@@ -48,7 +48,7 @@ class GeneratedConversion implements Arrayable
             name: Arr::get($attributes, 'name'),
             state: Arr::get($attributes, 'state'),
             state_set_at: Carbon::parse(Arr::get($attributes, 'state_set_at', now())),
-            type: ($type = Arr::get($attributes, 'type')) ? MediaType::from($type) : MediaType::Other,
+            type: ($type = Arr::get($attributes, 'type')) ? MediaType::from($type) : null,
             disk: Arr::get($attributes, 'disk'),
             path: Arr::get($attributes, 'path'),
             mime_type: Arr::get($attributes, 'mime_type'),
@@ -65,7 +65,7 @@ class GeneratedConversion implements Arrayable
 
     public function delete(): static
     {
-        if ($this->path) {
+        if ($this->path && $this->disk) {
             Storage::disk($this->disk)->deleteDirectory(
                 SupportFile::dirname($this->path)
             );

@@ -5,33 +5,18 @@ namespace Finller\LaravelMedia\Tests\Models;
 use Finller\LaravelMedia\Enums\MediaType;
 use Finller\LaravelMedia\Jobs\OptimizedImageConversionJob;
 use Finller\LaravelMedia\Media;
-use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
 use Finller\LaravelMedia\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
-class TestWithMultipleConversions extends Model
+class TestWithNestedConversions extends Model
 {
     use HasMedia;
 
     protected $table = 'tests';
 
     protected $guarded = [];
-
-    /**
-     * @return Collection<MediaCollection>
-     */
-    protected function registerMediaCollections(): Collection
-    {
-        return collect([
-            new MediaCollection(
-                name: 'files',
-                single: false,
-                public: false,
-            ),
-        ]);
-    }
 
     /**
      * @return Collection<MediaConversion>
@@ -44,15 +29,12 @@ class TestWithMultipleConversions extends Model
             $conversions
                 ->push(new MediaConversion(
                     name: 'optimized',
-                    job: new OptimizedImageConversionJob($media, 'optimized')
-                ))
-                ->push(new MediaConversion(
-                    name: 'webp',
-                    job: new OptimizedImageConversionJob(
-                        $media,
-                        'webp',
-                        fileName: "{$media->name}.webp"
-                    )
+                    job: new OptimizedImageConversionJob($media, 'optimized'),
+                    conversions: collect()
+                        ->push(new MediaConversion(
+                            name: 'webp',
+                            job: new OptimizedImageConversionJob($media, 'webp', fileName: "{$media->name}.webp")
+                        ))
                 ));
         }
 

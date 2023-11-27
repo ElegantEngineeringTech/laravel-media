@@ -1,6 +1,5 @@
 <?php
 
-use Finller\LaravelMedia\Tests\Models\Test;
 use Finller\LaravelMedia\Tests\Models\TestWithMultipleConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -12,7 +11,7 @@ it('generate a webp file conversion', function () {
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
-    $model->saveMedia(
+    $model->addMedia(
         file: $file,
         collection_name: 'files',
         disk: 'media'

@@ -2,7 +2,7 @@
 
 namespace Finller\LaravelMedia\Traits;
 
-use Finller\LaravelMedia\Jobs\ConversionJob;
+use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 
 /**
  * @property ?string $uuid
+ * @property EloquentCollection<int, Media> $media
  */
 trait HasMedia
 {
@@ -27,7 +28,7 @@ trait HasMedia
      */
     public function getMedia(string $collection_name = null): EloquentCollection
     {
-        return $this->media->where('collection_name', $collection_name);
+        return $this->media->where('collection_name', $collection_name ?? config('media.default_collection_name'));
     }
 
     /**
@@ -68,15 +69,25 @@ trait HasMedia
         return collect($this->registerMediaConversions($media))->keyBy('name');
     }
 
-    function hasMediaCollection(string $collection_name): bool
+    public function getMediaConversionKey(string $conversion): string
+    {
+        return str_replace('.', '.conversions.', $conversion);
+    }
+
+    public function getMediaConversion(Media $media, string $conversion): ?MediaConversion
+    {
+        return data_get($this->getMediaConversions($media), $this->getMediaConversionKey($conversion));
+    }
+
+    public function hasMediaCollection(string $collection_name): bool
     {
         return $this->getMediaCollections()->has($collection_name);
     }
 
     /**
-     * @param int[] $except
+     * @param  int[]  $except
      */
-    function clearMediaCollection(string $collection_name, array $except = []): static
+    public function clearMediaCollection(string $collection_name, array $except = []): static
     {
         $this->getMedia($collection_name)
             ->except($except)
@@ -87,7 +98,7 @@ trait HasMedia
         return $this;
     }
 
-    public function saveMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): Media
+    public function addMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): Media
     {
         $collection_name ??= config('media.default_collection_name');
 
@@ -113,9 +124,30 @@ trait HasMedia
             $this->clearMediaCollection($collection_name, except: [$media->id]);
         }
 
-        $this->dispatchConversions($media, $collection_name);
+        $this->dispatchConversions($media);
+
 
         return $media;
+    }
+
+    public function dispatchConversion(Media $media, string $conversionName): static
+    {
+        $conversion = $this->getMediaConversion($media, $conversionName);
+
+        if (!$conversion) {
+            return $this;
+        }
+
+        $media->deleteGeneratedConversion($conversion->name);
+
+        $media
+            ->putGeneratedConversion($conversion->name, new GeneratedConversion(state: 'pending'))
+            ->save();
+
+
+        dispatch($conversion->job);
+
+        return $this;
     }
 
     public function dispatchConversions(Media $media): static
@@ -126,13 +158,16 @@ trait HasMedia
             return $this;
         }
 
-        foreach ($conversions as $name => $conversion) {
-            if ($conversion->job instanceof ConversionJob) {
-                dispatch($conversion->job);
-            } else {
-                $job = $conversion->job;
-                dispatch(new $job($media, $name));
-            }
+        $media->deleteGeneratedConversions();
+
+        foreach ($conversions as $conversion) {
+            $media->putGeneratedConversion($conversion->name, new GeneratedConversion(state: 'pending'));
+        }
+
+        $media->save();
+
+        foreach ($conversions as $conversion) {
+            dispatch($conversion->job);
         }
 
         return $this;

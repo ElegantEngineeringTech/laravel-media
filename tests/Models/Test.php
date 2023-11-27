@@ -8,7 +8,6 @@ use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
 use Finller\LaravelMedia\Traits\HasMedia;
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Spatie\Image\Manipulations;

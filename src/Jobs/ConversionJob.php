@@ -3,6 +3,7 @@
 namespace Finller\LaravelMedia\Jobs;
 
 use Finller\LaravelMedia\Media;
+use Finller\LaravelMedia\MediaConversion;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,11 +16,16 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public TemporaryDirectory $temporaryDirectory;
+    public ?TemporaryDirectory $temporaryDirectory = null;
 
     public function __construct(public Media $media, public string $conversion)
     {
-        $this->temporaryDirectory = (new TemporaryDirectory())->deleteWhenDestroyed()->create();
+    }
+
+    public function getConversion(): ?MediaConversion
+    {
+        // @phpstan-ignore-next-line
+        return $this->media->model->getMediaConversion($this->media, $this->conversion);
     }
 
     public function uniqueId()
@@ -29,6 +35,42 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function handle()
     {
+        $this->start();
+
+        $this->run();
+
+        $this->end();
+    }
+
+    public function start()
+    {
+        $this->temporaryDirectory = (new TemporaryDirectory())->deleteWhenDestroyed()->create();
+    }
+
+    public function run()
+    {
         //
+    }
+
+    public function end()
+    {
+        $this->temporaryDirectory?->delete();
+
+        $this->dispatchChildrenConversions();
+    }
+
+    protected function dispatchChildrenConversions()
+    {
+        $conversion = $this->getConversion();
+
+        if (!$conversion?->conversions->isNotEmpty()) {
+            return;
+        }
+
+        foreach ($conversion->conversions as $childConversion) {
+            $job = $childConversion->job;
+            $job->conversion = implode('.', [$this->conversion, $job->conversion]);
+            dispatch($job);
+        }
     }
 }

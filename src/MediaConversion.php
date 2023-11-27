@@ -3,12 +3,15 @@
 namespace Finller\LaravelMedia;
 
 use Finller\LaravelMedia\Jobs\ConversionJob;
+use Illuminate\Support\Collection;
 
 class MediaConversion
 {
     public function __construct(
         public string $name,
-        public string|ConversionJob $job,
+        public ConversionJob $job,
+        public Collection $conversions = new Collection()
     ) {
+        $this->conversions = $conversions->keyBy('name');
     }
 }
