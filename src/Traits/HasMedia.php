@@ -73,11 +73,16 @@ trait HasMedia
         return $this->getMediaCollections()->has($collection_name);
     }
 
-    function clearMediaCollection(string $collection_name): static
+    /**
+     * @param int[] $except
+     */
+    function clearMediaCollection(string $collection_name, array $except = []): static
     {
-        $this->getMedia($collection_name)->each(function (Media $media) {
-            $media->delete();
-        });
+        $this->getMedia($collection_name)
+            ->except($except)
+            ->each(function (Media $media) {
+                $media->delete();
+            });
 
         return $this;
     }
@@ -93,10 +98,6 @@ trait HasMedia
             throw new Exception("The media collection {$collection_name} is not registered for {$class}");
         }
 
-        if ($collection->single) {
-            $this->clearMediaCollection($collection_name);
-        }
-
         $media = new Media();
 
         $media->model()->associate($this);
@@ -105,8 +106,12 @@ trait HasMedia
             file: $file,
             collection_name: $collection_name,
             name: $name,
-            disk: $disk
+            disk: $disk ?? $collection->disk
         );
+
+        if ($collection->single) {
+            $this->clearMediaCollection($collection_name, except: [$media->id]);
+        }
 
         $this->dispatchConversions($media, $collection_name);
 

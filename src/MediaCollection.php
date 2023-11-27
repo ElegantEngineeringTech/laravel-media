@@ -14,6 +14,7 @@ class MediaCollection
         public ?array $acceptedMimeTypes = null,
         public bool $single = false,
         public bool $public = false,
+        public ?string $disk = null
     ) {
     }
 }

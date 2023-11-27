@@ -8,7 +8,7 @@ class MediaConversion
 {
     public function __construct(
         public string $name,
-        public string|ConversionJob $job
+        public string|ConversionJob $job,
     ) {
     }
 }

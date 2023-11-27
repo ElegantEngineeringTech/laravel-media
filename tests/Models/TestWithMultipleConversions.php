@@ -8,12 +8,11 @@ use Finller\LaravelMedia\Media;
 use Finller\LaravelMedia\MediaCollection;
 use Finller\LaravelMedia\MediaConversion;
 use Finller\LaravelMedia\Traits\HasMedia;
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Spatie\Image\Manipulations;
 
-class Test extends Model
+
+class TestWithMultipleConversions extends Model
 {
     use HasMedia;
 
@@ -32,11 +31,6 @@ class Test extends Model
                 single: false,
                 public: false,
             ),
-            new MediaCollection(
-                name: 'avatar',
-                single: true,
-                public: true,
-            ),
         ]);
     }
 
@@ -52,20 +46,11 @@ class Test extends Model
                 ->push(new MediaConversion(
                     name: 'optimized',
                     job: new OptimizedImageConversionJob($media, 'optimized')
+                ))
+                ->push(new MediaConversion(
+                    name: 'webp',
+                    job: new OptimizedImageConversionJob($media, 'webp', file_name: "{$media->name}.webp")
                 ));
-
-            if ($media->collection_name === 'avatar') {
-                $conversions->push(new MediaConversion(
-                    name: 'small',
-                    job: new OptimizedImageConversionJob(
-                        media: $media,
-                        conversion: 'small',
-                        width: 5,
-                        height: 5,
-                        fitMethod: Manipulations::FIT_CROP
-                    )
-                ));
-            }
         }
 
         return $conversions;

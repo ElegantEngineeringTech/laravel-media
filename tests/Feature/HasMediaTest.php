@@ -4,21 +4,31 @@ use Finller\LaravelMedia\Tests\Models\Test;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
+it('get the correct media collection', function () {
+    $model = new Test();
+
+    expect($model->getMediaCollections()->has('files'))->toBe(true);
+});
+
 it('create a media, store files and generate conversions', function () {
     Storage::fake('media');
 
     $model = new Test();
     $model->save();
 
-    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
+    $file = UploadedFile::fake()->image('foo.jpg');
 
-    $model->saveMedia(
+    $media = $model->saveMedia(
         file: $file,
         collection_name: 'files',
         disk: 'media'
     );
 
-    $media = $model->getMedia('files')->first();
+    $media->refresh();
+
+    expect($model->getMediaConversions($media)->count())->toBe(1);
+
+    expect($media->collection_name)->toBe('files');
 
     Storage::disk('media')->assertExists($media->path);
 
