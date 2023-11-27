@@ -61,7 +61,7 @@ class Media extends Model
     ];
 
     protected $attributes = [
-        'generated_conversions' => '[]'
+        'generated_conversions' => '[]',
     ];
 
     public static function booted()
@@ -105,17 +105,16 @@ class Media extends Model
         return $this->path;
     }
 
-
     protected function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "/{$this->uuid}/generated_conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
+            return "/{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
         }
 
         return "/{$this->uuid}/";
     }
 
-    function getDisk(): Filesystem
+    public function getDisk(): Filesystem
     {
         return Storage::disk($this->disk);
     }
@@ -129,7 +128,7 @@ class Media extends Model
     }
 
     /**
-     * @param string $path including the file name
+     * @param  string  $path including the file name
      */
     public function copyFileTo(string $path): static
     {
@@ -138,7 +137,7 @@ class Media extends Model
         return $this;
     }
 
-    function makeTemporaryFileCopy(?TemporaryDirectory $temporaryDirectory = null): string|false
+    public function makeTemporaryFileCopy(TemporaryDirectory $temporaryDirectory = null): string|false
     {
         $temporaryDirectory ??= (new TemporaryDirectory())->deleteWhenDestroyed()->create();
 
@@ -222,7 +221,7 @@ class Media extends Model
         );
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = ($basePath ?? $this->generateBasePath()) . $this->file_name;
+        $this->path = ($basePath ?? $this->generateBasePath()).$this->file_name;
 
         $file->storeAs(
             path: SupportFile::dirname($this->path),
@@ -271,7 +270,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
             mime_type: $mime_type,
             type: $type,
             state: 'success',

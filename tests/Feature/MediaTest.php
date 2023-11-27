@@ -4,7 +4,6 @@ use FFMpeg\Coordinate\Dimension;
 use Finller\LaravelMedia\Casts\GeneratedConversion;
 use Finller\LaravelMedia\Database\Factories\MediaFactory;
 use Finller\LaravelMedia\Enums\MediaType;
-use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -322,7 +321,6 @@ it('delete all files when model deleted', function () {
     Storage::disk('media')->assertMissing($generatedConversion->path);
     Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
 });
-
 
 it('copy the file to a temporary directory', function () {
 

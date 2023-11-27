@@ -21,10 +21,10 @@ trait HasMedia
         return $this->morphMany(config('media.model'), 'model');
     }
 
-    /** 
+    /**
      * @return EloquentCollection<int, Media>
      */
-    function getMedia(?string $collection_name = null): EloquentCollection
+    public function getMedia(string $collection_name = null): EloquentCollection
     {
         return $this->media->where('collection_name', $collection_name);
     }
@@ -47,7 +47,7 @@ trait HasMedia
         return $conversions;
     }
 
-    public function saveMedia(string|UploadedFile $file, string $collection_name = null, ?string $name = null, ?string $disk = null): static
+    public function saveMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): static
     {
         $collection_name ??= config('media.default_collection_name');
 

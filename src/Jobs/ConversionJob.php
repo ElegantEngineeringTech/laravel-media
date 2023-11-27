@@ -2,10 +2,8 @@
 
 namespace Finller\LaravelMedia\Jobs;
 
-use Finller\LaravelMedia\Helpers\File;
 use Finller\LaravelMedia\Media;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
