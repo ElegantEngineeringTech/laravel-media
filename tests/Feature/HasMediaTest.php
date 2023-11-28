@@ -91,4 +91,4 @@ it('generate nested conversions', function () {
     expect($childGeneratedConversion->extension)->toBe('webp');
 
     Storage::disk('media')->assertExists($childGeneratedConversion->path);
-})->only();
+});

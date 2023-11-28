@@ -44,7 +44,10 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function start()
     {
-        $this->temporaryDirectory = (new TemporaryDirectory())->deleteWhenDestroyed()->create();
+        $this->temporaryDirectory = (new TemporaryDirectory())
+            ->location(storage_path('media-tmp'))
+            ->deleteWhenDestroyed()
+            ->create();
     }
 
     public function run()
@@ -63,7 +66,7 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
     {
         $conversion = $this->getConversion();
 
-        if (! $conversion?->conversions->isNotEmpty()) {
+        if (!$conversion?->conversions->isNotEmpty()) {
             return;
         }
 

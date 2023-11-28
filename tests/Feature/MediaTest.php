@@ -338,7 +338,9 @@ it('copy the file to a temporary directory', function () {
 
     expect($media->getDisk()->exists($media->path))->toBe(true);
 
-    $temporaryDirectory = (new TemporaryDirectory())->create();
+    $temporaryDirectory = (new TemporaryDirectory())
+        ->location(storage_path('media-tmp'))
+        ->create();
 
     $path = $media->makeTemporaryFileCopy($temporaryDirectory);
 
