@@ -1,9 +1,6 @@
 <?php
 
-use FFMpeg\Coordinate\Dimension;
-use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Database\Factories\MediaFactory;
-use Finller\Media\Enums\MediaType;
 use Finller\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;

@@ -7,7 +7,6 @@ use Finller\Media\Enums\MediaType;
 use Finller\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('retrieve the generated conversion key', function () {
     /** @var Media $media */

@@ -2,13 +2,13 @@
 
 namespace Finller\Media\Traits;
 
+use Finller\Media\Helpers\File;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\File as HttpFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
-use Illuminate\Http\File as HttpFile;
-use Finller\Media\Helpers\File;
 
 /**
  * @property ?string $disk
@@ -19,7 +19,7 @@ trait InteractsWithMediaFiles
 {
     public function getDisk(): ?Filesystem
     {
-        if (!$this->disk) {
+        if (! $this->disk) {
             return null;
         }
 
@@ -39,7 +39,7 @@ trait InteractsWithMediaFiles
      */
     public function copyFileTo(string $path): ?string
     {
-        if (!$this->path) {
+        if (! $this->path) {
             return null;
         }
 
@@ -80,7 +80,7 @@ trait InteractsWithMediaFiles
 
     public function deleteDirectory(): bool
     {
-        if (!$this->path) {
+        if (! $this->path) {
             return true;
         }
 
@@ -91,7 +91,7 @@ trait InteractsWithMediaFiles
 
     public function humanReadableSize(int $precision = 0, int $maxPrecision = null): ?string
     {
-        if (!$this->size) {
+        if (! $this->size) {
             return null;
         }
 
