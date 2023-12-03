@@ -28,7 +28,8 @@ trait HasMedia
      */
     public function getMedia(string $collection_name = null): EloquentCollection
     {
-        return $this->media->where('collection_name', $collection_name ?? config('media.default_collection_name'));
+        return $this->media
+            ->when($collection_name, fn ($collection) => $collection->where('collection_name', $collection_name));
     }
 
     /**
@@ -85,17 +86,18 @@ trait HasMedia
     }
 
     /**
-     * @param  int[]  $except
+     * @param  int[]  $except Array of Media Ids
+     * @return Collection<int, Media> The deleted media list
      */
-    public function clearMediaCollection(string $collection_name, array $except = []): static
+    public function clearMediaCollection(string $collection_name, array $except = []): Collection
     {
-        $this->getMedia($collection_name)
+        $media = $this->getMedia($collection_name)
             ->except($except)
             ->each(function (Media $media) {
                 $media->delete();
             });
 
-        return $this;
+        return $media;
     }
 
     public function addMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): Media
@@ -106,10 +108,12 @@ trait HasMedia
 
         if (! $collection) {
             $class = static::class;
-            throw new Exception("The media collection {$collection_name} is not registered for {$class}");
+            throw new Exception("The media collection {$collection_name} is not registered for the model {$class}.");
         }
 
-        $media = new Media();
+        $model = config('media.model');
+        /** @var Media $media */
+        $media = new $model();
 
         $media->model()->associate($this);
 

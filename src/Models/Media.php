@@ -17,7 +17,6 @@ use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Str;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
@@ -218,49 +217,103 @@ class Media extends Model
         return $this;
     }
 
+    /**
+     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles any other file to store in the same directory
+     */
     public function storeFile(
         string|UploadedFile|HttpFile $file,
         string $collection_name = null,
         string $basePath = null,
         string $name = null,
-        string $disk = null
+        string $disk = null,
+        array $otherFiles = []
     ): static {
         if ($file instanceof UploadedFile || $file instanceof HttpFile) {
-            return $this->storeFileFromHttpFile($file, $collection_name, $basePath, $name, $disk);
+            $this->storeFileFromHttpFile($file, $collection_name, $basePath, $name, $disk);
+        } elseif (filter_var($file, FILTER_VALIDATE_URL)) {
+            $this->storeFileFromUrl($file, $collection_name, $basePath, $name, $disk);
+        } else {
+            $this->storeFileFromHttpFile(new HttpFile($file), $collection_name, $basePath, $name, $disk);
         }
 
-        if (filter_var($file, FILTER_VALIDATE_URL)) {
-            return $this->storeFileFromUrl($file, $collection_name, $basePath, $name, $disk);
+        foreach ($otherFiles as $otherFile) {
+            $this->putFile($otherFile);
         }
 
         return $this;
     }
 
     /**
-     * @param  (string|HttpFile)[]  $otherFiles
+     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles any other file to store in the same directory
      */
     public function storeConversion(
-        HttpFile|string $file,
+        string|UploadedFile|HttpFile $file,
         string $conversion,
         string $name = null,
         string $basePath = null,
         string $state = 'success',
         array $otherFiles = []
     ): GeneratedConversion {
-        $file = is_string($file) ? new HttpFile($file) : $file;
-        $name = File::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
 
-        $extension = $file->guessExtension();
+        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
+            $generatedConversion = $this->storeConversionFromHttpFile($file, $conversion, $name, $basePath, $state);
+        } elseif (filter_var($file, FILTER_VALIDATE_URL)) {
+            $generatedConversion = $this->storeConversionFromUrl($file, $conversion, $name, $basePath, $state);
+        } else {
+            $generatedConversion = $this->storeConversionFromHttpFile(new HttpFile($file), $conversion, $name, $basePath, $state);
+        }
+
+        foreach ($otherFiles as $otherFile) {
+            $this->putFile($otherFile);
+        }
+
+        return $generatedConversion;
+    }
+
+    public function storeConversionFromUrl(
+        string $url,
+        string $conversion,
+        string $name = null,
+        string $basePath = null,
+        string $state = 'success',
+    ): GeneratedConversion {
+        $temporaryDirectory = (new TemporaryDirectory())
+            ->location(storage_path('media-tmp'))
+            ->create();
+
+        $path = FileDownloader::getTemporaryFile($url, $temporaryDirectory);
+
+        $generatedConversion = $this->storeConversionFromHttpFile(new HttpFile($path), $conversion, $name, $basePath, $state);
+
+        $temporaryDirectory->delete();
+
+        return $generatedConversion;
+    }
+
+    public function storeConversionFromHttpFile(
+        UploadedFile|HttpFile $file,
+        string $conversion,
+        string $name = null,
+        string $basePath = null,
+        string $state = 'success',
+    ): GeneratedConversion {
+        $name = File::sanitizeFilename($name ?? File::name($file->getPathname()));
+
+        $extension = File::extension($file);
         $file_name = "{$name}.{$extension}";
-        $mime_type = $file->getMimeType();
+        $mime_type = File::mimeType($file);
         $type = MediaType::tryFromMimeType($mime_type);
         $dimension = File::dimension($file->getPathname(), type: $type);
+
+        $existingConversion = $this->getGeneratedConversion($name);
+
+        $existingConversion?->delete();
 
         $generatedConversion = new GeneratedConversion(
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
+            path: Str::finish($basePath ?? $this->generateBasePath($conversion), '/').$file_name,
             mime_type: $mime_type,
             type: $type,
             state: $state,
@@ -269,28 +322,26 @@ class Media extends Model
             width: $dimension->getWidth(),
             aspect_ratio: $dimension?->getRatio(forceStandards: false)->getValue(),
             size: $file->getSize(),
+            created_at: $existingConversion?->created_at
         );
 
         $this->putGeneratedConversion($conversion, $generatedConversion);
 
         $generatedConversion->putFile($file, fileName: $generatedConversion->file_name);
 
-        foreach ($otherFiles as $otherFile) {
-            $generatedConversion->putFile($otherFile);
-        }
-
         $this->save();
 
         return $generatedConversion;
     }
 
-    public function deleteGeneratedConversion(string $converion): static
+    public function deleteGeneratedConversion(string $converion): GeneratedConversion
     {
-        $this->getGeneratedConversion($converion)?->delete();
+        $generatedConversion = $this->getGeneratedConversion($converion);
+        $generatedConversion?->delete();
         $this->forgetGeneratedConversion($converion);
         $this->save();
 
-        return $this;
+        return $generatedConversion;
     }
 
     public function deleteGeneratedConversions(): static

@@ -3,9 +3,11 @@
 namespace Finller\Media\Traits;
 
 use Exception;
+use Finller\Media\FileDownloaders\FileDownloader;
 use Finller\Media\Helpers\File;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
@@ -76,7 +78,7 @@ trait InteractsWithMediaFiles
      * Put a file in the same directory than the main file
      */
     public function putFile(
-        HttpFile|string $file,
+        string|UploadedFile|HttpFile $file,
         string $name = null,
         string $fileName = null,
     ): string|false {
@@ -84,7 +86,11 @@ trait InteractsWithMediaFiles
             throw new Exception('['.static::class.']'."Can't put a file to the instance because the main path is not defined");
         }
 
-        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
+        if (is_string($file) && filter_var($file, FILTER_VALIDATE_URL)) {
+            $file = new HttpFile(FileDownloader::getTemporaryFile($file));
+        } elseif (is_string($file)) {
+            $file = new HttpFile($file);
+        }
 
         $fileName ??= File::extractFilename($file, $name);
 
