@@ -26,7 +26,6 @@ class MediaFactory extends Factory
             'disk' => config('media.disk'),
             'model_id' => 0,
             'model_type' => '\App\Models\Fake',
-            'generated_conversions' => [],
         ];
     }
 

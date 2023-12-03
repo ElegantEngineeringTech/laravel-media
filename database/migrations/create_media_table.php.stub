@@ -11,22 +11,33 @@ return new class extends Migration
         Schema::create('media', function (Blueprint $table) {
             $table->id();
 
-            $table->morphs('model');
-            $table->uuid('uuid')->nullable()->unique();
-            $table->string('collection_name');
-            $table->string('name');
-            $table->string('file_name');
+            $table->nullableMorphs('model');
+            $table->uuid('uuid')->unique()->index();
+            $table->string('collection_name')->index();
+            $table->string('name')->nullable();
+            $table->string('file_name')->nullable();
             $table->string('mime_type')->nullable();
-            $table->string('disk');
-            $table->string('conversions_disk')->nullable();
-            $table->unsignedBigInteger('size');
-            $table->json('manipulations');
-            $table->json('custom_properties');
-            $table->json('generated_conversions');
-            $table->json('responsive_images');
-            $table->unsignedInteger('order_column')->nullable()->index();
+            $table->string('disk')->nullable();
+            $table->unsignedBigInteger('size')->nullable();
+            $table->json('generated_conversions')->nullable();
+            $table->string('order')->nullable()->index();
 
-            $table->nullableTimestamps();
+            $table->string('path')->nullable();
+            $table->string('type')->nullable();
+            $table->string('extension')->nullable();
+            $table->unsignedBigInteger('width')->nullable();
+            $table->unsignedBigInteger('height')->nullable();
+            $table->decimal('aspect_ratio', 19, 6)->nullable();
+            $table->string('average_color')->nullable();
+            $table->json('metadata')->nullable();
+
+            $table->index(['model_type', 'model_id', 'collection_name']);
+
+            $table->timestamps();
         });
+    }
+
+    public function down(){
+        Schema::dropIfExists('media');
     }
 };

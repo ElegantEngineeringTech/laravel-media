@@ -24,15 +24,15 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 /**
  * @property int $id
  * @property string $uuid
- * @property string $disk
- * @property string $path
- * @property MediaType $type
- * @property string $name
- * @property string $file_name
- * @property int $size
+ * @property string $collection_name
+ * @property ?string $disk
+ * @property ?string $path
+ * @property ?MediaType $type
+ * @property ?string $name
+ * @property ?string $file_name
+ * @property ?int $size
  * @property ?string $mime_type
  * @property ?string $extension
- * @property ?string $collection_name
  * @property ?int $width
  * @property ?int $height
  * @property ?float $aspect_ratio
@@ -40,7 +40,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
- * @property Model $model
+ * @property ?Model $model
  */
 class Media extends Model
 {
@@ -59,10 +59,6 @@ class Media extends Model
         'type' => MediaType::class,
         'metadata' => AsArrayObject::class,
         'generated_conversions' => GeneratedConversions::class,
-    ];
-
-    protected $attributes = [
-        'generated_conversions' => '[]',
     ];
 
     public static function booted()
@@ -121,7 +117,7 @@ class Media extends Model
     public function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
+            return "{$this->uuid}/generated_conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
         }
 
         return "{$this->uuid}/";
@@ -192,7 +188,7 @@ class Media extends Model
         $this->name = File::sanitizeFilename($name ?? File::name($file));
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/').$this->file_name;
+        $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/') . $this->file_name;
 
         $this->putFile($file, fileName: $this->file_name);
 
@@ -264,7 +260,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
             mime_type: $mime_type,
             type: $type,
             state: $state,

@@ -16,7 +16,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Finller\\Media\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Finller\\Media\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
     }
 
@@ -31,9 +31,7 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        $migration = include __DIR__.'/../database/migrations/create_media_table.php.stub';
-        $migration->up();
-        $migration = include __DIR__.'/../database/migrations/add_columns_to_media_table.php.stub';
+        $migration = include __DIR__ . '/../database/migrations/create_media_table.php.stub';
         $migration->up();
 
         $app['db']->connection()->getSchemaBuilder()->create('tests', function (Blueprint $table) {

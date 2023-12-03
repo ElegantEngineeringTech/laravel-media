@@ -19,7 +19,6 @@ class MediaServiceProvider extends PackageServiceProvider
             ->name('laravel-media')
             ->hasConfigFile()
             ->hasMigration('create_media_table')
-            ->hasMigration('add_columns_to_media_table')
             ->hasCommand(MediaCommand::class);
     }
 }

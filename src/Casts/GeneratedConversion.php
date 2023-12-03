@@ -21,6 +21,7 @@ class GeneratedConversion implements Arrayable
     public Carbon $state_set_at;
 
     public function __construct(
+        public ?string $state = null,
         public ?string $file_name = null,
         public ?string $name = null,
         public ?MediaType $type = null,
@@ -33,7 +34,6 @@ class GeneratedConversion implements Arrayable
         public ?int $width = null,
         public ?float $aspect_ratio = null,
         public ?string $average_color = null,
-        public ?string $state = null,
         public Collection $generated_conversions = new Collection(),
         Carbon $created_at = null,
         Carbon $state_set_at = null,
