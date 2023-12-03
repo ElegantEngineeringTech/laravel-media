@@ -7,7 +7,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class FileDownloader
 {
-    public static  function getTemporaryFile(string $url, TemporaryDirectory $temporaryDirectory = null): string
+    public static function getTemporaryFile(string $url, TemporaryDirectory $temporaryDirectory = null): string
     {
         $context = stream_context_create([
             'http' => [
@@ -15,7 +15,7 @@ class FileDownloader
             ],
         ]);
 
-        if (!$stream = @fopen($url, 'r', false, $context)) {
+        if (! $stream = @fopen($url, 'r', false, $context)) {
             throw new Exception("Can't reach the url: {$url}");
         }
 

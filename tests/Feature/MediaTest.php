@@ -160,7 +160,7 @@ it('store a pdf from an url with a custom name', function () {
     $media->storeFile(
         file: $this->dummy_pdf_url,
         disk: 'media',
-        name: "foo"
+        name: 'foo'
     );
 
     expect($media->name)->toBe('foo');

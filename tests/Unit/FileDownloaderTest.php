@@ -1,8 +1,6 @@
 <?php
 
 use Finller\Media\FileDownloaders\FileDownloader;
-use Finller\Media\Helpers\File;
-use Illuminate\Http\UploadedFile;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('download a file from an url as a temporary file', function () {

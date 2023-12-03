@@ -121,7 +121,7 @@ class Media extends Model
     public function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "{$this->uuid}/generated_conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
+            return "{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
         }
 
         return "{$this->uuid}/";
@@ -192,7 +192,7 @@ class Media extends Model
         $this->name = File::sanitizeFilename($name ?? File::name($file));
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/') . $this->file_name;
+        $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/').$this->file_name;
 
         $this->putFile($file, fileName: $this->file_name);
 
@@ -201,7 +201,7 @@ class Media extends Model
         return $this;
     }
 
-    function storeFileFromUrl(
+    public function storeFileFromUrl(
         string $url,
         string $collection_name = null,
         string $basePath = null,
@@ -264,7 +264,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
             mime_type: $mime_type,
             type: $type,
             state: $state,
