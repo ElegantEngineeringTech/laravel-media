@@ -1,8 +1,8 @@
 <?php
 
-// config for Finller/LaravelMedia
+// config for Finller/Media
 
-use Finller\LaravelMedia\Media;
+use Finller\Media\Models\Media;
 
 return [
     /**

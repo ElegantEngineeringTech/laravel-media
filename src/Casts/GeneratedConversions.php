@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\LaravelMedia\Casts;
+namespace Finller\Media\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;

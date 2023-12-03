@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\LaravelMedia\Jobs;
+namespace Finller\Media\Jobs;
 
-use Finller\LaravelMedia\Media;
+use Finller\Media\Models\Media;
 use Illuminate\Support\Facades\File;
 use Spatie\Image\Image;
 use Spatie\Image\Manipulations;

@@ -1,13 +1,13 @@
 <?php
 
-namespace Finller\LaravelMedia\Tests\Models;
+namespace Finller\Media\Tests\Models;
 
-use Finller\LaravelMedia\Enums\MediaType;
-use Finller\LaravelMedia\Jobs\OptimizedImageConversionJob;
-use Finller\LaravelMedia\Media;
-use Finller\LaravelMedia\MediaCollection;
-use Finller\LaravelMedia\MediaConversion;
-use Finller\LaravelMedia\Traits\HasMedia;
+use Finller\Media\Enums\MediaType;
+use Finller\Media\Jobs\OptimizedImageConversionJob;
+use Finller\Media\MediaCollection;
+use Finller\Media\MediaConversion;
+use Finller\Media\Models\Media;
+use Finller\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 

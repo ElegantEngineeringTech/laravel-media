@@ -1,9 +1,9 @@
 <?php
 
-namespace Finller\LaravelMedia\Jobs;
+namespace Finller\Media\Jobs;
 
-use Finller\LaravelMedia\Media;
-use Finller\LaravelMedia\MediaConversion;
+use Finller\Media\MediaConversion;
+use Finller\Media\Models\Media;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;

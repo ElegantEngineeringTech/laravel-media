@@ -1,10 +1,10 @@
 <?php
 
-namespace Finller\LaravelMedia\Commands;
+namespace Finller\Media\Commands;
 
 use Illuminate\Console\Command;
 
-class LaravelMediaCommand extends Command
+class MediaCommand extends Command
 {
     public $signature = 'laravel-media';
 

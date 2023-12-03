@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\LaravelMedia;
+namespace Finller\Media;
 
-use Finller\LaravelMedia\Jobs\ConversionJob;
+use Finller\Media\Jobs\ConversionJob;
 use Illuminate\Support\Collection;
 
 class MediaConversion

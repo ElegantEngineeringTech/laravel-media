@@ -1,13 +1,13 @@
 <?php
 
-namespace Finller\LaravelMedia;
+namespace Finller\Media\Models;
 
-use Finller\LaravelMedia\Casts\GeneratedConversion;
-use Finller\LaravelMedia\Casts\GeneratedConversions;
-use Finller\LaravelMedia\Enums\MediaType;
-use Finller\LaravelMedia\Helpers\File;
-use Finller\LaravelMedia\Traits\HasUuid;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Finller\Media\Casts\GeneratedConversion;
+use Finller\Media\Casts\GeneratedConversions;
+use Finller\Media\Enums\MediaType;
+use Finller\Media\Helpers\File;
+use Finller\Media\Traits\HasUuid;
+use Finller\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Model;
@@ -18,9 +18,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Number;
 use Illuminate\Support\Str;
-use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 /**
  * @property int $id
@@ -46,6 +44,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 class Media extends Model
 {
     use HasUuid;
+    use InteractsWithMediaFiles;
 
     /**
      * @var array<int, string>
@@ -83,6 +82,10 @@ class Media extends Model
         return str_replace('.', '.generated_conversions.', $conversion);
     }
 
+    /**
+     * Retreive a conversion or nested conversion
+     * Ex: $media->getGeneratedConversion('poster.480p')
+     */
     public function getGeneratedConversion(string $conversion): ?GeneratedConversion
     {
         return data_get($this->generated_conversions, $this->getConversionKey($conversion));
@@ -106,50 +109,21 @@ class Media extends Model
         return $this->path;
     }
 
-    protected function generateBasePath(string $conversion = null): string
+    /**
+     * Generate the default base path for storing files
+     * uuid/
+     *  files
+     *  /generated_conversions
+     *      /conversionName
+     *      files
+     */
+    public function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
             return "/{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
         }
 
         return "/{$this->uuid}/";
-    }
-
-    public function getDisk(): Filesystem
-    {
-        return Storage::disk($this->disk);
-    }
-
-    /**
-     * @return null|resource
-     */
-    public function readStream()
-    {
-        return $this->getDisk()->readStream($this->path);
-    }
-
-    /**
-     * @param  string  $path including the file name
-     */
-    public function copyFileTo(string $path): static
-    {
-        file_put_contents($path, $this->readStream());
-
-        return $this;
-    }
-
-    public function makeTemporaryFileCopy(TemporaryDirectory $temporaryDirectory = null): string|false
-    {
-        $temporaryDirectory ??= (new TemporaryDirectory())
-            ->location(storage_path('media-tmp'))
-            ->deleteWhenDestroyed()
-            ->create();
-
-        $path = $temporaryDirectory->path($this->file_name);
-
-        $this->copyFileTo($path);
-
-        return $path;
     }
 
     /**
@@ -191,11 +165,6 @@ class Media extends Model
         }
 
         return $this;
-    }
-
-    public function humanReadableSize(): string
-    {
-        return Number::fileSize($this->size);
     }
 
     public function storeFileFromUpload(
@@ -254,18 +223,22 @@ class Media extends Model
         return $this;
     }
 
+    /**
+     * @param  (string|HttpFile)[]  $otherFiles
+     */
     public function storeConversion(
         HttpFile|string $file,
         string $conversion,
         string $name = null,
         string $basePath = null,
+        string $state = 'success',
+        array $otherFiles = []
     ): GeneratedConversion {
         $file = $file instanceof HttpFile ? $file : new HttpFile($file);
+        $name = File::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
 
         $extension = $file->guessExtension();
-        $name = File::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
         $file_name = "{$name}.{$extension}";
-
         $mime_type = $file->getMimeType();
         $type = MediaType::tryFromMimeType($mime_type);
         $dimension = File::dimension($file->getPathname(), type: $type);
@@ -277,7 +250,7 @@ class Media extends Model
             path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
             mime_type: $mime_type,
             type: $type,
-            state: 'success',
+            state: $state,
             disk: $this->disk,
             height: $dimension?->getHeight(),
             width: $dimension->getWidth(),
@@ -293,18 +266,30 @@ class Media extends Model
             $generatedConversion->file_name
         );
 
+        foreach ($otherFiles as $otherFile) {
+            $this->addFileToConversion($otherFile, $generatedConversion);
+        }
+
         $this->save();
 
         return $generatedConversion;
     }
 
-    public function deleteDirectory(): static
-    {
-        $this->getDisk()->deleteDirectory(
-            SupportFile::dirname($this->path)
-        );
+    public function addFileToConversion(
+        HttpFile|string $file,
+        GeneratedConversion $generatedConversion,
+        string $name = null,
+        string $fileName = null,
+    ): string|false {
+        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
 
-        return $this;
+        $fileName ??= File::extractFilename($file, $name);
+
+        return Storage::disk($generatedConversion->disk)->putFileAs(
+            SupportFile::dirname($generatedConversion->path),
+            $file,
+            $fileName
+        );
     }
 
     public function deleteGeneratedConversion(string $converion): static

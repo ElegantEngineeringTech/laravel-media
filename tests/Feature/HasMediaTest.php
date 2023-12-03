@@ -1,11 +1,11 @@
 <?php
 
-use Finller\LaravelMedia\Casts\GeneratedConversion;
-use Finller\LaravelMedia\Database\Factories\MediaFactory;
-use Finller\LaravelMedia\Enums\MediaType;
-use Finller\LaravelMedia\Media;
-use Finller\LaravelMedia\Tests\Models\Test;
-use Finller\LaravelMedia\Tests\Models\TestWithNestedConversions;
+use Finller\Media\Casts\GeneratedConversion;
+use Finller\Media\Database\Factories\MediaFactory;
+use Finller\Media\Enums\MediaType;
+use Finller\Media\Models\Media;
+use Finller\Media\Tests\Models\Test;
+use Finller\Media\Tests\Models\TestWithNestedConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

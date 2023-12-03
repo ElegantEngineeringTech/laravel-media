@@ -1,6 +1,6 @@
 <?php
 
-use Finller\LaravelMedia\Tests\Models\TestWithMultipleConversions;
+use Finller\Media\Tests\Models\TestWithMultipleConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

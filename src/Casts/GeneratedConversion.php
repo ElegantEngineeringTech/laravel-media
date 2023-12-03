@@ -1,20 +1,21 @@
 <?php
 
-namespace Finller\LaravelMedia\Casts;
+namespace Finller\Media\Casts;
 
 use Carbon\Carbon;
-use Finller\LaravelMedia\Enums\MediaType;
+use Finller\Media\Enums\MediaType;
+use Finller\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File as SupportFile;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @property null|Collection<string, GeneratedConversion> $generated_conversions
  */
 class GeneratedConversion implements Arrayable
 {
+    use InteractsWithMediaFiles;
+
     public Carbon $created_at;
 
     public Carbon $state_set_at;
@@ -65,12 +66,9 @@ class GeneratedConversion implements Arrayable
 
     public function delete(): static
     {
-        if ($this->path && $this->disk) {
-            Storage::disk($this->disk)->deleteDirectory(
-                SupportFile::dirname($this->path)
-            );
-            $this->path = null;
-        }
+        $this->deleteDirectory();
+
+        $this->path = null;
 
         $this->generated_conversions->each(fn (self $generatedConversion) => $generatedConversion->delete());
         $this->generated_conversions = collect();

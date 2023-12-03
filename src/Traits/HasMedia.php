@@ -1,11 +1,11 @@
 <?php
 
-namespace Finller\LaravelMedia\Traits;
+namespace Finller\Media\Traits;
 
-use Finller\LaravelMedia\Casts\GeneratedConversion;
-use Finller\LaravelMedia\Media;
-use Finller\LaravelMedia\MediaCollection;
-use Finller\LaravelMedia\MediaConversion;
+use Finller\Media\Casts\GeneratedConversion;
+use Finller\Media\MediaCollection;
+use Finller\Media\MediaConversion;
+use Finller\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

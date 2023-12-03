@@ -1,10 +1,11 @@
 <?php
 
-namespace Finller\LaravelMedia\Helpers;
+namespace Finller\Media\Helpers;
 
 use FFMpeg\Coordinate\Dimension;
-use Finller\LaravelMedia\Enums\MediaType;
+use Finller\Media\Enums\MediaType;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\File as HttpFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -34,6 +35,16 @@ class File
             $fileName,
             dictionary: ['@' => 'at', '+' => '-']
         );
+    }
+
+    public static function extractFilename(string|HttpFile $file, string $name = null): string
+    {
+        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
+
+        $name = static::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
+        $extension = $file->guessExtension();
+
+        return "{$name}.{$extension}";
     }
 
     public static function makeTemporaryDisk(TemporaryDirectory $directory): Filesystem

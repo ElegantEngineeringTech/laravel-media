@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\LaravelMedia;
+namespace Finller\Media;
 
 use Illuminate\Support\Collection;
 

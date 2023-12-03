@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\LaravelMedia\Helpers;
+namespace Finller\Media\Helpers;
 
 use FFMpeg\Coordinate\AspectRatio;
 use FFMpeg\Coordinate\Dimension;

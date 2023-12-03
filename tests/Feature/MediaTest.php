@@ -1,10 +1,10 @@
 <?php
 
 use FFMpeg\Coordinate\Dimension;
-use Finller\LaravelMedia\Casts\GeneratedConversion;
-use Finller\LaravelMedia\Database\Factories\MediaFactory;
-use Finller\LaravelMedia\Enums\MediaType;
-use Finller\LaravelMedia\Media;
+use Finller\Media\Casts\GeneratedConversion;
+use Finller\Media\Database\Factories\MediaFactory;
+use Finller\Media\Enums\MediaType;
+use Finller\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
@@ -320,35 +320,4 @@ it('delete all files when model deleted', function () {
     Storage::disk('media')->assertMissing($media->path);
     Storage::disk('media')->assertMissing($generatedConversion->path);
     Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
-});
-
-it('copy the file to a temporary directory', function () {
-
-    /** @var Media $media */
-    $media = MediaFactory::new()->make();
-
-    Storage::fake('media');
-
-    $file = UploadedFile::fake()->image('foo.jpg');
-
-    $media->storeFileFromUpload(
-        file: $file,
-        disk: 'media'
-    );
-
-    expect($media->getDisk()->exists($media->path))->toBe(true);
-
-    $temporaryDirectory = (new TemporaryDirectory())
-        ->location(storage_path('media-tmp'))
-        ->create();
-
-    $path = $media->makeTemporaryFileCopy($temporaryDirectory);
-
-    expect($path)->toBeString();
-
-    expect(is_file($path))->tobe(true);
-
-    $temporaryDirectory->delete();
-
-    expect(is_file($path))->tobe(false);
 });

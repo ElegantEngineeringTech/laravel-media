@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\LaravelMedia\Tests;
+namespace Finller\Media\Tests;
 
-use Finller\LaravelMedia\LaravelMediaServiceProvider;
+use Finller\Media\MediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -14,14 +14,14 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Finller\\LaravelMedia\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Finller\\Media\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            LaravelMediaServiceProvider::class,
+            MediaServiceProvider::class,
         ];
     }
 

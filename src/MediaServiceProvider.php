@@ -1,12 +1,12 @@
 <?php
 
-namespace Finller\LaravelMedia;
+namespace Finller\Media;
 
-use Finller\LaravelMedia\Commands\LaravelMediaCommand;
+use Finller\Media\Commands\MediaCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class LaravelMediaServiceProvider extends PackageServiceProvider
+class MediaServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -20,6 +20,6 @@ class LaravelMediaServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->hasMigration('1_create_media_table')
             ->hasMigration('2_add_columns_to_media_table')
-            ->hasCommand(LaravelMediaCommand::class);
+            ->hasCommand(MediaCommand::class);
     }
 }

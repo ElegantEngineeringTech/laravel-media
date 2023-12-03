@@ -1,14 +1,14 @@
 <?php
 
-namespace Finller\LaravelMedia\Database\Factories;
+namespace Finller\Media\Database\Factories;
 
-use Finller\LaravelMedia\Casts\GeneratedConversion;
-use Finller\LaravelMedia\Enums\MediaType;
-use Finller\LaravelMedia\Media;
+use Finller\Media\Casts\GeneratedConversion;
+use Finller\Media\Enums\MediaType;
+use Finller\Media\Models\Media;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @template Media
+ * @template TModel of Media
  */
 class MediaFactory extends Factory
 {

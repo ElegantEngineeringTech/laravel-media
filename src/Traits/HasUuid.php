@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\LaravelMedia\Traits;
+namespace Finller\Media\Traits;
 
 use Illuminate\Support\Str;
 

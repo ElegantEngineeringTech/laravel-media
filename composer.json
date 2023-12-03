@@ -37,13 +37,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Finller\\LaravelMedia\\": "src/",
-            "Finller\\LaravelMedia\\Database\\Factories\\": "database/factories/"
+            "Finller\\Media\\": "src/",
+            "Finller\\Media\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Finller\\LaravelMedia\\Tests\\": "tests/",
+            "Finller\\Media\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -75,11 +75,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Finller\\LaravelMedia\\LaravelMediaServiceProvider"
-            ],
-            "aliases": {
-                "LaravelMedia": "Finller\\LaravelMedia\\Facades\\LaravelMedia"
-            }
+                "Finller\\Media\\MediaServiceProvider"
+            ]
         }
     },
     "minimum-stability": "dev",

@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\LaravelMedia\Enums;
+namespace Finller\Media\Enums;
 
 enum MediaType: string
 {
