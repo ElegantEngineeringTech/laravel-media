@@ -2,6 +2,7 @@
 
 namespace Finller\Media\Traits;
 
+use Exception;
 use Finller\Media\Helpers\File;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
@@ -62,20 +63,42 @@ trait InteractsWithMediaFiles
         return $path;
     }
 
-    public function addFile(
+    public function getDirname(): ?string
+    {
+        if (! $this->path) {
+            return null;
+        }
+
+        return SupportFile::dirname($this->path);
+    }
+
+    /**
+     * Put a file in the same directory than the main file
+     */
+    public function putFile(
         HttpFile|string $file,
         string $name = null,
         string $fileName = null,
     ): string|false {
+        if (! $this->path) {
+            throw new Exception('['.static::class.']'."Can't put a file to the instance because the main path is not defined");
+        }
+
         $file = $file instanceof HttpFile ? $file : new HttpFile($file);
 
         $fileName ??= File::extractFilename($file, $name);
 
-        return $this->getDisk()->putFileAs(
-            SupportFile::dirname($this->path),
+        $path = $this->getDisk()->putFileAs(
+            $this->getDirname(),
             $file,
             $fileName
         );
+
+        if (! $path) {
+            throw new Exception('['.static::class.']'."Putting the file {$fileName} to the instance failed");
+        }
+
+        return $path;
     }
 
     public function deleteDirectory(): bool
@@ -84,9 +107,9 @@ trait InteractsWithMediaFiles
             return true;
         }
 
-        return $this->getDisk()->deleteDirectory(
-            SupportFile::dirname($this->path)
-        );
+        return $this
+            ->getDisk()
+            ->deleteDirectory($this->getDirname());
     }
 
     public function humanReadableSize(int $precision = 0, int $maxPrecision = null): ?string

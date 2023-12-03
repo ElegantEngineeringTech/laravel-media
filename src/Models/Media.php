@@ -5,6 +5,7 @@ namespace Finller\Media\Models;
 use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Casts\GeneratedConversions;
 use Finller\Media\Enums\MediaType;
+use Finller\Media\FileDownloaders\FileDownloader;
 use Finller\Media\Helpers\File;
 use Finller\Media\Traits\HasUuid;
 use Finller\Media\Traits\InteractsWithMediaFiles;
@@ -17,8 +18,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File as SupportFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 /**
  * @property int $id
@@ -120,10 +121,10 @@ class Media extends Model
     public function generateBasePath(string $conversion = null): string
     {
         if ($conversion) {
-            return "/{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
+            return "{$this->uuid}/generated_conversions/" . str_replace('.', '/', $this->getConversionKey($conversion)) . '/';
         }
 
-        return "/{$this->uuid}/";
+        return "{$this->uuid}/";
     }
 
     /**
@@ -167,18 +168,18 @@ class Media extends Model
         return $this;
     }
 
-    public function storeFileFromUpload(
-        UploadedFile $file,
+    public function storeFileFromHttpFile(
+        UploadedFile|HttpFile $file,
         string $collection_name = null,
         string $basePath = null,
         string $name = null,
         string $disk = null,
-    ): static {
+    ) {
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
         $this->disk = $disk ?? $this->disk ?? config('filesystems.default');
 
-        $this->mime_type = $file->getMimeType() ?? $file->getClientMimeType();
-        $this->extension = $file->guessExtension() ?? $file->clientExtension();
+        $this->mime_type = File::mimeType($file);
+        $this->extension = File::extension($file);
         $this->size = $file->getSize();
         $this->type = MediaType::tryFromMimeType($this->mime_type);
 
@@ -188,36 +189,52 @@ class Media extends Model
         $this->width = $dimension?->getWidth();
         $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
 
-        $this->name = Str::slug(
-            $name ?? SupportFile::name($file->getClientOriginalName()),
-            dictionary: ['@' => 'at', '+' => '-']
-        );
+        $this->name = File::sanitizeFilename($name ?? File::name($file));
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = ($basePath ?? $this->generateBasePath()).$this->file_name;
+        $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/') . $this->file_name;
 
-        $file->storeAs(
-            path: SupportFile::dirname($this->path),
-            name: $this->file_name,
-            options: [
-                'disk' => $this->disk,
-            ]
-        );
+        $this->putFile($file, fileName: $this->file_name);
 
         $this->save();
 
         return $this;
     }
 
+    function storeFileFromUrl(
+        string $url,
+        string $collection_name = null,
+        string $basePath = null,
+        string $name = null,
+        string $disk = null,
+    ): static {
+
+        $temporaryDirectory = (new TemporaryDirectory())
+            ->location(storage_path('media-tmp'))
+            ->create();
+
+        $path = FileDownloader::getTemporaryFile($url, $temporaryDirectory);
+
+        $this->storeFileFromHttpFile(new HttpFile($path), $collection_name, $basePath, $name, $disk);
+
+        $temporaryDirectory->delete();
+
+        return $this;
+    }
+
     public function storeFile(
-        string|UploadedFile $file,
+        string|UploadedFile|HttpFile $file,
         string $collection_name = null,
         string $basePath = null,
         string $name = null,
         string $disk = null
     ): static {
-        if ($file instanceof UploadedFile) {
-            return $this->storeFileFromUpload($file, $collection_name, $basePath, $name, $disk);
+        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
+            return $this->storeFileFromHttpFile($file, $collection_name, $basePath, $name, $disk);
+        }
+
+        if (filter_var($file, FILTER_VALIDATE_URL)) {
+            return $this->storeFileFromUrl($file, $collection_name, $basePath, $name, $disk);
         }
 
         return $this;
@@ -234,7 +251,7 @@ class Media extends Model
         string $state = 'success',
         array $otherFiles = []
     ): GeneratedConversion {
-        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
+        $file = is_string($file) ? new HttpFile($file) : $file;
         $name = File::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
 
         $extension = $file->guessExtension();
@@ -247,7 +264,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: ($basePath ?? $this->generateBasePath($conversion)).$file_name,
+            path: ($basePath ?? $this->generateBasePath($conversion)) . $file_name,
             mime_type: $mime_type,
             type: $type,
             state: $state,
@@ -260,36 +277,15 @@ class Media extends Model
 
         $this->putGeneratedConversion($conversion, $generatedConversion);
 
-        Storage::disk($generatedConversion->disk)->putFileAs(
-            SupportFile::dirname($generatedConversion->path),
-            $file,
-            $generatedConversion->file_name
-        );
+        $generatedConversion->putFile($file, fileName: $generatedConversion->file_name);
 
         foreach ($otherFiles as $otherFile) {
-            $this->addFileToConversion($otherFile, $generatedConversion);
+            $generatedConversion->putFile($otherFile);
         }
 
         $this->save();
 
         return $generatedConversion;
-    }
-
-    public function addFileToConversion(
-        HttpFile|string $file,
-        GeneratedConversion $generatedConversion,
-        string $name = null,
-        string $fileName = null,
-    ): string|false {
-        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
-
-        $fileName ??= File::extractFilename($file, $name);
-
-        return Storage::disk($generatedConversion->disk)->putFileAs(
-            SupportFile::dirname($generatedConversion->path),
-            $file,
-            $fileName
-        );
     }
 
     public function deleteGeneratedConversion(string $converion): static

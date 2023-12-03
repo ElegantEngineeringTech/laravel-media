@@ -6,6 +6,7 @@ use FFMpeg\Coordinate\Dimension;
 use Finller\Media\Enums\MediaType;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,6 +14,44 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class File
 {
+    public static function name(string|HttpFile|UploadedFile $file): ?string
+    {
+        if ($file instanceof UploadedFile) {
+            return SupportFile::name($file->getClientOriginalName());
+        }
+
+        if ($file instanceof HttpFile) {
+            return SupportFile::name($file->getPathname());
+        }
+
+        return SupportFile::name($file);
+    }
+
+    public static function mimeType(string|HttpFile|UploadedFile $file): ?string
+    {
+        if ($file instanceof UploadedFile) {
+            return $file->getMimeType() ?? $file->getClientMimeType();
+        }
+        if ($file instanceof HttpFile) {
+            return $file->getMimeType();
+        }
+
+        return SupportFile::mimeType($file);
+    }
+
+    public static function extension(string|HttpFile|UploadedFile $file): ?string
+    {
+        if ($file instanceof UploadedFile) {
+            return $file->guessExtension() ?? $file->getClientOriginalExtension();
+        }
+
+        if ($file instanceof HttpFile) {
+            return $file->guessExtension() ?? $file->getExtension();
+        }
+
+        return SupportFile::extension($file);
+    }
+
     public static function type(string $path): MediaType
     {
         return MediaType::tryFromMimeType(SupportFile::mimeType($path));
