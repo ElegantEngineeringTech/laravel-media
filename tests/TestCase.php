@@ -31,9 +31,9 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        $migration = include __DIR__.'/../database/migrations/1_create_media_table.php.stub';
+        $migration = include __DIR__.'/../database/migrations/create_media_table.php.stub';
         $migration->up();
-        $migration = include __DIR__.'/../database/migrations/2_add_columns_to_media_table.php.stub';
+        $migration = include __DIR__.'/../database/migrations/add_columns_to_media_table.php.stub';
         $migration->up();
 
         $app['db']->connection()->getSchemaBuilder()->create('tests', function (Blueprint $table) {
