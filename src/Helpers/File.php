@@ -57,7 +57,7 @@ class File
         return MediaType::tryFromMimeType(SupportFile::mimeType($path));
     }
 
-    public static function dimension(string $path, MediaType $type = null, string $mime_type = null): ?Dimension
+    public static function dimension(string $path, ?MediaType $type = null, ?string $mime_type = null): ?Dimension
     {
         $type ??= (MediaType::tryFromMimeType($mime_type) ?? static::type($path));
 
@@ -76,7 +76,7 @@ class File
         );
     }
 
-    public static function extractFilename(string|HttpFile $file, string $name = null): string
+    public static function extractFilename(string|HttpFile $file, ?string $name = null): string
     {
         $file = $file instanceof HttpFile ? $file : new HttpFile($file);
 

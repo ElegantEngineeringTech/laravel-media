@@ -97,7 +97,7 @@ class Media extends Model
      * Retreive the path of a conversion or nested conversion
      * Ex: $media->getPath('poster.480p')
      */
-    public function getPath(string $conversion = null): ?string
+    public function getPath(?string $conversion = null): ?string
     {
         if ($conversion) {
             return $this->getGeneratedConversion($conversion)?->path;
@@ -114,7 +114,7 @@ class Media extends Model
      *      /conversionName
      *      files
      */
-    public function generateBasePath(string $conversion = null): string
+    public function generateBasePath(?string $conversion = null): string
     {
         if ($conversion) {
             return "{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
@@ -127,7 +127,7 @@ class Media extends Model
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
      */
-    public function getUrl(string $conversion = null)
+    public function getUrl(?string $conversion = null)
     {
         return $this->getDisk()->url($this->getPath($conversion));
     }
@@ -166,10 +166,10 @@ class Media extends Model
 
     public function storeFileFromHttpFile(
         UploadedFile|HttpFile $file,
-        string $collection_name = null,
-        string $basePath = null,
-        string $name = null,
-        string $disk = null,
+        ?string $collection_name = null,
+        ?string $basePath = null,
+        ?string $name = null,
+        ?string $disk = null,
     ) {
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
         $this->disk = $disk ?? $this->disk ?? config('filesystems.default');
@@ -199,10 +199,10 @@ class Media extends Model
 
     public function storeFileFromUrl(
         string $url,
-        string $collection_name = null,
-        string $basePath = null,
-        string $name = null,
-        string $disk = null,
+        ?string $collection_name = null,
+        ?string $basePath = null,
+        ?string $name = null,
+        ?string $disk = null,
     ): static {
 
         $temporaryDirectory = (new TemporaryDirectory())
@@ -223,10 +223,10 @@ class Media extends Model
      */
     public function storeFile(
         string|UploadedFile|HttpFile $file,
-        string $collection_name = null,
-        string $basePath = null,
-        string $name = null,
-        string $disk = null,
+        ?string $collection_name = null,
+        ?string $basePath = null,
+        ?string $name = null,
+        ?string $disk = null,
         array $otherFiles = []
     ): static {
         if ($file instanceof UploadedFile || $file instanceof HttpFile) {
@@ -250,8 +250,8 @@ class Media extends Model
     public function storeConversion(
         string|UploadedFile|HttpFile $file,
         string $conversion,
-        string $name = null,
-        string $basePath = null,
+        ?string $name = null,
+        ?string $basePath = null,
         string $state = 'success',
         array $otherFiles = []
     ): GeneratedConversion {
@@ -274,8 +274,8 @@ class Media extends Model
     public function storeConversionFromUrl(
         string $url,
         string $conversion,
-        string $name = null,
-        string $basePath = null,
+        ?string $name = null,
+        ?string $basePath = null,
         string $state = 'success',
     ): GeneratedConversion {
         $temporaryDirectory = (new TemporaryDirectory())
@@ -294,8 +294,8 @@ class Media extends Model
     public function storeConversionFromHttpFile(
         UploadedFile|HttpFile $file,
         string $conversion,
-        string $name = null,
-        string $basePath = null,
+        ?string $name = null,
+        ?string $basePath = null,
         string $state = 'success',
     ): GeneratedConversion {
         $name = File::sanitizeFilename($name ?? File::name($file->getPathname()));

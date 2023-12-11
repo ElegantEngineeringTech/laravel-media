@@ -18,7 +18,7 @@ class OptimizedImageConversionJob extends ConversionJob
         public ?int $height = null,
         public string $fitMethod = Manipulations::FIT_MAX,
         public array $optimizationOptions = [],
-        string $fileName = null,
+        ?string $fileName = null,
     ) {
         parent::__construct($media, $conversion);
 
