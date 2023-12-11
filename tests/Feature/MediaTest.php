@@ -77,7 +77,7 @@ it('add the generated conversion', function () {
     expect($media->hasGeneratedConversion('poster.poster-optimized'))->toBe(true);
 });
 
-it('update a conversion', function () {
+it('update a generated conversion', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 

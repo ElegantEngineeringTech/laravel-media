@@ -24,6 +24,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property int $id
  * @property string $uuid
  * @property string $collection_name
+ * @property ?string $collection_group
  * @property ?string $disk
  * @property ?string $path
  * @property ?MediaType $type

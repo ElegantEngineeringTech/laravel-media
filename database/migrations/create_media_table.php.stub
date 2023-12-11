@@ -14,6 +14,7 @@ return new class extends Migration
             $table->nullableMorphs('model');
             $table->uuid('uuid')->unique()->index();
             $table->string('collection_name')->index();
+            $table->string('collection_group')->nullable();
             $table->string('name')->nullable();
             $table->string('file_name')->nullable();
             $table->string('mime_type')->nullable();
