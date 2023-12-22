@@ -34,4 +34,4 @@ it('register & generate all responsive image conversions from preset', function 
     }
 
     Storage::disk('media')->assertExists($generatedConversion->path);
-})->only();
+});
