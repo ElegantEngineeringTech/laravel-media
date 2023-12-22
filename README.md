@@ -8,8 +8,8 @@
 This package provide an extremly flexible media library, allowing you to store any files with their conversions (nested conversions are supported).
 It is designed to be usable with local upload/conversions and with cloud upload/conversions solutions like Bunny.net, AWS MediaConvert, Transloadit, ...
 
-It takes its inspiration from the wonderful ` spatie/laravel-media-library`` package (check spatie packages, they are really great),but it's not a fork. 
-The migration from  `spatie/laravel-media-library` is possible but not that easy if you want to keep your conversions files.
+It takes its inspiration from the wonderful `spatie/laravel-media-library` package (check spatie packages, they are really great),but it's not a fork.
+The migration from `spatie/laravel-media-library` is possible but not that easy if you want to keep your conversions files.
 
 ## Installation
 
