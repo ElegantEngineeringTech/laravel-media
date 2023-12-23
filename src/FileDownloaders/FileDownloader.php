@@ -7,7 +7,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class FileDownloader
 {
-    public static function getTemporaryFile(string $url, ?TemporaryDirectory $temporaryDirectory = null): string
+    public static function getTemporaryFile(string $url, TemporaryDirectory $temporaryDirectory = null): string
     {
         $context = stream_context_create([
             'http' => [

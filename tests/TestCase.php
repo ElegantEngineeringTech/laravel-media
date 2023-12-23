@@ -6,10 +6,13 @@ use Finller\Media\MediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
+use ProtoneMedia\LaravelFFMpeg\Support\ServiceProvider;
 
 class TestCase extends Orchestra
 {
     public $dummy_pdf_url = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+
+    public $dummy_video_url = 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
 
     protected function setUp(): void
     {
@@ -24,6 +27,7 @@ class TestCase extends Orchestra
     {
         return [
             MediaServiceProvider::class,
+            ServiceProvider::class,
         ];
     }
 
@@ -39,5 +43,10 @@ class TestCase extends Orchestra
             $table->timestamps();
             $table->softDeletes();
         });
+    }
+
+    public function getTestFile(string $path): string
+    {
+        return __DIR__.'/files/'.$path;
     }
 }

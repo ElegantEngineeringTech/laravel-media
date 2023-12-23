@@ -51,7 +51,7 @@ trait InteractsWithMediaFiles
         return $path;
     }
 
-    public function makeTemporaryFileCopy(?TemporaryDirectory $temporaryDirectory = null): string|false
+    public function makeTemporaryFileCopy(TemporaryDirectory $temporaryDirectory = null): string|false
     {
         $temporaryDirectory ??= (new TemporaryDirectory())
             ->location(storage_path('media-tmp'))
@@ -79,8 +79,8 @@ trait InteractsWithMediaFiles
      */
     public function putFile(
         string|UploadedFile|HttpFile $file,
-        ?string $name = null,
-        ?string $fileName = null,
+        string $name = null,
+        string $fileName = null,
     ): string|false {
         if (! $this->path) {
             throw new Exception('['.static::class.']'."Can't put a file to the instance because the main path is not defined");
@@ -118,7 +118,7 @@ trait InteractsWithMediaFiles
             ->deleteDirectory($this->getDirname());
     }
 
-    public function humanReadableSize(int $precision = 0, ?int $maxPrecision = null): ?string
+    public function humanReadableSize(int $precision = 0, int $maxPrecision = null): ?string
     {
         if (! $this->size) {
             return null;

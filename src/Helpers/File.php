@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class File
@@ -55,6 +56,20 @@ class File
     public static function type(string $path): MediaType
     {
         return MediaType::tryFromMimeType(SupportFile::mimeType($path));
+    }
+
+    public static function duration(string $path): ?float
+    {
+        if (static::type($path) === MediaType::Video) {
+            $disk = Storage::build([
+                'driver' => 'local',
+                'root' => SupportFile::dirname($path),
+            ]);
+
+            return FFMpeg::fromDisk($disk)->open(SupportFile::basename($path))->getDurationInMiliseconds();
+        }
+
+        return null;
     }
 
     public static function dimension(string $path, ?MediaType $type = null, ?string $mime_type = null): ?Dimension

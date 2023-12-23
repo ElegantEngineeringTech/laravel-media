@@ -37,6 +37,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $height
  * @property ?float $aspect_ratio
  * @property ?string $average_color
+ * @property ?float $duration in miliseconds
  * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
@@ -86,6 +87,14 @@ class Media extends Model
     public function getGeneratedConversion(string $conversion): ?GeneratedConversion
     {
         return data_get($this->generated_conversions, $this->getConversionKey($conversion));
+    }
+
+    public function getGeneratedParentConversion(string $conversion): ?GeneratedConversion
+    {
+        $genealogy = explode('.', $conversion);
+        $parents = implode('.', array_slice($genealogy, 0, -1));
+
+        return $this->getGeneratedConversion($parents);
     }
 
     public function hasGeneratedConversion(string $conversion): bool
@@ -138,7 +147,7 @@ class Media extends Model
 
         if (count($genealogy) > 1) {
             $child = Arr::last($genealogy);
-            $parents = implode('.', array_slice($genealogy, 0, count($genealogy) - 1));
+            $parents = implode('.', array_slice($genealogy, 0, -1));
             $conversion = $this->getGeneratedConversion($parents);
             $conversion->generated_conversions->put($child, $generatedConversion);
         } else {
@@ -154,7 +163,7 @@ class Media extends Model
 
         if (count($genealogy) > 1) {
             $child = Arr::last($genealogy);
-            $parents = implode('.', array_slice($genealogy, 0, count($genealogy) - 1));
+            $parents = implode('.', array_slice($genealogy, 0, -1));
             $conversion = $this->getGeneratedConversion($parents);
             $conversion->generated_conversions->forget($child);
         } else {
@@ -184,6 +193,7 @@ class Media extends Model
         $this->height = $dimension?->getHeight();
         $this->width = $dimension?->getWidth();
         $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
+        $this->duration = File::duration($file->getPathname());
 
         $this->name = File::sanitizeFilename($name ?? File::name($file));
 
