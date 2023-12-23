@@ -35,8 +35,8 @@ class GeneratedConversion implements Arrayable
         public ?float $aspect_ratio = null,
         public ?string $average_color = null,
         public Collection $generated_conversions = new Collection(),
-        Carbon $created_at = null,
-        Carbon $state_set_at = null,
+        ?Carbon $created_at = null,
+        ?Carbon $state_set_at = null,
     ) {
         $this->created_at = $created_at ?? now();
         $this->state_set_at = $state_set_at ?? now();

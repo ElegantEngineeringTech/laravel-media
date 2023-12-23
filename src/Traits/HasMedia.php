@@ -26,7 +26,7 @@ trait HasMedia
     /**
      * @return EloquentCollection<int, Media>
      */
-    public function getMedia(string $collection_name = null): EloquentCollection
+    public function getMedia(?string $collection_name = null): EloquentCollection
     {
         return $this->media
             ->when($collection_name, fn ($collection) => $collection->where('collection_name', $collection_name));
@@ -100,7 +100,7 @@ trait HasMedia
         return $media;
     }
 
-    public function addMedia(string|UploadedFile $file, string $collection_name = null, string $name = null, string $disk = null): Media
+    public function addMedia(string|UploadedFile $file, ?string $collection_name = null, ?string $name = null, ?string $disk = null): Media
     {
         $collection_name ??= config('media.default_collection_name');
 
