@@ -125,11 +125,20 @@ class Media extends Model
      */
     public function generateBasePath(?string $conversion = null): string
     {
+        $prefix = config('media.generated_path_prefix', '');
+
+        $root = Str::of($prefix)
+            ->when($prefix, fn ($string) => $string->finish('/'))
+            ->append($this->uuid)->finish('/');
+
         if ($conversion) {
-            return "{$this->uuid}/generated_conversions/".str_replace('.', '/', $this->getConversionKey($conversion)).'/';
+            return $root
+                ->append('generated_conversions/')
+                ->append(str_replace('.', '/', $this->getConversionKey($conversion)))
+                ->finish('/');
         }
 
-        return "{$this->uuid}/";
+        return $root;
     }
 
     /**

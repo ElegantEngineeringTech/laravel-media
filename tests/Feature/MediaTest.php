@@ -191,6 +191,29 @@ it('store a svg file', function () {
     Storage::disk('media')->assertExists($media->path);
 });
 
+it('store a file within a prefixed path', function () {
+    config()->set('media.generated_path_prefix', 'media');
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $file = $this->getTestFile('images/svg.svg');
+
+    $media->storeFile(
+        file: $file,
+        disk: 'media',
+        name: 'foo'
+    );
+
+    expect($media->name)->toBe('foo');
+    expect($media->file_name)->toBe('foo.svg');
+    expect($media->path)->toBe("media/{$media->uuid}/foo.svg");
+
+    Storage::disk('media')->assertExists($media->path);
+});
+
 it('store a conversion image of a media', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
