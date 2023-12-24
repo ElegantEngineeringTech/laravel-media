@@ -10,7 +10,7 @@ use Finller\Media\Models\Media;
 use Finller\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 
 class Test extends Model
 {
@@ -35,6 +35,12 @@ class Test extends Model
                 name: 'avatar',
                 single: true,
                 public: true,
+            ),
+            new MediaCollection(
+                name: 'fallback',
+                single: true,
+                public: true,
+                fallback: fn () => 'fallback-value'
             ),
         ]);
     }
@@ -61,7 +67,7 @@ class Test extends Model
                         conversion: 'small',
                         width: 5,
                         height: 5,
-                        fitMethod: Manipulations::FIT_CROP
+                        fit: Fit::Crop
                     )
                 ));
             }

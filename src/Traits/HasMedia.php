@@ -13,8 +13,10 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 
 /**
+ * @template TMedia of Media
+ *
  * @property ?string $uuid
- * @property EloquentCollection<int, Media> $media
+ * @property EloquentCollection<int, TMedia> $media
  */
 trait HasMedia
 {
@@ -24,12 +26,38 @@ trait HasMedia
     }
 
     /**
-     * @return EloquentCollection<int, Media>
+     * @return EloquentCollection<int, TMedia>
      */
-    public function getMedia(?string $collection_name = null): EloquentCollection
+    public function getMedia(?string $collection_name = null, ?string $collection_group = null): EloquentCollection
     {
         return $this->media
-            ->when($collection_name, fn ($collection) => $collection->where('collection_name', $collection_name));
+            ->when($collection_name, fn (EloquentCollection $collection) => $collection->where('collection_name', $collection_name))
+            ->when($collection_group, fn (EloquentCollection $collection) => $collection->where('collection_group', $collection_group));
+    }
+
+    /**
+     * @return TMedia
+     */
+    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null): ?Media
+    {
+        return $this->getMedia($collection_name, $collection_group)->first();
+    }
+
+    public function getFirstMediaUrl(
+        ?string $collection_name = null,
+        ?string $collection_group = null,
+        ?string $conversion = null,
+    ): ?string {
+        $media = $this->getFirstMedia($collection_name, $collection_group);
+
+        if ($media) {
+            return $media->getUrl($conversion);
+        }
+
+        $collection = $this->getMediaCollection($collection_name);
+
+        return value($collection?->fallback);
+
     }
 
     /**
@@ -41,6 +69,7 @@ trait HasMedia
     }
 
     /**
+     * @param  TMedia  $media
      * @return Arrayable<MediaConversion>|iterable<MediaConversion>|null
      */
     protected function registerMediaConversions(Media $media): Arrayable|iterable|null
@@ -62,7 +91,18 @@ trait HasMedia
             ->keyBy('name');
     }
 
+    public function hasMediaCollection(string $collection_name): bool
+    {
+        return $this->getMediaCollections()->has($collection_name);
+    }
+
+    public function getMediaCollection(string $collection_name): MediaCollection
+    {
+        return $this->getMediaCollections()->get($collection_name);
+    }
+
     /**
+     * @param  TMedia  $media
      * @return Collection<string, MediaConversion>
      */
     public function getMediaConversions(Media $media): Collection
@@ -75,19 +115,17 @@ trait HasMedia
         return str_replace('.', '.conversions.', $conversion);
     }
 
+    /**
+     * @param  TMedia  $media
+     */
     public function getMediaConversion(Media $media, string $conversion): ?MediaConversion
     {
         return data_get($this->getMediaConversions($media), $this->getMediaConversionKey($conversion));
     }
 
-    public function hasMediaCollection(string $collection_name): bool
-    {
-        return $this->getMediaCollections()->has($collection_name);
-    }
-
     /**
      * @param  int[]  $except Array of Media Ids
-     * @return Collection<int, Media> The deleted media list
+     * @return Collection<int, TMedia> The deleted media list
      */
     public function clearMediaCollection(string $collection_name, array $except = []): Collection
     {
@@ -100,11 +138,18 @@ trait HasMedia
         return $media;
     }
 
-    public function addMedia(string|UploadedFile $file, ?string $collection_name = null, ?string $name = null, ?string $disk = null): Media
-    {
+    /**
+     * @return TMedia
+     */
+    public function addMedia(
+        string|UploadedFile $file,
+        ?string $collection_name = null,
+        ?string $name = null,
+        ?string $disk = null
+    ): Media {
         $collection_name ??= config('media.default_collection_name');
 
-        $collection = $this->getMediaCollections()->get($collection_name);
+        $collection = $this->getMediaCollection($collection_name);
 
         if (! $collection) {
             $class = static::class;
@@ -112,7 +157,7 @@ trait HasMedia
         }
 
         $model = config('media.model');
-        /** @var Media $media */
+        /** @var TMedia $media */
         $media = new $model();
 
         $media->model()->associate($this);
@@ -133,6 +178,9 @@ trait HasMedia
         return $media;
     }
 
+    /**
+     * @param  TMedia  $media
+     */
     public function dispatchConversion(Media $media, string $conversionName): static
     {
         $conversion = $this->getMediaConversion($media, $conversionName);
@@ -152,6 +200,9 @@ trait HasMedia
         return $this;
     }
 
+    /**
+     * @param  TMedia  $media
+     */
     public function dispatchConversions(Media $media): static
     {
         $conversions = $this->getMediaConversions($media);

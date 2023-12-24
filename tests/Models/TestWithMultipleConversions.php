@@ -50,7 +50,7 @@ class TestWithMultipleConversions extends Model
                     name: 'webp',
                     job: new OptimizedImageConversionJob(
                         $media,
-                        'webp',
+                        conversion: 'webp',
                         fileName: "{$media->name}.webp"
                     )
                 ));

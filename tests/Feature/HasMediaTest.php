@@ -92,3 +92,27 @@ it('generate nested conversions', function () {
 
     Storage::disk('media')->assertExists($childGeneratedConversion->path);
 });
+
+it('get the fallback value when no media extist', function () {
+    $model = new Test();
+
+    expect($model->getFirstMediaUrl('fallback'))->toBe('fallback-value');
+});
+
+it('get the media url when a media exists in a collection', function () {
+    Storage::fake('media');
+
+    $model = new Test();
+    $model->save();
+
+    $file = UploadedFile::fake()->image('foo.jpg');
+
+    $media = $model->addMedia(
+        file: $file,
+        collection_name: 'fallback',
+        disk: 'media'
+    );
+
+    expect($model->getFirstMedia()->id)->toBe($media->id);
+    expect($model->getFirstMediaUrl())->toBe($media->getUrl());
+});

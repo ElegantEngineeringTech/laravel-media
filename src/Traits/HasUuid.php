@@ -9,15 +9,6 @@ use Illuminate\Support\Str;
  */
 trait HasUuid
 {
-    // public static function bootHasUuid()
-    // {
-    //     static::creating(function (Model $model) {
-    //         if (empty($model->uuid)) {
-    //             $model->uuid = (string) Str::uuid(); // @phpstan-ignore-line
-    //         }
-    //     });
-    // }
-
     public function initializeHasUuid()
     {
         if (blank($this->uuid)) {

@@ -62,7 +62,7 @@
         ],
         "analyse": "vendor/bin/phpstan analyse --memory-limit 500M",
         "test": "vendor/bin/pest",
-        "test-coverage": "vendor/bin/pest --coverage",
+        "test-coverage": "XDEBUG_MODE=coverage vendor/bin/pest --coverage",
         "format": "vendor/bin/pint"
     },
     "config": {

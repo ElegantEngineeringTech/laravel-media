@@ -2,10 +2,12 @@
 
 namespace Finller\Media;
 
+use Closure;
 use Illuminate\Support\Collection;
 
 /**
  * @property Collection<int, MediaConversion> $conversions
+ * @property null|string|(Closure(): string) $fallback
  */
 class MediaCollection
 {
@@ -14,7 +16,8 @@ class MediaCollection
         public ?array $acceptedMimeTypes = null,
         public bool $single = false,
         public bool $public = false,
-        public ?string $disk = null
+        public ?string $disk = null,
+        public null|string|Closure $fallback = null,
     ) {
     }
 }
