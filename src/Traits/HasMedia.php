@@ -35,7 +35,12 @@ trait HasMedia
             ->when($collection_group, fn (EloquentCollection $collection) => $collection->where('collection_group', $collection_group));
     }
 
-    /**
+    public function hasMedia(?string $collection_name = null, ?string $collection_group = null): bool
+    {
+        return $this->getMedia($collection_name, $collection_group)->isNotEmpty();
+    }
+
+    /**c
      * @return TMedia
      */
     public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null): ?Media
