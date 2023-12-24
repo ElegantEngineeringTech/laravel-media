@@ -30,6 +30,7 @@ class GeneratedConversion implements Arrayable
         public ?string $mime_type = null,
         public ?string $extension = null,
         public ?int $size = null,
+        public ?float $duration = null,
         public ?int $height = null,
         public ?int $width = null,
         public ?float $aspect_ratio = null,
@@ -44,23 +45,28 @@ class GeneratedConversion implements Arrayable
 
     public static function make(array $attributes): self
     {
+        $state_set_at = Arr::get($attributes, 'state_set_at');
+        $created_at = Arr::get($attributes, 'created_at');
+        $type = Arr::get($attributes, 'type');
+
         return new self(
             file_name: Arr::get($attributes, 'file_name'),
             name: Arr::get($attributes, 'name'),
             state: Arr::get($attributes, 'state'),
-            state_set_at: Carbon::parse(Arr::get($attributes, 'state_set_at', now())),
-            type: ($type = Arr::get($attributes, 'type')) ? MediaType::from($type) : null,
+            state_set_at: $state_set_at ? Carbon::parse($state_set_at) : null,
+            type: $type ? MediaType::from($type) : null,
             disk: Arr::get($attributes, 'disk'),
             path: Arr::get($attributes, 'path'),
             mime_type: Arr::get($attributes, 'mime_type'),
             extension: Arr::get($attributes, 'extension'),
             size: Arr::get($attributes, 'size'),
+            duration: Arr::get($attributes, 'duration'),
             height: Arr::get($attributes, 'height'),
             width: Arr::get($attributes, 'width'),
             aspect_ratio: Arr::get($attributes, 'aspect_ratio'),
             average_color: Arr::get($attributes, 'average_color'),
             generated_conversions: collect(Arr::get($attributes, 'generated_conversions', []))->map(fn ($item) => self::make($item)),
-            created_at: Carbon::parse(Arr::get($attributes, 'created_at', now())),
+            created_at: $created_at ? Carbon::parse($created_at) : null,
         );
     }
 

@@ -25,19 +25,15 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property string $uuid
  * @property string $collection_name
  * @property ?string $collection_group
- * @property ?string $disk
- * @property ?string $path
  * @property ?MediaType $type
  * @property ?string $name
  * @property ?string $file_name
- * @property ?int $size
  * @property ?string $mime_type
  * @property ?string $extension
  * @property ?int $width
  * @property ?int $height
  * @property ?float $aspect_ratio
  * @property ?string $average_color
- * @property ?float $duration in miliseconds
  * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
@@ -333,7 +329,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: Str::finish($basePath ?? $this->generateBasePath($conversion), '/').$file_name,
+            path: Str::of($basePath ?? $this->generateBasePath($conversion))->finish('/')->append($file_name),
             mime_type: $mime_type,
             type: $type,
             state: $state,
@@ -342,6 +338,7 @@ class Media extends Model
             width: $dimension->getWidth(),
             aspect_ratio: $dimension?->getRatio(forceStandards: false)->getValue(),
             size: $file->getSize(),
+            duration: File::duration($file->getPathname()),
             created_at: $existingConversion?->created_at
         );
 
@@ -373,18 +370,3 @@ class Media extends Model
         return $this;
     }
 }
-
-// media/uuid
-//     -> files
-//     /conversions
-//         /poster
-//             -> files
-//             /conversions
-//                 /480p
-//                     -> files
-//                 /720p
-//                     -> files
-//                 /1080p
-//                     -> files
-//         /hls
-//             ->files

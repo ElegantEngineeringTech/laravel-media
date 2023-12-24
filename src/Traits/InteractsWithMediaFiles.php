@@ -2,6 +2,7 @@
 
 namespace Finller\Media\Traits;
 
+use Carbon\CarbonInterval;
 use Exception;
 use Finller\Media\FileDownloaders\FileDownloader;
 use Finller\Media\Helpers\File;
@@ -17,6 +18,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?string $disk
  * @property ?string $path
  * @property ?int $size
+ * @property ?float $duration in miliseconds
  */
 trait InteractsWithMediaFiles
 {
@@ -125,5 +127,18 @@ trait InteractsWithMediaFiles
         }
 
         return Number::fileSize($this->size, $precision, $maxPrecision);
+    }
+
+    public function humanReadableDuration(
+        ?int $syntax = null,
+        ?bool $short = false,
+        ?int $parts = -1,
+        ?int $options = null
+    ): ?string {
+        if (! $this->duration) {
+            return null;
+        }
+
+        return CarbonInterval::milliseconds($this->duration)->forHumans($syntax, $short, $parts, $options);
     }
 }
