@@ -4,8 +4,9 @@ namespace Finller\Media\Jobs;
 
 use Finller\Media\Models\Media;
 use Illuminate\Support\Facades\File;
+use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
-use Spatie\Image\Manipulations;
+use Spatie\ImageOptimizer\OptimizerChain;
 
 class OptimizedImageConversionJob extends ConversionJob
 {
@@ -16,8 +17,8 @@ class OptimizedImageConversionJob extends ConversionJob
         public string $conversion,
         public ?int $width = null,
         public ?int $height = null,
-        public string $fitMethod = Manipulations::FIT_MAX,
-        public array $optimizationOptions = [],
+        public Fit $fit = Fit::Max,
+        public ?OptimizerChain $optimizerChain = null,
         ?string $fileName = null,
     ) {
         parent::__construct($media, $conversion);
@@ -33,13 +34,8 @@ class OptimizedImageConversionJob extends ConversionJob
         $newPath = $temporaryDisk->path($this->fileName);
 
         Image::load($path)
-            ->manipulate(function (Manipulations $manipulations) {
-                if ($this->width || $this->height) {
-                    $manipulations->fit($this->fitMethod, $this->width, $this->height);
-                }
-
-                $manipulations->optimize($this->optimizationOptions);
-            })
+            ->fit($this->fit, $this->width, $this->height)
+            ->optimize($this->optimizerChain)
             ->save($newPath);
 
         $this->media->storeConversion(

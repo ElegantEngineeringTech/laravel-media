@@ -7,7 +7,7 @@ use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
 use Illuminate\Support\Collection;
-use Spatie\Image\Manipulations;
+use Spatie\Image\Enums\Fit;
 
 class ResponsiveImagesConversionsPreset
 {
@@ -29,6 +29,7 @@ class ResponsiveImagesConversionsPreset
 
         foreach (static::$widths as $width) {
             $name = (string) $width;
+
             if ($media->width > $width) {
                 $conversions->push(new MediaConversion(
                     name: $name,
@@ -36,7 +37,7 @@ class ResponsiveImagesConversionsPreset
                         media: $media,
                         conversion: $name,
                         width: $width,
-                        fitMethod : Manipulations::FIT_MAX,
+                        fit : Fit::Max,
                     )
                 ));
             }

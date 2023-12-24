@@ -170,6 +170,27 @@ it('store a pdf from an url with a custom name', function () {
     Storage::disk('media')->assertExists($media->path);
 });
 
+it('store a svg file', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $file = $this->getTestFile('images/svg.svg');
+
+    $media->storeFile(
+        file: $file,
+        disk: 'media',
+        name: 'foo'
+    );
+
+    expect($media->name)->toBe('foo');
+    expect($media->file_name)->toBe('foo.svg');
+    expect($media->path)->toBe("{$media->uuid}/foo.svg");
+
+    Storage::disk('media')->assertExists($media->path);
+});
+
 it('store a conversion image of a media', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
