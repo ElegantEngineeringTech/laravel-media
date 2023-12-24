@@ -101,7 +101,7 @@ trait HasMedia
         return $this->getMediaCollections()->has($collection_name);
     }
 
-    public function getMediaCollection(string $collection_name): MediaCollection
+    public function getMediaCollection(string $collection_name): ?MediaCollection
     {
         return $this->getMediaCollections()->get($collection_name);
     }
