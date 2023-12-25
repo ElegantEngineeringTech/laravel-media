@@ -31,6 +31,15 @@ trait InteractsWithMediaFiles
         return Storage::disk($this->disk);
     }
 
+    public function getUrl(): ?string
+    {
+        if (! $this->path) {
+            return null;
+        }
+
+        return $this->getDisk()->url($this->path);
+    }
+
     /**
      * @return null|resource
      */

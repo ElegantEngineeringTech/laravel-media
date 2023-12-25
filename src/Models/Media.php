@@ -7,6 +7,7 @@ use Finller\Media\Casts\GeneratedConversions;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\FileDownloaders\FileDownloader;
 use Finller\Media\Helpers\File;
+use Finller\Media\Support\ResponsiveImagesConversionsPreset;
 use Finller\Media\Traits\HasUuid;
 use Finller\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
@@ -368,5 +369,21 @@ class Media extends Model
         $this->save();
 
         return $this;
+    }
+
+    public function getResponsiveImages(): Collection
+    {
+        return collect(ResponsiveImagesConversionsPreset::$widths)
+            ->map(fn (int $width) => $this->getGeneratedConversion($width))
+            ->filter();
+    }
+
+    /**
+     * Exemple: elva-fairy-480w.jpg 480w, elva-fairy-800w.jpg 800w
+     */
+    public function getSrcset(): Collection
+    {
+        return $this->getResponsiveImages()
+            ->map(fn (GeneratedConversion $generatedConversion) => $generatedConversion->getUrl().' '.$generatedConversion->width.'w');
     }
 }
