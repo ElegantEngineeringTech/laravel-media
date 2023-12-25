@@ -142,9 +142,13 @@ class Media extends Model
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
      */
-    public function getUrl(?string $conversion = null)
+    public function getUrl(?string $conversion = null): ?string
     {
-        return $this->getDisk()->url($this->getPath($conversion));
+        if ($path = $this->getPath($conversion)) {
+            return $this->getDisk()->url($path);
+        }
+
+        return null;
     }
 
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
