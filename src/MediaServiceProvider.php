@@ -2,7 +2,6 @@
 
 namespace Finller\Media;
 
-use Finller\Media\Commands\MediaCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -19,6 +18,6 @@ class MediaServiceProvider extends PackageServiceProvider
             ->name('laravel-media')
             ->hasConfigFile()
             ->hasMigration('create_media_table')
-            ->hasCommand(MediaCommand::class);
+            ->hasViews();
     }
 }
