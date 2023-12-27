@@ -30,7 +30,7 @@ return new class extends Migration
             $table->unsignedBigInteger('height')->nullable();
             $table->decimal('aspect_ratio', 19, 6)->nullable();
             $table->string('average_color')->nullable();
-            $table->decimal('duration', 19, 6)->nullable();
+            $table->decimal('duration', 19, 2)->nullable();
             $table->json('metadata')->nullable();
 
             $table->index(['model_type', 'model_id', 'collection_name']);
