@@ -26,7 +26,7 @@ class VideoPosterConversionJob extends ConversionJob
     ) {
         parent::__construct($media, $conversion);
 
-        $this->fileName = $fileName ?? $this->media->file_name;
+        $this->fileName = $fileName ?? "{$this->media->name}.jpg";
     }
 
     public function run()

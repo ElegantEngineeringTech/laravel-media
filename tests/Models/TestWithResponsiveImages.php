@@ -2,6 +2,7 @@
 
 namespace Finller\Media\Tests\Models;
 
+use Finller\Media\Enums\MediaType;
 use Finller\Media\MediaCollection;
 use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
@@ -38,6 +39,10 @@ class TestWithResponsiveImages extends Model
      */
     protected function registerMediaConversions(Media $media): Collection
     {
-        return ResponsiveImagesConversionsPreset::get($media);
+        if ($media->type === MediaType::Image) {
+            return ResponsiveImagesConversionsPreset::get($media);
+        }
+
+        return collect();
     }
 }

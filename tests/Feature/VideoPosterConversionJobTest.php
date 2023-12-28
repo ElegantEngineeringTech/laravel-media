@@ -3,7 +3,7 @@
 use Finller\Media\Tests\Models\TestWithVideoConversions;
 use Illuminate\Support\Facades\Storage;
 
-it('generate a poster file conversion from a video', function () {
+it('generate a poster conversion from a video', function () {
     Storage::fake('media');
 
     $model = new TestWithVideoConversions();

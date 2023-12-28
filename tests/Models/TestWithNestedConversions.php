@@ -23,10 +23,9 @@ class TestWithNestedConversions extends Model
      */
     protected function registerMediaConversions(Media $media): Collection
     {
-        $conversions = collect();
 
         if ($media->type === MediaType::Image) {
-            $conversions
+            return collect()
                 ->push(new MediaConversion(
                     name: 'optimized',
                     job: new OptimizedImageConversionJob($media, 'optimized'),
@@ -38,6 +37,6 @@ class TestWithNestedConversions extends Model
                 ));
         }
 
-        return $conversions;
+        return collect();
     }
 }

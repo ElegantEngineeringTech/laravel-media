@@ -2,7 +2,6 @@
 
 namespace Finller\Media\Support;
 
-use Finller\Media\Enums\MediaType;
 use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
@@ -16,34 +15,36 @@ class ResponsiveImagesConversionsPreset
     /**
      * @return Collection<int, MediaConversion>
      */
-    public static function get(Media $media): Collection
-    {
+    public static function get(
+        Media $media,
+        string $extension = 'jpg'
+    ): Collection {
         /**
          * @var Collection<int, MediaConversion> $conversions
          */
         $conversions = collect();
 
-        if ($media->type !== MediaType::Image || ! $media->width) {
-            return $conversions;
-        }
-
-        foreach (static::$widths as $width) {
+        foreach (static::getWidths($media) as $width) {
             $name = (string) $width;
 
-            if ($media->width > $width) {
-                $conversions->push(new MediaConversion(
-                    name: $name,
-                    job: new OptimizedImageConversionJob(
-                        media: $media,
-                        conversion: $name,
-                        width: $width,
-                        fit : Fit::Max,
-                    )
-                ));
-            }
+            $conversions->push(new MediaConversion(
+                name: $name,
+                job: new OptimizedImageConversionJob(
+                    media: $media,
+                    conversion: $name,
+                    width: $width,
+                    fit : Fit::Max,
+                    fileName: "{$media->name}-{$name}.{$extension}"
+                )
+            ));
 
         }
 
         return $conversions;
+    }
+
+    public static function getWidths(Media $media): array
+    {
+        return array_filter(static::$widths, fn (int $width) => $width <= $media->width);
     }
 }
