@@ -151,6 +151,19 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * Retreive the temporary url of a conversion or nested conversion
+     * Ex: $media->getUrl('poster.480p')
+     */
+    public function getTemporaryUrl(?string $conversion, \DateTimeInterface $expiration, array $options = []): ?string
+    {
+        if ($path = $this->getPath($conversion)) {
+            return $this->getDisk()->temporaryUrl($path, $expiration, $options);
+        }
+
+        return null;
+    }
+
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
     {
         $genealogy = explode('.', $conversion);

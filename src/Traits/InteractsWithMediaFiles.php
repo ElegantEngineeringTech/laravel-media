@@ -40,6 +40,15 @@ trait InteractsWithMediaFiles
         return $this->getDisk()->url($this->path);
     }
 
+    public function getTemporaryUrl(\DateTimeInterface $expiration, array $options = []): ?string
+    {
+        if (! $this->path) {
+            return null;
+        }
+
+        return $this->getDisk()->temporaryUrl($this->path, $expiration, $options);
+    }
+
     /**
      * @return null|resource
      */
