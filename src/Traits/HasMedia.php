@@ -149,8 +149,11 @@ trait HasMedia
     public function addMedia(
         string|UploadedFile $file,
         ?string $collection_name = null,
+        ?string $collection_group = null,
+        ?string $disk = null,
         ?string $name = null,
-        ?string $disk = null
+        ?string $order = null,
+        ?array $metadata = null,
     ): Media {
         $collection_name ??= config('media.default_collection_name');
 
@@ -166,6 +169,10 @@ trait HasMedia
         $media = new $model();
 
         $media->model()->associate($this);
+
+        $media->collection_group = $collection_group;
+        $media->order = $order;
+        $media->metadata = $metadata;
 
         $media->storeFile(
             file: $file,
