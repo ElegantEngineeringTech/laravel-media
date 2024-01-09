@@ -62,8 +62,9 @@ class Media extends Model
     public static function booted()
     {
         static::deleted(function (Media $media) {
+            $media->generated_conversions
+                ->each(fn (GeneratedConversion $generatedConversion) => $generatedConversion->delete());
             $media->deleteDirectory();
-            $media->deleteGeneratedConversions();
         });
     }
 
