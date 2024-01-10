@@ -4,6 +4,7 @@ namespace Finller\Media\Jobs;
 
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\FormatInterface;
+use FFMpeg\Format\Video\X264;
 use Finller\Media\Models\Media;
 use Illuminate\Support\Facades\File;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
@@ -12,19 +13,29 @@ class OptimizedVideoConversionJob extends ConversionJob
 {
     public string $fileName;
 
+    public FormatInterface $format;
+
+    public string $fitMethod = ResizeFilter::RESIZEMODE_FIT;
+
+    public bool $forceStandards = false;
+
     public function __construct(
         public Media $media,
         public string $conversion,
-        public FormatInterface $format,
         public ?int $width,
         public ?int $height,
-        public string $fitMethod = ResizeFilter::RESIZEMODE_FIT,
-        public bool $forceStandards = false,
+        ?FormatInterface $format = new X264,
+        ?string $fitMethod = ResizeFilter::RESIZEMODE_FIT,
+        ?bool $forceStandards = false,
         ?string $fileName = null,
     ) {
         parent::__construct($media, $conversion);
 
         $this->fileName = $fileName ?? $this->media->file_name;
+
+        $this->format = $format;
+        $this->fitMethod = $fitMethod;
+        $this->forceStandards = $forceStandards;
     }
 
     public function run()
