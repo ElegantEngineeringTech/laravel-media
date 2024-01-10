@@ -2,10 +2,12 @@
 
 namespace Finller\Media\Support;
 
+use FFMpeg\Coordinate\TimeCode;
 use Finller\Media\Jobs\VideoPosterConversionJob;
 use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
 use Illuminate\Support\Collection;
+use Spatie\Image\Enums\Fit;
 
 class VideoPosterConversionPreset
 {
@@ -17,6 +19,10 @@ class VideoPosterConversionPreset
         bool $withResponsiveImages = false,
         string $extension = 'jpg',
         bool $sync = false,
+        int|string|TimeCode $seconds = 0,
+        ?int $width = null,
+        ?int $height = null,
+        Fit $fit = Fit::Max
     ): Collection {
         /**
          * @var Collection<int, MediaConversion> $conversions
@@ -29,6 +35,10 @@ class VideoPosterConversionPreset
             job: new VideoPosterConversionJob(
                 media: $media,
                 conversion: 'poster',
+                seconds: $seconds,
+                width: $width,
+                height: $height,
+                fit: $fit,
                 fileName: "{$media->name}.{$extension}"
             ),
             conversions: $withResponsiveImages ?
