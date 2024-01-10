@@ -43,7 +43,7 @@ class VideoPosterConversionPreset
             ),
             conversions: $withResponsiveImages ?
                 ResponsiveImagesConversionsPreset::get($media) :
-                null
+                collect()
         ));
 
         return $conversions;
