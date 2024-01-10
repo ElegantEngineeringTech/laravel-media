@@ -13,6 +13,7 @@ use Finller\Media\Traits\HasUuid;
 use Finller\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -52,6 +53,8 @@ class Media extends Model
      */
     protected $guarded = [];
 
+    protected $appends = ['url'];
+
     /**
      * @var array<string, string>
      */
@@ -74,6 +77,11 @@ class Media extends Model
     public function model(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected function url(): Attribute
+    {
+        return Attribute::get(fn () => $this->getUrl());
     }
 
     public function getConversionKey(string $conversion): string
