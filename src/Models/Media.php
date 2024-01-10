@@ -2,6 +2,7 @@
 
 namespace Finller\Media\Models;
 
+use Closure;
 use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Casts\GeneratedConversions;
 use Finller\Media\Enums\MediaType;
@@ -12,6 +13,7 @@ use Finller\Media\Traits\HasUuid;
 use Finller\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\File as HttpFile;
@@ -35,7 +37,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $height
  * @property ?float $aspect_ratio
  * @property ?string $average_color
- * @property ?int $order_column
+ * @property ?string $order
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
  * @property ?Model $model
@@ -403,5 +405,32 @@ class Media extends Model
     {
         return $this->getResponsiveImages()
             ->map(fn (GeneratedConversion $generatedConversion) => $generatedConversion->getUrl().' '.$generatedConversion->width.'w');
+    }
+
+    /**
+     * @param null|(Closure(string $previous): string) $sequence
+     */
+    public static function reorder(array $ids, ?Closure $sequence = null): void
+    {
+        /** @var EloquentCollection<int, Media> */
+        $models = static::query()
+            ->whereIn('id', $ids)
+            ->get();
+
+        $models = $models->sortBy(function (Media $model) use ($ids) {
+            return array_search($model->getKey(), $ids);
+        });
+
+        $previous = $sequence ? null : -1;
+
+        foreach ($models as $model) {
+
+            $model->order = $sequence ? value($sequence, $previous) : ($previous+1);
+
+            $previous = $model->order;
+
+            $model->save();
+        }
+
     }
 }

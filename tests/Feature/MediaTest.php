@@ -383,3 +383,21 @@ it('delete all files when model deleted', function () {
     Storage::disk('media')->assertMissing($generatedConversion->path);
     Storage::disk('media')->assertMissing($nestedGeneratedConversion->path);
 });
+
+it('reorder models', function () {
+
+    $first_media = MediaFactory::new()->create(['order' => '0']);
+    $second_media = MediaFactory::new()->create(['order' => '1']);
+    $third_media = MediaFactory::new()->create(['order' => '2']);
+
+    Media::reorder([
+        $third_media->getKey(),
+        $first_media->getKey(),
+        $second_media->getKey(),
+    ]);
+
+    expect($third_media->refresh()->order)->toBe('0');
+    expect($first_media->refresh()->order)->toBe('1');
+    expect($second_media->refresh()->order)->toBe('2');
+
+});
