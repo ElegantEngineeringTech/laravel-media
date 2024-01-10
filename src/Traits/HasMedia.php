@@ -16,11 +16,19 @@ use Illuminate\Support\Collection;
  * @template TMedia of Media
  *
  * @property ?string $uuid
- * @property EloquentCollection<int, TMedia> $media
+ * @property EloquentCollection<int, TMedia> $media ordered by order, id
+ * @property EloquentCollection<int, TMedia> $unorderedMedia
  */
 trait HasMedia
 {
     public function media(): MorphMany
+    {
+        return $this->morphMany(config('media.model'), 'model')
+            ->orderBy('order')
+            ->orderBy('id');
+    }
+
+    public function unorderedMedia(): MorphMany
     {
         return $this->morphMany(config('media.model'), 'model');
     }
