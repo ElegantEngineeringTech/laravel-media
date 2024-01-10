@@ -409,6 +409,7 @@ class Media extends Model
 
     /**
      * @param  null|(Closure(string $previous): string)  $sequence
+     * @param  null|(Closure(string $previous): string)  $sequence
      */
     public static function reorder(array $ids, ?Closure $sequence = null): void
     {
@@ -425,7 +426,7 @@ class Media extends Model
 
         foreach ($models as $model) {
 
-            $model->order = $sequence ? value($sequence, $previous) : ($previous + 1);
+            $model->order = $sequence ? $sequence($previous) : ($previous + 1);
 
             $previous = $model->order;
 
