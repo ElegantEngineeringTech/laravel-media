@@ -16,11 +16,21 @@ class Video implements HasDimension
             'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
         ]);
 
-        return $file
-            ->streams($path)
-            ->videos()
-            ->first()
-            ->getDimensions();
+        $stream = $file
+        ->streams($path)
+        ->videos()
+        ->first();
+
+        $dimension = $stream->getDimensions();
+
+        /** @var int */
+        $rotation = data_get($stream->get('side_data_list'), '0.rotation', 0);
+
+        if((abs($rotation) / 90) % 2 === 1){
+            $dimension = new Dimension($dimension->getHeight(), $dimension->getWidth());
+        }
+
+        return $dimension;
     }
 
     public static function ratio(string $path, bool $forceStandards = true): AspectRatio

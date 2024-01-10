@@ -1,6 +1,7 @@
 <?php
 
 use Finller\Media\Helpers\File;
+use Finller\Media\Helpers\Video;
 use Illuminate\Http\UploadedFile;
 
 it('get the correct name from Uploaded file', function () {
