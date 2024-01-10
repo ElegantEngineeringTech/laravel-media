@@ -15,7 +15,8 @@ class VideoPosterConversionPreset
     public static function get(
         Media $media,
         bool $withResponsiveImages = false,
-        string $extension = 'jpg'
+        string $extension = 'jpg',
+        bool $sync = false,
     ): Collection {
         /**
          * @var Collection<int, MediaConversion> $conversions
@@ -24,6 +25,7 @@ class VideoPosterConversionPreset
 
         $conversions->push(new MediaConversion(
             name: 'poster',
+            sync: $sync,
             job: new VideoPosterConversionJob(
                 media: $media,
                 conversion: 'poster',

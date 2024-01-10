@@ -17,7 +17,8 @@ class ResponsiveImagesConversionsPreset
      */
     public static function get(
         Media $media,
-        string $extension = 'jpg'
+        string $extension = 'jpg',
+        bool $sync = false,
     ): Collection {
         /**
          * @var Collection<int, MediaConversion> $conversions
@@ -29,6 +30,7 @@ class ResponsiveImagesConversionsPreset
 
             $conversions->push(new MediaConversion(
                 name: $name,
+                sync: $sync,
                 job: new OptimizedImageConversionJob(
                     media: $media,
                     conversion: $name,
