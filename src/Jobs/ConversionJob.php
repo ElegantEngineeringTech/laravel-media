@@ -105,9 +105,13 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
         }
 
         foreach ($conversion->conversions as $childConversion) {
-            $job = $childConversion->job;
-            $job->conversion = implode('.', [$this->conversion, $job->conversion]);
-            dispatch($job);
+            $childConversion->job->conversion = implode('.', [$this->conversion, $childConversion->job->conversion]);
+
+            if ($childConversion->sync) {
+                dispatch_sync($childConversion->job);
+            } else {
+                dispatch($childConversion->job);
+            }
         }
     }
 }

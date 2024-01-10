@@ -240,7 +240,11 @@ trait HasMedia
         $media->save();
 
         foreach ($conversions as $conversion) {
-            dispatch($conversion->job);
+            if ($conversion->sync) {
+                dispatch_sync($conversion->job);
+            } else {
+                dispatch($conversion->job);
+            }
         }
 
         return $this;
