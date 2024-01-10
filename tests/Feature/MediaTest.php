@@ -401,3 +401,39 @@ it('reorder models', function () {
     expect($second_media->refresh()->order)->toBe('2');
 
 });
+
+it('reorder models using uuids', function () {
+
+    $first_media = MediaFactory::new()->create(['order' => '0']);
+    $second_media = MediaFactory::new()->create(['order' => '1']);
+    $third_media = MediaFactory::new()->create(['order' => '2']);
+
+    Media::reorder([
+        $third_media->uuid,
+        $first_media->uuid,
+        $second_media->uuid,
+    ], using: 'uuid');
+
+    expect($third_media->refresh()->order)->toBe('0');
+    expect($first_media->refresh()->order)->toBe('1');
+    expect($second_media->refresh()->order)->toBe('2');
+
+});
+
+it('reorder models from a custom sequence', function () {
+
+    $first_media = MediaFactory::new()->create(['order' => '0']);
+    $second_media = MediaFactory::new()->create(['order' => '1']);
+    $third_media = MediaFactory::new()->create(['order' => '2']);
+
+    Media::reorder([
+        $third_media->getKey(),
+        $first_media->getKey(),
+        $second_media->getKey(),
+    ], sequence: fn (?string $previous) => (string) ($previous === null ? 0 : (intval($previous) + 2)));
+
+    expect($third_media->refresh()->order)->toBe('0');
+    expect($first_media->refresh()->order)->toBe('2');
+    expect($second_media->refresh()->order)->toBe('4');
+
+});
