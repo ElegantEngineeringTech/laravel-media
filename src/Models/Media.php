@@ -64,7 +64,8 @@ class Media extends Model
     public static function booted()
     {
         static::deleted(function (Media $media) {
-            $media->generated_conversions
+            $media
+                ->generated_conversions
                 ->each(fn (GeneratedConversion $generatedConversion) => $generatedConversion->delete());
             $media->deleteDirectory();
         });
@@ -152,6 +153,51 @@ class Media extends Model
         }
 
         return null;
+    }
+
+    public function getWidth(?string $conversion = null): ?int
+    {
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->width;
+        }
+
+        return $this->width;
+    }
+
+    public function getHeight(?string $conversion = null): ?int
+    {
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->height;
+        }
+
+        return $this->height;
+    }
+
+    public function getName(?string $conversion = null): ?string
+    {
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->name;
+        }
+
+        return $this->name;
+    }
+
+    public function getSize(?string $conversion = null): ?int
+    {
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->size;
+        }
+
+        return $this->size;
+    }
+
+    public function getAspectRatio(?string $conversion = null): ?float
+    {
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->aspect_ratio;
+        }
+
+        return $this->aspect_ratio;
     }
 
     /**
@@ -391,20 +437,25 @@ class Media extends Model
         return $this;
     }
 
-    public function getResponsiveImages(): Collection
+    public function getResponsiveImages(?string $conversion = null): Collection
     {
         return collect(ResponsiveImagesConversionsPreset::$widths)
-            ->map(fn (int $width) => $this->getGeneratedConversion($width))
+            ->when($conversion,
+                fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion("{$conversion}.{$width}")),
+                fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion($width)),
+            )
             ->filter();
     }
 
     /**
      * Exemple: elva-fairy-480w.jpg 480w, elva-fairy-800w.jpg 800w
      */
-    public function getSrcset(): Collection
+    public function getSrcset(?string $conversion = null): Collection
     {
-        return $this->getResponsiveImages()
-            ->map(fn (GeneratedConversion $generatedConversion) => $generatedConversion->getUrl().' '.$generatedConversion->width.'w');
+        return $this
+            ->getResponsiveImages($conversion)
+            ->filter(fn (GeneratedConversion $generatedConversion) => $generatedConversion->getUrl())
+            ->map(fn (GeneratedConversion $generatedConversion) => "{$generatedConversion->getUrl()} {$generatedConversion->width}w");
     }
 
     /**
