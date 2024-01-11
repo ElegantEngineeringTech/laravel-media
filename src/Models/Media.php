@@ -468,17 +468,18 @@ class Media extends Model
 
     /**
      * @param  null|(Closure(null|string $previous): string)  $sequence
+     * @return EloquentCollection<int, static>
      */
-    public static function reorder(array $keys, ?Closure $sequence = null, string $using = 'id'): void
+    public static function reorder(array $keys, ?Closure $sequence = null, string $using = 'id'): EloquentCollection
     {
-        /** @var EloquentCollection<int, Media> */
+        /** @var EloquentCollection<int, static> */
         $models = static::query()
             ->whereIn($using, $keys)
             ->get();
 
         $models = $models->sortBy(function (Media $model) use ($keys, $using) {
             return array_search($model->{$using}, $keys);
-        });
+        })->values();
 
         $previous = $sequence ? null : -1;
 
@@ -490,6 +491,8 @@ class Media extends Model
 
             $model->save();
         }
+
+        return $models;
 
     }
 }
