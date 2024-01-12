@@ -38,7 +38,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $height
  * @property ?float $aspect_ratio
  * @property ?string $average_color
- * @property ?string $order
+ * @property ?int $order
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
  * @property ?Model $model
@@ -467,7 +467,7 @@ class Media extends Model
     }
 
     /**
-     * @param  null|(Closure(null|string $previous): string)  $sequence
+     * @param  null|(Closure(null|int $previous): int)  $sequence
      * @return EloquentCollection<int, static>
      */
     public static function reorder(array $keys, ?Closure $sequence = null, string $using = 'id'): EloquentCollection
