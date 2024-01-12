@@ -23,7 +23,8 @@ trait HasMedia
     public function media(): MorphMany
     {
         return $this->morphMany(config('media.model'), 'model')
-            ->orderByRaw('-order_column DESC');
+            ->orderByRaw('-order_column DESC')
+            ->orderBy('id', 'asc');
     }
 
     /**
