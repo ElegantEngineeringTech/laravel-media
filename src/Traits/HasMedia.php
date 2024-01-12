@@ -135,12 +135,15 @@ trait HasMedia
      * @param  int[]  $except Array of Media Ids
      * @return Collection<int, TMedia> The deleted media list
      */
-    public function clearMediaCollection(string $collection_name, array $except = []): Collection
-    {
-        $media = $this->getMedia($collection_name)
+    public function clearMediaCollection(
+        string $collection_name,
+        ?string $collection_group = null,
+        array $except = []
+    ): Collection {
+        $media = $this->getMedia($collection_name, $collection_group)
             ->except($except)
-            ->each(function (Media $media) {
-                $media->delete();
+            ->each(function (Media $model) {
+                $model->delete();
             });
 
         return $media;
