@@ -16,21 +16,14 @@ use Illuminate\Support\Collection;
  * @template TMedia of Media
  *
  * @property ?string $uuid
- * @property EloquentCollection<int, TMedia> $media ordered by order, id
- * @property EloquentCollection<int, TMedia> $unorderedMedia
+ * @property EloquentCollection<int, TMedia> $media ordered by order_column
  */
 trait HasMedia
 {
     public function media(): MorphMany
     {
         return $this->morphMany(config('media.model'), 'model')
-            ->orderBy('order')
-            ->orderBy('id');
-    }
-
-    public function unorderedMedia(): MorphMany
-    {
-        return $this->morphMany(config('media.model'), 'model');
+            ->orderByRaw('-order_column DESC');
     }
 
     /**
@@ -40,7 +33,8 @@ trait HasMedia
     {
         return $this->media
             ->when($collection_name, fn (EloquentCollection $collection) => $collection->where('collection_name', $collection_name))
-            ->when($collection_group, fn (EloquentCollection $collection) => $collection->where('collection_group', $collection_group));
+            ->when($collection_group, fn (EloquentCollection $collection) => $collection->where('collection_group', $collection_group))
+            ->values();
     }
 
     public function hasMedia(?string $collection_name = null, ?string $collection_group = null): bool
@@ -179,7 +173,7 @@ trait HasMedia
         $media->model()->associate($this);
 
         $media->collection_group = $collection_group;
-        $media->order = $order;
+        $media->order_column = $order;
         $media->metadata = $metadata;
 
         $media->storeFile(

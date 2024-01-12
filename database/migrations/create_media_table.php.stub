@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('disk')->nullable();
             $table->unsignedBigInteger('size')->nullable();
             $table->json('generated_conversions')->nullable();
-            $table->unsignedBigInteger('order')->nullable()->index();
+            $table->unsignedBigInteger('order_column')->nullable()->index();
 
             $table->string('path')->nullable();
             $table->string('type')->nullable();

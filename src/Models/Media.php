@@ -38,7 +38,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $height
  * @property ?float $aspect_ratio
  * @property ?string $average_color
- * @property ?int $order
+ * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
  * @property ?Model $model
@@ -485,9 +485,9 @@ class Media extends Model
 
         foreach ($models as $model) {
 
-            $model->order = $sequence ? $sequence($previous) : ($previous + 1);
+            $model->order_column = $sequence ? $sequence($previous) : ($previous + 1);
 
-            $previous = $model->order;
+            $previous = $model->order_column;
 
             $model->save();
         }
