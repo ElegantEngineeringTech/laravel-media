@@ -386,9 +386,9 @@ it('delete all files when model deleted', function () {
 
 it('reorder models', function () {
 
-    $first_media = MediaFactory::new()->create(['order' => '0']);
-    $second_media = MediaFactory::new()->create(['order' => '1']);
-    $third_media = MediaFactory::new()->create(['order' => '2']);
+    $first_media = MediaFactory::new()->create(['order_column' => 0]);
+    $second_media = MediaFactory::new()->create(['order_column' => 1]);
+    $third_media = MediaFactory::new()->create(['order_column' => 2]);
 
     Media::reorder([
         $third_media->getKey(),
@@ -396,17 +396,17 @@ it('reorder models', function () {
         $second_media->getKey(),
     ]);
 
-    expect($third_media->refresh()->order)->toBe('0');
-    expect($first_media->refresh()->order)->toBe('1');
-    expect($second_media->refresh()->order)->toBe('2');
+    expect($third_media->refresh()->order_column)->toBe(0);
+    expect($first_media->refresh()->order_column)->toBe(1);
+    expect($second_media->refresh()->order_column)->toBe(2);
 
 });
 
 it('reorder models using uuids', function () {
 
-    $first_media = MediaFactory::new()->create(['order' => '0']);
-    $second_media = MediaFactory::new()->create(['order' => '1']);
-    $third_media = MediaFactory::new()->create(['order' => '2']);
+    $first_media = MediaFactory::new()->create(['order_column' => 0]);
+    $second_media = MediaFactory::new()->create(['order_column' => 1]);
+    $third_media = MediaFactory::new()->create(['order_column' => 2]);
 
     Media::reorder([
         $third_media->uuid,
@@ -414,26 +414,26 @@ it('reorder models using uuids', function () {
         $second_media->uuid,
     ], using: 'uuid');
 
-    expect($third_media->refresh()->order)->toBe('0');
-    expect($first_media->refresh()->order)->toBe('1');
-    expect($second_media->refresh()->order)->toBe('2');
+    expect($third_media->refresh()->order_column)->toBe(0);
+    expect($first_media->refresh()->order_column)->toBe(1);
+    expect($second_media->refresh()->order_column)->toBe(2);
 
 });
 
 it('reorder models from a custom sequence', function () {
 
-    $first_media = MediaFactory::new()->create(['order' => '0']);
-    $second_media = MediaFactory::new()->create(['order' => '1']);
-    $third_media = MediaFactory::new()->create(['order' => '2']);
+    $first_media = MediaFactory::new()->create(['order_column' => 0]);
+    $second_media = MediaFactory::new()->create(['order_column' => 1]);
+    $third_media = MediaFactory::new()->create(['order_column' => 2]);
 
     Media::reorder([
         $third_media->getKey(),
         $first_media->getKey(),
         $second_media->getKey(),
-    ], sequence: fn (?string $previous) => (string) ($previous === null ? 0 : (intval($previous) + 2)));
+    ], sequence: fn (?int $previous) => ($previous === null ? 0 : ($previous + 2)));
 
-    expect($third_media->refresh()->order)->toBe('0');
-    expect($first_media->refresh()->order)->toBe('2');
-    expect($second_media->refresh()->order)->toBe('4');
+    expect($third_media->refresh()->order_column)->toBe(0);
+    expect($first_media->refresh()->order_column)->toBe(2);
+    expect($second_media->refresh()->order_column)->toBe(4);
 
 });

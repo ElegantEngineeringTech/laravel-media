@@ -150,10 +150,11 @@ trait HasMedia
     }
 
     /**
+     * @param  string|UploadedFile|resource  $file
      * @return TMedia
      */
     public function addMedia(
-        string|UploadedFile $file,
+        mixed $file,
         ?string $collection_name = null,
         ?string $collection_group = null,
         ?string $disk = null,

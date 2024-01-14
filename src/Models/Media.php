@@ -21,6 +21,7 @@ use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
@@ -309,10 +310,42 @@ class Media extends Model
     }
 
     /**
+     * @param  resource  $ressource
+     */
+    public function storeFileFromRessource(
+        $ressource,
+        ?string $collection_name = null,
+        ?string $basePath = null,
+        ?string $name = null,
+        ?string $disk = null
+    ): static {
+
+        $temporaryDirectory = (new TemporaryDirectory())
+            ->location(storage_path('media-tmp'))
+            ->create();
+
+        $path = tempnam($temporaryDirectory->path(), 'media-');
+
+        $storage = Storage::build([
+            'driver' => 'local',
+            'root' => $temporaryDirectory->path(),
+        ]);
+
+        $storage->writeStream($path, $ressource);
+
+        $this->storeFileFromHttpFile(new HttpFile($path), $collection_name, $basePath, $name, $disk);
+
+        $temporaryDirectory->delete();
+
+        return $this;
+    }
+
+    /**
+     * @param  string|UploadedFile|HttpFile|resource  $file
      * @param  (string|UploadedFile|HttpFile)[]  $otherFiles any other file to store in the same directory
      */
     public function storeFile(
-        string|UploadedFile|HttpFile $file,
+        mixed $file,
         ?string $collection_name = null,
         ?string $basePath = null,
         ?string $name = null,
@@ -323,6 +356,8 @@ class Media extends Model
             $this->storeFileFromHttpFile($file, $collection_name, $basePath, $name, $disk);
         } elseif (filter_var($file, FILTER_VALIDATE_URL)) {
             $this->storeFileFromUrl($file, $collection_name, $basePath, $name, $disk);
+        } elseif (is_resource($file)) {
+            $this->storeFileFromRessource($file, $collection_name, $basePath, $name, $disk);
         } else {
             $this->storeFileFromHttpFile(new HttpFile($file), $collection_name, $basePath, $name, $disk);
         }
