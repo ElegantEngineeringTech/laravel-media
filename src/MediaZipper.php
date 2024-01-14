@@ -62,11 +62,6 @@ class MediaZipper implements Responsable
         return $zip;
     }
 
-    /**
-     * Create an HTTP response that represents the object.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     */
     public function toResponse($request): StreamedResponse
     {
         return new StreamedResponse(fn () => $this->getZipStream(), 200, [
