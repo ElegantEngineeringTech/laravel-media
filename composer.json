@@ -18,6 +18,7 @@
     "require": {
         "php": "^8.1",
         "illuminate/contracts": "^10.0",
+        "maennchen/zipstream-php": "^3.1",
         "pbmedia/laravel-ffmpeg": "^8.3",
         "spatie/image": "^3.0.0",
         "spatie/laravel-package-tools": "^1.14.0",
