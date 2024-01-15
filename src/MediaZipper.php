@@ -11,9 +11,6 @@ use ZipStream\ZipStream;
 
 class MediaZipper implements Responsable
 {
-    /**
-     * @param  Collection<int, Media>  $media
-     */
     public function __construct(
         public Collection $media = new Collection(),
         public string $fileName = 'media.zip',
@@ -24,15 +21,15 @@ class MediaZipper implements Responsable
 
     public function toFile(Filesystem $storage, string $path, array $options = []): string|false
     {
-        $tempStream = fopen('php://memory', 'w+');
+        $temporaryStream = fopen('php://memory', 'w+');
 
-        $zipStream = $this->getZipStream([
-            'outputStream' => $tempStream,
+        $this->getZipStream([
+            'outputStream' => $temporaryStream,
         ]);
 
-        $success = $storage->writeStream($path, $tempStream, $options);
+        $success = $storage->writeStream($path, $temporaryStream, $options);
 
-        fclose($tempStream);
+        fclose($temporaryStream);
 
         return $success ? $path : false;
     }
@@ -44,6 +41,7 @@ class MediaZipper implements Responsable
             ...$options,
         );
 
+        /** @var Media $item */
         foreach ($this->media as $item) {
             $stream = $item->readStream();
 
