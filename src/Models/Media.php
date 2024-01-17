@@ -97,22 +97,28 @@ class Media extends Model
      * Retreive a conversion or nested conversion
      * Ex: $media->getGeneratedConversion('poster.480p')
      */
-    public function getGeneratedConversion(string $conversion): ?GeneratedConversion
+    public function getGeneratedConversion(string $conversion, ?string $state = null): ?GeneratedConversion
     {
-        return data_get($this->generated_conversions, $this->getConversionKey($conversion));
+        $generatedConversion = data_get($this->generated_conversions, $this->getConversionKey($conversion));
+
+        if($state && $generatedConversion?->state === $state){
+            return $generatedConversion;
+        }
+
+        return $generatedConversion;
     }
 
-    public function getGeneratedParentConversion(string $conversion): ?GeneratedConversion
+    public function getGeneratedParentConversion(string $conversion, ?string $state = null): ?GeneratedConversion
     {
         $genealogy = explode('.', $conversion);
         $parents = implode('.', array_slice($genealogy, 0, -1));
 
-        return $this->getGeneratedConversion($parents);
+        return $this->getGeneratedConversion($parents, $state);
     }
 
-    public function hasGeneratedConversion(string $conversion): bool
+    public function hasGeneratedConversion(string $conversion, ?string $state = null): bool
     {
-        return (bool) $this->getGeneratedConversion($conversion);
+        return (bool) $this->getGeneratedConversion($conversion, $state);
     }
 
     /**
