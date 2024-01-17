@@ -68,10 +68,10 @@ class Media extends Model
     public static function booted()
     {
         static::deleted(function (Media $media) {
-            $media
-                ->generated_conversions
-                ->each(function (GeneratedConversion $generatedConversion) use ($media) {
-                    $media->deleteGeneratedConversionFiles($generatedConversion);
+            $media->generated_conversions
+                ?->keys()
+                ->each(function (string $conversion) use ($media) {
+                    $media->deleteGeneratedConversionFiles($conversion);
                 });
 
             $media->deleteMediaFiles();
@@ -445,7 +445,7 @@ class Media extends Model
         $existingConversion = $this->getGeneratedConversion($conversion);
 
         if ($existingConversion) {
-            $this->deleteGeneratedConversionFiles($existingConversion);
+            $this->deleteGeneratedConversionFiles($conversion);
         }
 
         $generatedConversion = new GeneratedConversion(
@@ -532,7 +532,7 @@ class Media extends Model
             return null;
         }
 
-        $this->deleteGeneratedConversionFiles($generatedConversion);
+        $this->deleteGeneratedConversionFiles($converion);
         $this->forgetGeneratedConversion($converion);
         $this->save();
 
@@ -541,9 +541,11 @@ class Media extends Model
 
     public function deleteGeneratedConversions(): static
     {
-        $this->generated_conversions?->each(function (GeneratedConversion $generatedConversion) {
-            $this->deleteGeneratedConversionFiles($generatedConversion);
-        });
+        $this->generated_conversions
+            ?->keys()
+            ->each(function (string $conversion) {
+                $this->deleteGeneratedConversionFiles($conversion);
+            });
 
         $this->generated_conversions = collect();
         $this->save();
@@ -554,11 +556,19 @@ class Media extends Model
     /**
      * You can override this function to customize how files are deleted
      */
-    protected function deleteGeneratedConversionFiles(GeneratedConversion $generatedConversion): static
+    protected function deleteGeneratedConversionFiles(string $conversion): static
     {
-        $generatedConversion->generated_conversions?->each(function (GeneratedConversion $generatedConversion) {
-            $this->deleteGeneratedConversionFiles($generatedConversion);
-        });
+        $generatedConversion = $this->getGeneratedConversion($conversion);
+
+        if (! $generatedConversion) {
+            return $this;
+        }
+
+        $generatedConversion->generated_conversions
+            ?->keys()
+            ->each(function (string $childConversion) use ($conversion) {
+                $this->deleteGeneratedConversionFiles("{$conversion}.{$childConversion}");
+            });
 
         $generatedConversion->deleteFile();
 
