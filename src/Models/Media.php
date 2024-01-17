@@ -101,8 +101,8 @@ class Media extends Model
     {
         $generatedConversion = data_get($this->generated_conversions, $this->getConversionKey($conversion));
 
-        if ($state && $generatedConversion?->state === $state) {
-            return $generatedConversion;
+        if ($state) {
+            return $generatedConversion?->state === $state ? $generatedConversion : null;
         }
 
         return $generatedConversion;
