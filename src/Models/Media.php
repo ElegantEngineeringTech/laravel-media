@@ -474,7 +474,6 @@ class Media extends Model
         return $generatedConversion;
     }
 
-
     public function getResponsiveImages(?string $conversion = null): Collection
     {
         return collect(ResponsiveImagesConversionsPreset::$widths)
