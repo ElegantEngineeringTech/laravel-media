@@ -37,7 +37,7 @@ trait InteractsWithMediaFiles
             return null;
         }
 
-        return $this->getDisk()->url($this->path);
+        return $this->getDisk()?->url($this->path);
     }
 
     public function getTemporaryUrl(\DateTimeInterface $expiration, array $options = []): ?string
@@ -46,7 +46,7 @@ trait InteractsWithMediaFiles
             return null;
         }
 
-        return $this->getDisk()->temporaryUrl($this->path, $expiration, $options);
+        return $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
     }
 
     /**
@@ -60,7 +60,7 @@ trait InteractsWithMediaFiles
     /**
      * @param  string  $path including the file name
      */
-    public function copyFileTo(string $path): ?string
+    public function copyFileLocallyTo(string $path): ?string
     {
         if (! $this->path) {
             return null;
@@ -80,7 +80,7 @@ trait InteractsWithMediaFiles
 
         $path = $temporaryDirectory->path($this->file_name);
 
-        $this->copyFileTo($path);
+        $this->copyFileLocallyTo($path);
 
         return $path;
     }
@@ -114,7 +114,7 @@ trait InteractsWithMediaFiles
 
         $fileName ??= File::extractFilename($file, $name);
 
-        $path = $this->getDisk()->putFileAs(
+        $path = $this->getDisk()?->putFileAs(
             $this->getDirname(),
             $file,
             $fileName

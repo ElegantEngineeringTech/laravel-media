@@ -157,11 +157,32 @@ class Media extends Model
      */
     public function getUrl(?string $conversion = null): ?string
     {
-        if ($path = $this->getPath($conversion)) {
-            return $this->getDisk()->url($path);
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->getUrl();
         }
 
-        return null;
+        if (! $this->path) {
+            return null;
+        }
+
+        return $this->getDisk()?->url($this->path);
+    }
+
+    /**
+     * Retreive the temporary url of a conversion or nested conversion
+     * Ex: $media->getUrl('poster.480p')
+     */
+    public function getTemporaryUrl(?string $conversion, \DateTimeInterface $expiration, array $options = []): ?string
+    {
+        if ($conversion) {
+            return $this->getGeneratedConversion($conversion)?->getTemporaryUrl($expiration, $options);
+        }
+
+        if (! $this->path) {
+            return null;
+        }
+
+        return $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
     }
 
     public function getWidth(?string $conversion = null): ?int
@@ -207,19 +228,6 @@ class Media extends Model
         }
 
         return $this->aspect_ratio;
-    }
-
-    /**
-     * Retreive the temporary url of a conversion or nested conversion
-     * Ex: $media->getUrl('poster.480p')
-     */
-    public function getTemporaryUrl(?string $conversion, \DateTimeInterface $expiration, array $options = []): ?string
-    {
-        if ($path = $this->getPath($conversion)) {
-            return $this->getDisk()->temporaryUrl($path, $expiration, $options);
-        }
-
-        return null;
     }
 
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
