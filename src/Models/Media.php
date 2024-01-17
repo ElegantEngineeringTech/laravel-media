@@ -70,8 +70,11 @@ class Media extends Model
         static::deleted(function (Media $media) {
             $media
                 ->generated_conversions
-                ->each(fn (GeneratedConversion $generatedConversion) => $generatedConversion->delete());
-            $media->deleteDirectory();
+                ->each(function (GeneratedConversion $generatedConversion) use ($media) {
+                    $media->deleteGeneratedConversionFiles($generatedConversion);
+                });
+
+            $media->deleteMediaFiles();
         });
     }
 
@@ -439,9 +442,11 @@ class Media extends Model
         $type = MediaType::tryFromMimeType($mime_type);
         $dimension = File::dimension($file->getPathname(), type: $type);
 
-        $existingConversion = $this->getGeneratedConversion($name);
+        $existingConversion = $this->getGeneratedConversion($conversion);
 
-        $existingConversion?->delete();
+        if ($existingConversion) {
+            $this->deleteGeneratedConversionFiles($existingConversion);
+        }
 
         $generatedConversion = new GeneratedConversion(
             name: $name,
@@ -469,24 +474,6 @@ class Media extends Model
         return $generatedConversion;
     }
 
-    public function deleteGeneratedConversion(string $converion): GeneratedConversion
-    {
-        $generatedConversion = $this->getGeneratedConversion($converion);
-        $generatedConversion?->delete();
-        $this->forgetGeneratedConversion($converion);
-        $this->save();
-
-        return $generatedConversion;
-    }
-
-    public function deleteGeneratedConversions(): static
-    {
-        $this->generated_conversions->each(fn (GeneratedConversion $generatedConversion) => $generatedConversion->delete());
-        $this->generated_conversions = collect();
-        $this->save();
-
-        return $this;
-    }
 
     public function getResponsiveImages(?string $conversion = null): Collection
     {
@@ -536,6 +523,56 @@ class Media extends Model
         }
 
         return $models;
+    }
 
+    public function deleteGeneratedConversion(string $converion): ?GeneratedConversion
+    {
+        $generatedConversion = $this->getGeneratedConversion($converion);
+
+        if (! $generatedConversion) {
+            return null;
+        }
+
+        $this->deleteGeneratedConversionFiles($generatedConversion);
+        $this->forgetGeneratedConversion($converion);
+        $this->save();
+
+        return $generatedConversion;
+    }
+
+    public function deleteGeneratedConversions(): static
+    {
+        $this->generated_conversions?->each(function (GeneratedConversion $generatedConversion) {
+            $this->deleteGeneratedConversionFiles($generatedConversion);
+        });
+
+        $this->generated_conversions = collect();
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * You can override this function to customize how files are deleted
+     */
+    protected function deleteGeneratedConversionFiles(GeneratedConversion $generatedConversion): static
+    {
+        $generatedConversion->generated_conversions?->each(function (GeneratedConversion $generatedConversion) {
+            $this->deleteGeneratedConversionFiles($generatedConversion);
+        });
+
+        $generatedConversion->deleteFile();
+
+        return $this;
+    }
+
+    /**
+     * You can override this function to customize how files are deleted
+     */
+    protected function deleteMediaFiles(): static
+    {
+        $this->deleteFile();
+
+        return $this;
     }
 }

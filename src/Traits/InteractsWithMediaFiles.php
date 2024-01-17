@@ -133,9 +133,16 @@ trait InteractsWithMediaFiles
             return true;
         }
 
-        return $this
-            ->getDisk()
-            ->deleteDirectory($this->getDirname());
+        return $this->getDisk()?->deleteDirectory($this->getDirname());
+    }
+
+    public function deleteFile(): bool
+    {
+        if (! $this->path) {
+            return true;
+        }
+
+        return $this->getDisk()?->delete($this->path);
     }
 
     public function humanReadableSize(int $precision = 0, ?int $maxPrecision = null): ?string

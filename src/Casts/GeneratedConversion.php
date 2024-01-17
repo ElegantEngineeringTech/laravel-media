@@ -70,18 +70,6 @@ class GeneratedConversion implements Arrayable
         );
     }
 
-    public function delete(): static
-    {
-        $this->deleteDirectory();
-
-        $this->path = null;
-
-        $this->generated_conversions->each(fn (self $generatedConversion) => $generatedConversion->delete());
-        $this->generated_conversions = collect();
-
-        return $this;
-    }
-
     public function toArray(): array
     {
         return array_map(
