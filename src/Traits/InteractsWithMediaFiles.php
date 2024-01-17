@@ -58,7 +58,7 @@ trait InteractsWithMediaFiles
     }
 
     /**
-     * @param  string  $path including the file name
+     * @param  string  $path  including the file name
      */
     public function copyFileLocallyTo(string $path): ?string
     {

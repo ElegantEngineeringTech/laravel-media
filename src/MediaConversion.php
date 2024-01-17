@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 class MediaConversion
 {
     /**
-     * @param  bool  $sync When sync is true, dispatch_sync is used
+     * @param  bool  $sync  When sync is true, dispatch_sync is used
      */
     public function __construct(
         public string $name,

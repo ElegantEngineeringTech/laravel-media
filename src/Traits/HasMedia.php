@@ -132,7 +132,7 @@ trait HasMedia
     }
 
     /**
-     * @param  int[]  $except Array of Media Ids
+     * @param  int[]  $except  Array of Media Ids
      * @return Collection<int, TMedia> The deleted media list
      */
     public function clearMediaCollection(

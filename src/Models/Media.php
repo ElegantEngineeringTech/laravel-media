@@ -350,7 +350,7 @@ class Media extends Model
 
     /**
      * @param  string|UploadedFile|HttpFile|resource  $file
-     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles any other file to store in the same directory
+     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles  any other file to store in the same directory
      */
     public function storeFile(
         mixed $file,
@@ -378,7 +378,7 @@ class Media extends Model
     }
 
     /**
-     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles any other file to store in the same directory
+     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles  any other file to store in the same directory
      */
     public function storeConversion(
         string|UploadedFile|HttpFile $file,
