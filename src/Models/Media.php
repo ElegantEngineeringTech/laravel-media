@@ -565,7 +565,7 @@ class Media extends Model
         }
 
         $generatedConversion->generated_conversions
-            ?->keys()
+            ->keys()
             ->each(function (string $childConversion) use ($conversion) {
                 $this->deleteGeneratedConversionFiles("{$conversion}.{$childConversion}");
             });

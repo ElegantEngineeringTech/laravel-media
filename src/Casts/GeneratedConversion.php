@@ -10,7 +10,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 /**
- * @property null|Collection<string, GeneratedConversion> $generated_conversions
+ * @property Collection<string, GeneratedConversion> $generated_conversions
  */
 class GeneratedConversion implements Arrayable
 {
@@ -35,6 +35,7 @@ class GeneratedConversion implements Arrayable
         public ?int $width = null,
         public ?float $aspect_ratio = null,
         public ?string $average_color = null,
+        public array $metadata = [],
         public Collection $generated_conversions = new Collection(),
         ?Carbon $created_at = null,
         ?Carbon $state_set_at = null,
@@ -65,6 +66,7 @@ class GeneratedConversion implements Arrayable
             width: Arr::get($attributes, 'width'),
             aspect_ratio: Arr::get($attributes, 'aspect_ratio'),
             average_color: Arr::get($attributes, 'average_color'),
+            metadata: Arr::get($attributes, 'metadata', []),
             generated_conversions: collect(Arr::get($attributes, 'generated_conversions', []))->map(fn ($item) => self::make($item)),
             created_at: $created_at ? Carbon::parse($created_at) : null,
         );

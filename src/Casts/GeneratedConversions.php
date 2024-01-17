@@ -19,8 +19,7 @@ class GeneratedConversions implements CastsAttributes
             return collect();
         }
 
-        return collect(json_decode($value, true))
-            ->map(fn ($item) => GeneratedConversion::make($item));
+        return collect(json_decode($value, true))->map(fn ($item) => GeneratedConversion::make($item));
     }
 
     /**
