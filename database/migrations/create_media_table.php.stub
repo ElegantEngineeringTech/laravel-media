@@ -20,22 +20,22 @@ return new class extends Migration
             $table->string('mime_type')->nullable();
             $table->string('disk')->nullable();
             $table->unsignedBigInteger('size')->nullable();
-            $table->json('generated_conversions')->nullable();
             $table->unsignedBigInteger('order_column')->nullable()->index();
+            $table->json('generated_conversions')->nullable();
 
             $table->string('path')->nullable();
             $table->string('type')->nullable();
             $table->string('extension')->nullable();
             $table->unsignedBigInteger('width')->nullable();
             $table->unsignedBigInteger('height')->nullable();
-            $table->decimal('aspect_ratio', 19, 6)->nullable();
+            $table->decimal('aspect_ratio', 8, 2, true)->nullable();
             $table->string('average_color')->nullable();
-            $table->decimal('duration', 19, 2)->nullable();
+            $table->decimal('duration', 19, 2, true)->nullable();
             $table->json('metadata')->nullable();
 
-            $table->index(['model_type', 'model_id', 'collection_name']);
-
             $table->timestamps();
+
+            $table->index(['model_type', 'model_id', 'collection_name']);
         });
     }
 
