@@ -22,7 +22,7 @@ class VideoPosterConversionPreset
         int|string|TimeCode $seconds = 0,
         ?int $width = null,
         ?int $height = null,
-        Fit $fit = Fit::Max
+        Fit $fit = Fit::Contain
     ): Collection {
         /**
          * @var Collection<int, MediaConversion> $conversions

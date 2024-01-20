@@ -35,7 +35,7 @@ class ResponsiveImagesConversionsPreset
                     media: $media,
                     conversion: $name,
                     width: $width,
-                    fit : Fit::Max,
+                    fit : Fit::Contain,
                     fileName: "{$media->name}-{$name}.{$extension}"
                 )
             ));

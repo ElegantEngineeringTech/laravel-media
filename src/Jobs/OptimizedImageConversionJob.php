@@ -17,7 +17,7 @@ class OptimizedImageConversionJob extends ConversionJob
         public string $conversion,
         public ?int $width = null,
         public ?int $height = null,
-        public Fit $fit = Fit::Max,
+        public Fit $fit = Fit::Contain,
         public ?OptimizerChain $optimizerChain = null,
         ?string $fileName = null,
     ) {

@@ -43,6 +43,8 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
  * @property ?Model $model
+ * @property ?string $model_type
+ * @property ?int $model_id
  */
 class Media extends Model
 {

@@ -20,7 +20,7 @@ class VideoPosterConversionJob extends ConversionJob
         public null|int|string|TimeCode $seconds = 0,
         public ?int $width = null,
         public ?int $height = null,
-        public Fit $fit = Fit::Max,
+        public Fit $fit = Fit::Contain,
         public ?OptimizerChain $optimizerChain = null,
         ?string $fileName = null,
     ) {
