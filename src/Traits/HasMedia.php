@@ -231,9 +231,9 @@ trait HasMedia
         $conversions = $this->getMediaConversions($media)
             ->only($only)
             ->except($except)
-            ->when(!$force, function (Collection $collection) use ($media) {
+            ->when(! $force, function (Collection $collection) use ($media) {
                 return $collection->filter(function (MediaConversion $conversion) use ($media) {
-                    return !$media->hasGeneratedConversion($conversion->name);
+                    return ! $media->hasGeneratedConversion($conversion->name);
                 });
             });
 
