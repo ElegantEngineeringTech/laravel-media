@@ -222,17 +222,27 @@ trait HasMedia
     /**
      * @param  TMedia  $media
      */
-    public function dispatchConversions(Media $media): static
-    {
-        $conversions = $this->getMediaConversions($media);
+    public function dispatchConversions(
+        Media $media,
+        ?bool $force = false,
+        ?array $only = null,
+        ?array $except = null,
+    ): static {
+        $conversions = $this->getMediaConversions($media)
+            ->only($only)
+            ->except($except)
+            ->when(!$force, function (Collection $collection) use ($media) {
+                return $collection->filter(function (MediaConversion $conversion) use ($media) {
+                    return !$media->hasGeneratedConversion($conversion->name);
+                });
+            });
 
         if ($conversions->isEmpty()) {
             return $this;
         }
 
-        $media->deleteGeneratedConversions();
-
         foreach ($conversions as $conversion) {
+            $media->deleteGeneratedConversionFiles($conversion->name);
             $media->putGeneratedConversion($conversion->name, new GeneratedConversion(state: 'pending'));
         }
 

@@ -532,16 +532,16 @@ class Media extends Model
         return $models;
     }
 
-    public function deleteGeneratedConversion(string $converion): ?GeneratedConversion
+    public function deleteGeneratedConversion(string $conversion): ?GeneratedConversion
     {
-        $generatedConversion = $this->getGeneratedConversion($converion);
+        $generatedConversion = $this->getGeneratedConversion($conversion);
 
         if (! $generatedConversion) {
             return null;
         }
 
-        $this->deleteGeneratedConversionFiles($converion);
-        $this->forgetGeneratedConversion($converion);
+        $this->deleteGeneratedConversionFiles($conversion);
+        $this->forgetGeneratedConversion($conversion);
         $this->save();
 
         return $generatedConversion;
@@ -564,7 +564,7 @@ class Media extends Model
     /**
      * You can override this function to customize how files are deleted
      */
-    protected function deleteGeneratedConversionFiles(string $conversion): static
+    public function deleteGeneratedConversionFiles(string $conversion): static
     {
         $generatedConversion = $this->getGeneratedConversion($conversion);
 
