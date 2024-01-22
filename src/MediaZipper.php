@@ -42,12 +42,13 @@ class MediaZipper implements Responsable
         );
 
         /** @var Media $item */
-        foreach ($this->media as $item) {
+        foreach ($this->media as $index => $item) {
             $stream = $item->readStream();
 
             $zip->addFileFromStream(
-                fileName: $item->file_name,
-                stream: $stream
+                fileName: "{$index}_{$item->file_name}",
+                stream: $stream,
+                exactSize: $item->size,
             );
 
             if (is_resource($stream)) {
