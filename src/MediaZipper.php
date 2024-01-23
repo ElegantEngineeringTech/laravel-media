@@ -7,6 +7,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use ZipStream\OperationMode;
 use ZipStream\ZipStream;
 
 class MediaZipper implements Responsable
@@ -23,9 +24,11 @@ class MediaZipper implements Responsable
     {
         $temporaryStream = fopen('php://memory', 'w+');
 
-        $this->getZipStream([
+        $zip = $this->getZipStream([
             'outputStream' => $temporaryStream,
         ]);
+
+        $zip->finish();
 
         $success = $storage->writeStream($path, $temporaryStream, $options);
 
@@ -36,10 +39,10 @@ class MediaZipper implements Responsable
 
     public function getZipStream(array $options = [])
     {
-        $zip = new ZipStream(
-            ...$this->zipStreamOptions,
-            ...$options,
-        );
+        $zip = new ZipStream(...array_merge(
+            $this->zipStreamOptions,
+            $options
+        ));
 
         /** @var Media $item */
         foreach ($this->media as $index => $item) {
@@ -56,16 +59,37 @@ class MediaZipper implements Responsable
             }
         }
 
-        $zip->finish();
-
         return $zip;
+    }
+
+    public function getSize(): int
+    {
+        return (int) $this->media->sum('size');
     }
 
     public function toResponse($request): StreamedResponse
     {
-        return new StreamedResponse(fn () => $this->getZipStream(), 200, [
+        $simulation = $this->getZipStream([
+            'defaultEnableZeroHeader' => true,
+            'sendHttpHeaders' => false,
+            'contentType' => 'application/octet-stream',
+            'operationMode' => OperationMode::SIMULATE_STRICT, // or SIMULATE_LAX
+        ]);
+
+        $size = $simulation->finish();
+
+        return new StreamedResponse(function () {
+            $zip = $this->getZipStream([
+                'defaultEnableZeroHeader' => true,
+                'contentType' => 'application/octet-stream',
+            ]);
+
+            $zip->finish();
+
+        }, 200, [
             'Content-Disposition' => "attachment; filename=\"{$this->fileName}\"",
             'Content-Type' => 'application/octet-stream',
+            'Content-Length' => $size,
         ]);
     }
 }

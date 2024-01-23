@@ -17,7 +17,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 /**
  * @property ?string $disk
  * @property ?string $path
- * @property ?int $size
+ * @property ?int $size The filesize in bytes
  * @property ?float $duration in miliseconds
  */
 trait InteractsWithMediaFiles
