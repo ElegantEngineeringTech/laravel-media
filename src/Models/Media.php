@@ -6,6 +6,7 @@ use Closure;
 use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Casts\GeneratedConversions;
 use Finller\Media\Enums\MediaType;
+use Finller\Media\Events\MediaFileStoredEvent;
 use Finller\Media\FileDownloaders\FileDownloader;
 use Finller\Media\Helpers\File;
 use Finller\Media\Support\ResponsiveImagesConversionsPreset;
@@ -300,7 +301,8 @@ class Media extends Model
         $this->file_name = "{$this->name}.{$this->extension}";
         $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/').$this->file_name;
 
-        $this->putFile($file, fileName: $this->file_name);
+        $path = $this->putFile($file, fileName: $this->file_name);
+        event(new MediaFileStoredEvent($this, $path));
 
         $this->save();
 
@@ -382,7 +384,8 @@ class Media extends Model
         }
 
         foreach ($otherFiles as $otherFile) {
-            $this->putFile($otherFile);
+            $path = $this->putFile($otherFile);
+            event(new MediaFileStoredEvent($this, $path));
         }
 
         return $this;
@@ -409,7 +412,8 @@ class Media extends Model
         }
 
         foreach ($otherFiles as $otherFile) {
-            $this->putFile($otherFile);
+            $path = $this->putFile($otherFile);
+            event(new MediaFileStoredEvent($this, $path));
         }
 
         return $generatedConversion;
@@ -475,7 +479,8 @@ class Media extends Model
 
         $this->putGeneratedConversion($conversion, $generatedConversion);
 
-        $generatedConversion->putFile($file, fileName: $generatedConversion->file_name);
+        $path = $generatedConversion->putFile($file, fileName: $generatedConversion->file_name);
+        event(new MediaFileStoredEvent($this, $path));
 
         $this->save();
 

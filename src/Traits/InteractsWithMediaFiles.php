@@ -101,10 +101,7 @@ trait InteractsWithMediaFiles
         string|UploadedFile|HttpFile $file,
         ?string $name = null,
         ?string $fileName = null,
-    ): string|false {
-        if (! $this->path) {
-            throw new Exception('['.static::class.']'."Can't put a file to the instance because the main path is not defined");
-        }
+    ): string {
 
         if (is_string($file) && filter_var($file, FILTER_VALIDATE_URL)) {
             $file = new HttpFile(FileDownloader::getTemporaryFile($file));
