@@ -166,35 +166,77 @@ class Media extends Model
     /**
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
+     *
+     * @param  null|true|string|(callable(): ?string)  $fallback
      */
-    public function getUrl(?string $conversion = null): ?string
+    public function getUrl(?string $conversion = null, null|true|string|callable $fallback = null): ?string
     {
+        $url = null;
+
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->getUrl();
+            $url = $this->getGeneratedConversion($conversion)?->getUrl();
+        } elseif ($this->path) {
+            /** @var null|string $url */
+            $url = $this->getDisk()?->url($this->path);
         }
 
-        if (! $this->path) {
-            return null;
+        if ($url) {
+            return $url;
+        } elseif ($fallback) {
+            if ($fallback === true) {
+                return $this->getUrl();
+            }
+
+            if (is_string($fallback)) {
+                return $this->getUrl(conversion: $fallback);
+            }
+
+            if (is_callable($fallback)) {
+                return value($fallback);
+            }
         }
 
-        return $this->getDisk()?->url($this->path);
+        return $url;
     }
 
     /**
      * Retreive the temporary url of a conversion or nested conversion
-     * Ex: $media->getUrl('poster.480p')
+     * Ex: $media->getTemporaryUrl('poster.480p', now()->addHour())
+     *
+     * @param  null|true|string|(callable(): ?string)  $fallback
      */
-    public function getTemporaryUrl(?string $conversion, \DateTimeInterface $expiration, array $options = []): ?string
-    {
+    public function getTemporaryUrl(
+        ?string $conversion,
+        \DateTimeInterface $expiration,
+        array $options = [],
+        null|true|string|callable $fallback = null
+    ): ?string {
+        $url = null;
+
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->getTemporaryUrl($expiration, $options);
+            $url = $this->getGeneratedConversion($conversion)?->getTemporaryUrl($expiration, $options);
+        } elseif ($this->path) {
+            /** @var null|string $url */
+            $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
         }
 
-        if (! $this->path) {
-            return null;
+        if ($url) {
+            return $url;
+        } elseif ($fallback) {
+            if ($fallback === true) {
+                return $this->getTemporaryUrl(null, $expiration, $options);
+            }
+
+            if (is_string($fallback)) {
+                return $this->getTemporaryUrl(conversion: $fallback, expiration: $expiration, options: $options);
+            }
+
+            if (is_callable($fallback)) {
+                return value($fallback);
+            }
         }
 
-        return $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
+        return $url;
     }
 
     public function getWidth(?string $conversion = null): ?int

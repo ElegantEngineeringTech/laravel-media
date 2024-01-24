@@ -46,6 +46,45 @@ it('retrieve the generated conversion path', function () {
     expect($media->getPath('poster.480p'))->toBe('/poster/generated_conversions/480p/poster-480p.png');
 });
 
+it('retrieve the generated conversion url', function () {
+    Storage::fake('media');
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    $media->generated_conversions = collect([
+        'poster' => MediaFactory::generatedConversion(disk: 'media'),
+    ]);
+
+    expect($media->getUrl('poster'))->toBe('/storage//poster/poster.png');
+    expect($media->getUrl('poster.480p'))->toBe('/storage//poster/generated_conversions/480p/poster-480p.png');
+});
+
+it('retrieve the generated conversion url fallback', function () {
+    Storage::fake('media');
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make([
+        'path' => '/uuid/empty.jpg',
+    ]);
+
+    $media->generated_conversions = collect([
+        'poster' => new GeneratedConversion(
+            state: 'success',
+            type: MediaType::Image,
+            file_name: 'poster.png',
+            name: 'poster',
+            path: '/poster/poster.png',
+            disk: 'media',
+        ),
+    ]);
+
+    expect($media->getUrl('missing', true))->toBe('/storage//uuid/empty.jpg');
+    expect($media->getUrl('missing', 'poster'))->toBe('/storage//poster/poster.png');
+    expect($media->getUrl('missing', fn () => 'foo'))->toBe('foo');
+    expect($media->getUrl('missing'))->toBe(null);
+});
+
 it('add the generated conversion', function () {
 
     /** @var Media $media */

@@ -29,7 +29,7 @@ class MediaFactory extends Factory
         ];
     }
 
-    public static function generatedConversion()
+    public static function generatedConversion(?string $disk = null)
     {
         return new GeneratedConversion(
             state: 'success',
@@ -37,7 +37,7 @@ class MediaFactory extends Factory
             file_name: 'poster.png',
             name: 'poster',
             path: '/poster/poster.png',
-            disk: config('media.disk'),
+            disk: $disk ?? config('media.disk'),
             generated_conversions: collect([
                 '480p' => new GeneratedConversion(
                     state: 'success',
@@ -45,7 +45,7 @@ class MediaFactory extends Factory
                     file_name: 'poster-480p.png',
                     name: 'poster-480p',
                     path: '/poster/generated_conversions/480p/poster-480p.png',
-                    disk: config('media.disk'),
+                    disk: $disk ?? config('media.disk'),
                 ),
             ])
         );
