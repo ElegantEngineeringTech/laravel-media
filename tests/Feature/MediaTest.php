@@ -266,7 +266,7 @@ it('limit the name length to 255', function () {
     $media->storeFile(
         file: $file,
         disk: 'media',
-        name: "aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaa",
+        name: 'aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaa',
     );
 
     expect($media->name)->toBe('aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa');
