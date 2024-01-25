@@ -338,10 +338,16 @@ class Media extends Model
         $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
         $this->duration = File::duration($file->getPathname());
 
-        $this->name = File::sanitizeFilename($name ?? File::name($file));
+        $basePath = Str::finish($basePath ?? $this->generateBasePath(), '/');
+
+        $this->name = Str::limit(
+            File::sanitizeFilename($name ?? File::name($file)),
+            255 - strlen($this->extension ?? '') - strlen($basePath) - 1, // 1 is for the point between the name and the extension
+            ''
+        );
 
         $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = Str::finish($basePath ?? $this->generateBasePath(), '/').$this->file_name;
+        $this->path = $basePath.$this->file_name;
 
         $path = $this->putFile($file, fileName: $this->file_name);
         event(new MediaFileStoredEvent($this, $path));

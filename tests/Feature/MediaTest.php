@@ -253,6 +253,29 @@ it('store a file within a prefixed path', function () {
     Storage::disk('media')->assertExists($media->path);
 });
 
+it('limit the name length to 255', function () {
+    config()->set('media.generated_path_prefix', 'media');
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media');
+
+    $file = $this->getTestFile('images/svg.svg');
+
+    $media->storeFile(
+        file: $file,
+        disk: 'media',
+        name: "aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaa",
+    );
+
+    expect($media->name)->toBe('aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa');
+    expect($media->file_name)->toBe('aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa.svg');
+    expect($media->path)->toBe("media/{$media->uuid}/aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa20aaaaaaaa30aaaaaaaa40aaaaaaaa40aaaaaaaa50aaaaaaaa60aaaaaaaa70aaaaaaaa80aaaaaaaa90aaaaaaaa10aaaaaaaa.svg");
+
+    Storage::disk('media')->assertExists($media->path);
+});
+
 it('store a conversion image of a media', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
