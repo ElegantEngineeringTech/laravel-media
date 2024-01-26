@@ -2,6 +2,9 @@
 
 namespace Finller\Media\Enums;
 
+use Finller\Media\Helpers\File;
+use ProtoneMedia\LaravelFFMpeg\FFMpeg\FFProbe;
+
 enum MediaType: string
 {
     case Video = 'video';
@@ -12,10 +15,6 @@ enum MediaType: string
 
     public static function tryFromMimeType(string $mimeType)
     {
-        if (str_starts_with($mimeType, 'video/')) {
-            return self::Video;
-        }
-
         if (str_starts_with($mimeType, 'image/')) {
             return self::Image;
         }
@@ -24,10 +23,47 @@ enum MediaType: string
             return self::Audio;
         }
 
+        if (str_starts_with($mimeType, 'video/')) {
+            return self::Video;
+        }
+
         if (in_array($mimeType, ['application/pdf', 'application/acrobat', 'application/nappdf', 'application/x-pdf', 'image/pdf'])) {
             return self::Pdf;
         }
 
         return self::Other;
+    }
+
+    /**
+     * Some codec like 3GPP files can contain either audios or videos
+     * To determine the true type, we need to check which stream is defined
+     */
+    public static function tryFromStreams(string $path)
+    {
+        $type = self::tryFromMimeType(File::mimeType($path));
+
+        if (
+            $type === self::Video ||
+             $type === self::Audio
+        ) {
+            $ffprobe = FFProbe::create([
+                'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
+                'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
+            ]);
+
+            $streams = $ffprobe->streams($path);
+
+            if ($streams->videos()->first()) {
+                return self::Video;
+            }
+
+            if ($streams->audios()->first()) {
+                return self::Audio;
+            }
+
+            return self::Other;
+        }
+
+        return $type;
     }
 }

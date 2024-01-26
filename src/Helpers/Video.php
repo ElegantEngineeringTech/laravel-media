@@ -11,12 +11,12 @@ class Video implements HasDimension
 {
     public static function dimension(string $path): ?Dimension
     {
-        $file = FFProbe::create([
+        $ffprobe = FFProbe::create([
             'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
             'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
         ]);
 
-        $stream = $file
+        $stream = $ffprobe
             ->streams($path)
             ->videos()
             ->first();

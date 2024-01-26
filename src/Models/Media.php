@@ -499,7 +499,7 @@ class Media extends Model
         $extension = File::extension($file);
         $file_name = "{$name}.{$extension}";
         $mime_type = File::mimeType($file);
-        $type = MediaType::tryFromMimeType($mime_type);
+        $type = File::type($file->getPathname());
         $dimension = File::dimension($file->getPathname(), type: $type);
 
         $existingConversion = $this->getGeneratedConversion($conversion);

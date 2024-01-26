@@ -55,7 +55,7 @@ class File
 
     public static function type(string $path): MediaType
     {
-        return MediaType::tryFromMimeType(SupportFile::mimeType($path));
+        return MediaType::tryFromStreams($path);
     }
 
     public static function duration(string $path): ?float
