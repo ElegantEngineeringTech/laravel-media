@@ -70,7 +70,7 @@ class Media extends Model
 
     public static function booted()
     {
-        static::deleted(function (Media $media) {
+        static::deleting(function (Media $media) {
             $media->generated_conversions
                 ?->keys()
                 ->each(function (string $conversion) use ($media) {
