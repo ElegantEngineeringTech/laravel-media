@@ -128,10 +128,12 @@ class Media extends Model
      * Retreive the path of a conversion or nested conversion
      * Ex: $media->getPath('poster.480p')
      */
-    public function getPath(?string $conversion = null): ?string
+    public function getPath(?string $conversion = null, bool $fallback = false): ?string
     {
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->path;
+            $path = $this->getGeneratedConversion($conversion)?->path;
+
+            return $fallback ? ($path ?? $this->path) : $path;
         }
 
         return $this->path;
@@ -191,9 +193,7 @@ class Media extends Model
                 return $this->getUrl(conversion: $fallback);
             }
 
-            if (is_callable($fallback)) {
-                return value($fallback);
-            }
+            return value($fallback);
         }
 
         return $url;
@@ -231,54 +231,62 @@ class Media extends Model
                 return $this->getTemporaryUrl(conversion: $fallback, expiration: $expiration, options: $options);
             }
 
-            if (is_callable($fallback)) {
-                return value($fallback);
-            }
+            return value($fallback);
         }
 
         return $url;
     }
 
-    public function getWidth(?string $conversion = null): ?int
+    public function getWidth(?string $conversion = null, bool $fallback = false): ?int
     {
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->width;
+            $width = $this->getGeneratedConversion($conversion)?->width;
+
+            return $fallback ? ($width ?? $this->width) : $width;
         }
 
         return $this->width;
     }
 
-    public function getHeight(?string $conversion = null): ?int
+    public function getHeight(?string $conversion = null, bool $fallback = false): ?int
     {
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->height;
+            $height = $this->getGeneratedConversion($conversion)?->height;
+
+            return $fallback ? ($height ?? $this->height) : $height;
         }
 
         return $this->height;
     }
 
-    public function getName(?string $conversion = null): ?string
+    public function getName(?string $conversion = null, bool $fallback = false): ?string
     {
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->name;
+            $name = $this->getGeneratedConversion($conversion)?->name;
+
+            return $fallback ? ($name ?? $this->name) : $name;
         }
 
         return $this->name;
     }
 
-    public function getSize(?string $conversion = null): ?int
+    public function getSize(?string $conversion = null, bool $fallback = false): ?int
     {
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->size;
+            $size = $this->getGeneratedConversion($conversion)?->size;
+
+            return $fallback ? ($size ?? $this->size) : $size;
         }
 
         return $this->size;
     }
 
-    public function getAspectRatio(?string $conversion = null): ?float
+    public function getAspectRatio(?string $conversion = null, bool $fallback = false): ?float
     {
         if ($conversion) {
-            return $this->getGeneratedConversion($conversion)?->aspect_ratio;
+            $aspect_ratio = $this->getGeneratedConversion($conversion)?->aspect_ratio;
+
+            return $fallback ? ($aspect_ratio ?? $this->aspect_ratio) : $aspect_ratio;
         }
 
         return $this->aspect_ratio;
