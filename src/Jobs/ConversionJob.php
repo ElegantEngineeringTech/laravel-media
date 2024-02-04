@@ -74,7 +74,7 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
         try {
             $this->run();
         } catch (\Throwable $th) {
-            
+
             $this->temporaryDirectory->delete();
 
             throw $th;
