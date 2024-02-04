@@ -332,7 +332,7 @@ class Media extends Model
         ?string $disk = null,
     ) {
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
-        $this->disk = $disk ?? $this->disk ?? config('filesystems.default');
+        $this->disk = $disk ?? $this->disk ?? config('media.disk');
 
         $this->mime_type = File::mimeType($file);
         $this->extension = File::extension($file);

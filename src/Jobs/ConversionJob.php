@@ -10,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
@@ -28,6 +29,13 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
     public function uniqueId()
     {
         return "{$this->media->id}:{$this->conversion}";
+    }
+
+    public function middleware(): array
+    {
+        return [
+            (new WithoutOverlapping("media:{$this->media->id}"))->shared()->expireAfter(now()->addMinutes(60)),
+        ];
     }
 
     public function getConversion(): ?MediaConversion
