@@ -143,4 +143,18 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
             }
         }
     }
+
+    /**
+     * Get the tags that should be assigned to the job.
+     *
+     * @return array
+     */
+    public function tags()
+    {
+        return [
+            'media',
+            get_class($this),
+            $this->conversion,
+        ];
+    }
 }
