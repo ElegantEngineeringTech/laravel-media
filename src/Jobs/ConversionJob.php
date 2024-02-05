@@ -33,8 +33,14 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function middleware(): array
     {
+        if ($this->job?->getConnectionName() === 'sync') {
+            return [];
+        }
+
         return [
-            (new WithoutOverlapping("media:{$this->media->id}"))->shared()->expireAfter(now()->addMinutes(60)),
+            (new WithoutOverlapping("media:{$this->media->id}"))
+                ->shared()
+                ->expireAfter(now()->addMinutes(60)),
         ];
     }
 

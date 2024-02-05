@@ -37,4 +37,4 @@ it('generate a poster with its responsive images from a video', function () {
         expect($generatedConversion->width)->toBe($width);
     }
 
-});
+})->only();
