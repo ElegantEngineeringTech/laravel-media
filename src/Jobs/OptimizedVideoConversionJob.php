@@ -6,6 +6,7 @@ use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\Video\X264;
 use Finller\Media\Models\Media;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\File;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
@@ -18,6 +19,14 @@ class OptimizedVideoConversionJob extends ConversionJob
     public string $fitMethod = ResizeFilter::RESIZEMODE_FIT;
 
     public bool $forceStandards = false;
+
+    public function withoutOverlapping(): WithoutOverlapping
+    {
+        return (new WithoutOverlapping("media:{$this->media->id}"))
+            ->shared()
+            ->releaseAfter(now()->addMinutes(10))
+            ->expireAfter(now()->addMinutes(30));
+    }
 
     public function __construct(
         public Media $media,

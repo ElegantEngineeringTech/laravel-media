@@ -21,9 +21,19 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public TemporaryDirectory $temporaryDirectory;
 
+    public $deleteWhenMissingModels = true;
+
     public function __construct(public Media $media, public string $conversion)
     {
         //
+    }
+
+    public function withoutOverlapping(): WithoutOverlapping
+    {
+        return (new WithoutOverlapping("media:{$this->media->id}"))
+            ->shared()
+            ->releaseAfter(now()->addMinutes(1))
+            ->expireAfter(now()->addMinutes(10));
     }
 
     public function uniqueId()
@@ -38,9 +48,7 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
         }
 
         return [
-            (new WithoutOverlapping("media:{$this->media->id}"))
-                ->shared()
-                ->expireAfter(now()->addMinutes(60)),
+            $this->withoutOverlapping(),
         ];
     }
 
