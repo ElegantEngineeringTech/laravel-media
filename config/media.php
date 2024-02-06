@@ -26,4 +26,15 @@ return [
      * To fully customize the generated default path, extends the Media model ans override generateBasePath method
      */
     'generated_path_prefix' => null,
+
+    /**
+     * Customize the queue connection used when dispatching conversion jobs
+     */
+    'queue_connection' => env('QUEUE_CONNECTION', 'sync'),
+
+    /**
+     * Customize the queue used when dispatching conversion jobs
+     * null will fallback to the default laravel queue
+     */
+    'queue' => null,
 ];

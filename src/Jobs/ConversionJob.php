@@ -25,15 +25,22 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function __construct(public Media $media, public string $conversion)
     {
-        //
+        $this->onConnection(config('media.queue_connection'));
+        $this->onQueue(config('media.queue'));
     }
 
+    /**
+     * WithoutOverlapping middleware will cost you a try
+     * If you have 10 conversions for the same media, you should allow at least 10 tries in your job/queue
+     * Because each processing job will trigger a try to the other pending ones
+     * ReleaseAfter value qhould always be longer than the time it takes to proceed the job
+     */
     public function withoutOverlapping(): WithoutOverlapping
     {
         return (new WithoutOverlapping("media:{$this->media->id}"))
             ->shared()
             ->releaseAfter(now()->addMinutes(1))
-            ->expireAfter(now()->addMinutes(10));
+            ->expireAfter(now()->addMinutes(60));
     }
 
     public function uniqueId()
@@ -43,6 +50,9 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function middleware(): array
     {
+        /**
+         * When the connection is 'sync', overlapping jobs are skipped
+         */
         if ($this->job?->getConnectionName() === 'sync') {
             return [];
         }
