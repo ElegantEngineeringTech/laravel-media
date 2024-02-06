@@ -37,4 +37,22 @@ return [
      * null will fallback to the default laravel queue
      */
     'queue' => null,
+
+    /**
+     * Customize WithoutOverlapping middleware settings
+     */
+    'queue_overlapping' => [
+        /**
+         * Release value must be longer than the longest conversion job that might run
+         * Default is: 1 minute, increase it if you jobs are longer
+         */
+        'release_after' => 60,
+        /**
+         * Expire value allow to forget a lock in case of the job failed in a unexpected way
+         *
+         * @see https://laravel.com/docs/10.x/queues#preventing-job-overlaps
+         */
+        'expire_after' => 60 * 60,
+    ],
+
 ];

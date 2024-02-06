@@ -39,8 +39,8 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
     {
         return (new WithoutOverlapping("media:{$this->media->id}"))
             ->shared()
-            ->releaseAfter(now()->addMinutes(1))
-            ->expireAfter(now()->addMinutes(60));
+            ->releaseAfter(config('media.queue_overlapping.release_after', 60))
+            ->expireAfter(config('media.queue_overlapping.expire_after', 60 * 60));
     }
 
     public function uniqueId()
