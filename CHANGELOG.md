@@ -2,6 +2,14 @@
 
 All notable changes to `laravel-media` will be documented in this file.
 
+## v1.0.14 Laravel 11 - 2024-03-16
+
+### What's Changed
+
+* Bump ramsey/composer-install from 2 to 3 by @dependabot in https://github.com/finller/laravel-media/pull/5
+
+**Full Changelog**: https://github.com/finller/laravel-media/compare/v1.0.13...v1.0.14
+
 ## v1.0.13 - 2024-02-06
 
 **Full Changelog**: https://github.com/finller/laravel-media/compare/v1.0.12...v1.0.13
