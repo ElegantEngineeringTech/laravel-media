@@ -6,7 +6,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/finller/laravel-media.svg?style=flat-square)](https://packagist.org/packages/finller/laravel-media)
 
 This package provide an extremly flexible media library, allowing you to store any files with their conversions (nested conversions are supported).
-It is designed to be usable with local upload/conversions and with cloud upload/conversions solutions like Bunny.net, AWS MediaConvert, Transloadit, ...
+It is designed to be usable with local upload/conversions and with cloud upload/conversions solutions like Bunny.net, AWS S3/MediaConvert, Transloadit, ...
 
 It takes its inspiration from the wonderful `spatie/laravel-media-library` package (check spatie packages, they are really great),but it's not a fork.
 The migration from `spatie/laravel-media-library` is possible but not that easy if you want to keep your conversions files.
@@ -19,7 +19,7 @@ You can install the package via composer:
 composer require finller/laravel-media
 ```
 
-You can publish and run the migrations with:
+You have to publish and run the migrations with:
 
 ```bash
 php artisan vendor:publish --tag="laravel-media-migrations"
@@ -35,6 +35,9 @@ php artisan vendor:publish --tag="laravel-media-config"
 This is the contents of the published config file:
 
 ```php
+// config for Finller/Media
+
+use Finller\Media\Jobs\DeleteModelMediaJob;
 use Finller\Media\Models\Media;
 
 return [
@@ -47,6 +50,26 @@ return [
      * The default disk used to store files
      */
     'disk' => env('MEDIA_DISK', env('FILESYSTEM_DISK', 'local')),
+
+    /**
+     * Control if media should be deleted with the model
+     * when using the HasMedia Trait
+     */
+    'delete_media_with_model' => true,
+
+    /**
+     * Control if media should be deleted with the model
+     * when soft deleted
+     */
+    'delete_media_with_trashed_model' => false,
+
+    /**
+     * Deleting a lot of media related to a model can take some time
+     * or even fail (cloud api error, permissions, ...)
+     * For performance and monitoring, when a model with HasMedia trait is deleted,
+     * each media is individually deleted inside a job.
+     */
+    'delete_media_with_model_job' => DeleteModelMediaJob::class,
 
     /**
      * The default collection name
@@ -105,15 +128,27 @@ There are 2 important concepts to understand, both are tied to the Model associa
     For exemple: avatar, thumbnail, upload, ... are media collections.
 -   Media Conversion: Define a file conversion of a media.
     For exemple: A 720p version of a larger 1440p video, a webp conversion or a png image, ... Are media conversion.
-    A Media conversion can have media conversion too!
+    A Media conversion can have media conversions too!
 
 ## Preparing your models
 
-This package is designed to associate media to a model.
+This package is designed to associate media to a model but can also be used without model association.
 
 ### Registering your media collections
 
-First you need to add the `HasMedia` trait to your Model.
+First you need to add the `HasMedia` trait to your Model:
+
+```php
+namespace App\Models;
+
+use Finller\Media\Traits\HasMedia;
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    use HasMedia;
+}
+```
 
 Then you can define your Media collection and Media conversion like in this exemple:
 
@@ -125,7 +160,7 @@ use Finller\Media\MediaCollection;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Support\ResponsiveImagesConversionsPreset;
 use Finller\Media\Support\VideoPosterConversionPreset;
-
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class Post extends Model
@@ -155,11 +190,6 @@ class Post extends Model
 
         return $collections;
     }
-
-    public function registerMediaConversions(Media $media): Collection
-    {
-        return collect();
-    }
 }
 ```
 
@@ -171,12 +201,20 @@ Media conversions are run through Laravel Jobs, you can do anything in the job a
 -   Your job define a `run` method.
 -   Your job call '$this->media->storeConversion(...)`.
 
-Let's take a look at a common Media conversion: Optimizing an image.
+Let's take a look at a common media conversion task: Optimizing an image.
 
-The following job is already provided by this package, but it's a great introduction to the concept:
+> [!NOTE]
+> The following job is already provided by this package, but it's a great introduction to the concept
 
 ```php
-namespace Finller\Media\Jobs;
+namespace App\Jobs\Media;
+
+use Finller\Media\Jobs\ConversionJob;
+use Finller\Media\Models\Media;
+use Illuminate\Support\Facades\File;
+use Spatie\Image\Enums\Fit;
+use Spatie\Image\Image;
+use Spatie\ImageOptimizer\OptimizerChain;
 
 class OptimizedImageConversionJob extends ConversionJob
 {
@@ -229,13 +267,14 @@ This media conversion Job can now be registered in you Model like that:
 namespace App\Models;
 
 use Finller\Media\Traits\HasMedia;
+use Finller\Media\MediaCollection;
 use Finller\Media\MediaConversion;
-use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\Enums\MediaType;
-
-use Spatie\Image\Enums\Fit;
-
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Spatie\Image\Enums\Fit;
+use \App\Jobs\Media\OptimizedImageConversionJob;
+use Finller\Media\Models\Media;
 
 class Post extends Model
 {
@@ -269,16 +308,13 @@ class Post extends Model
 }
 ```
 
-#### Media Conversion presets
+#### Common media conversions
 
-This package provide common presets for your conversions to make your life easy when converting files:
+This package provide common jobs for your conversions to make your life easier:
 
--
-
-```php
-$Media = new Finller\Media();
-echo $Media->echoPhrase('Hello, Finller!');
-```
+-   `VideoPosterConversionJob` will extract a poster using ffmpeg.
+-   `OptimizedVideoConversionJob` will optimize, resize or convert any video using ffmpeg.
+-   `OptimizedImageConversionJob` will optimize, resize or convert any image using spatie/image.
 
 ## Testing
 

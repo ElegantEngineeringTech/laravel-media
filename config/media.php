@@ -2,6 +2,7 @@
 
 // config for Finller/Media
 
+use Finller\Media\Jobs\DeleteModelMediaJob;
 use Finller\Media\Models\Media;
 
 return [
@@ -14,6 +15,26 @@ return [
      * The default disk used to store files
      */
     'disk' => env('MEDIA_DISK', env('FILESYSTEM_DISK', 'local')),
+
+    /**
+     * Control if media should be deleted with the model
+     * when using the HasMedia Trait
+     */
+    'delete_media_with_model' => true,
+
+    /**
+     * Control if media should be deleted with the model
+     * when soft deleted
+     */
+    'delete_media_with_trashed_model' => false,
+
+    /**
+     * Deleting a lot of media related to a model can take some time
+     * or even fail (cloud api error, permissions, ...)
+     * For performance and monitoring, when a model with HasMedia trait is deleted,
+     * each media is individually deleted inside a job.
+     */
+    'delete_media_with_model_job' => DeleteModelMediaJob::class,
 
     /**
      * The default collection name

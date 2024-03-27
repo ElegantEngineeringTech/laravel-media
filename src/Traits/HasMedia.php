@@ -8,6 +8,7 @@ use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
@@ -20,6 +21,30 @@ use Illuminate\Support\Collection;
  */
 trait HasMedia
 {
+    public static function bootHasMedia()
+    {
+        static::deleting(function (Model $model) {
+
+            if (! config('media.delete_media_with_model')) {
+                return true;
+            }
+
+            $isSoftDeleting = method_exists($model, 'isForceDeleting') && ! $model->isForceDeleting();
+
+            if (
+                $isSoftDeleting && ! config('media.delete_media_with_trashed_model')
+            ) {
+                return true;
+            }
+
+            $job = config('media.delete_media_with_model_job');
+
+            foreach ($model->media as $media) {
+                dispatch(new $job($media));
+            }
+        });
+    }
+
     public function media(): MorphMany
     {
         return $this->morphMany(config('media.model'), 'model')
@@ -65,7 +90,6 @@ trait HasMedia
         $collection = $this->getMediaCollection($collection_name);
 
         return value($collection?->fallback);
-
     }
 
     /**
