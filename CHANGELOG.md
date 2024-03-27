@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-media` will be documented in this file.
 
+## v1.1.0 - 2024-03-27
+
+- `HasMedia` now support deleting media attached to the model
+
 ## v1.0.14 Laravel 11 - 2024-03-16
 
 ### What's Changed
