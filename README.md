@@ -124,9 +124,9 @@ php artisan vendor:publish --tag="laravel-media-views"
 
 There are 2 important concepts to understand, both are tied to the Model associated with its media:
 
--   Media Collection: Define a group of media with its own settings (the group can only have 1 media).
+-   **Media Collection:** Define a group of media with its own settings (the group can only have 1 media).
     For exemple: avatar, thumbnail, upload, ... are media collections.
--   Media Conversion: Define a file conversion of a media.
+-   **Media Conversion:** Define a file conversion of a media.
     For exemple: A 720p version of a larger 1440p video, a webp conversion or a png image, ... Are media conversion.
     A Media conversion can have media conversions too!
 
@@ -199,7 +199,7 @@ Media conversions are run through Laravel Jobs, you can do anything in the job a
 
 -   Your job extends `\Finller\Media\Jobs\ConversionJob`.
 -   Your job define a `run` method.
--   Your job call '$this->media->storeConversion(...)`.
+-   Your job call `$this->media->storeConversion(...)`.
 
 Let's take a look at a common media conversion task: Optimizing an image.
 
