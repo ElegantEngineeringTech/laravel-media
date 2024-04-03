@@ -72,9 +72,9 @@ class File
         return null;
     }
 
-    public static function dimension(string $path, ?MediaType $type = null, ?string $mime_type = null): ?Dimension
+    public static function dimension(string $path): ?Dimension
     {
-        $type ??= (MediaType::tryFromMimeType($mime_type) ?? static::type($path));
+        $type = static::type($path);
 
         return match ($type) {
             MediaType::Video => Video::dimension($path),

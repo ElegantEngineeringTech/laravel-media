@@ -13,7 +13,7 @@ enum MediaType: string
     case Pdf = 'pdf';
     case Other = 'other';
 
-    public static function tryFromMimeType(string $mimeType)
+    public static function tryFromMimeType(string $mimeType): self
     {
         if (str_starts_with($mimeType, 'image/')) {
             return self::Image;
@@ -35,16 +35,16 @@ enum MediaType: string
     }
 
     /**
-     * Some codec like 3GPP files can contain either audios or videos
+     * Some codec like 3GPP or MOV files can contain either audios or videos
      * To determine the true type, we need to check which stream is defined
      */
-    public static function tryFromStreams(string $path)
+    public static function tryFromStreams(string $path): self
     {
         $type = self::tryFromMimeType(File::mimeType($path));
 
         if (
             $type === self::Video ||
-             $type === self::Audio
+            $type === self::Audio
         ) {
             $ffprobe = FFProbe::create([
                 'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),

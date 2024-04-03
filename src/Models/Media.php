@@ -337,9 +337,9 @@ class Media extends Model
         $this->mime_type = File::mimeType($file);
         $this->extension = File::extension($file);
         $this->size = $file->getSize();
-        $this->type = MediaType::tryFromMimeType($this->mime_type);
+        $this->type = File::type($file->getPathname());
 
-        $dimension = File::dimension($file->getPathname(), type: $this->type);
+        $dimension = File::dimension($file->getPathname());
 
         $this->height = $dimension?->getHeight();
         $this->width = $dimension?->getWidth();
@@ -508,7 +508,7 @@ class Media extends Model
         $file_name = "{$name}.{$extension}";
         $mime_type = File::mimeType($file);
         $type = File::type($file->getPathname());
-        $dimension = File::dimension($file->getPathname(), type: $type);
+        $dimension = File::dimension($file->getPathname());
 
         $existingConversion = $this->getGeneratedConversion($conversion);
 
@@ -546,7 +546,8 @@ class Media extends Model
     public function getResponsiveImages(?string $conversion = null): Collection
     {
         return collect(ResponsiveImagesConversionsPreset::$widths)
-            ->when($conversion,
+            ->when(
+                $conversion,
                 fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion("{$conversion}.{$width}")),
                 fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion($width)),
             )
