@@ -5,6 +5,7 @@ namespace Finller\Media\Models;
 use Closure;
 use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Casts\GeneratedConversions;
+use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Events\MediaFileStoredEvent;
 use Finller\Media\FileDownloaders\FileDownloader;
@@ -43,7 +44,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $order_column
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
- * @property ?Model $model
+ * @property ?InteractWithMedia $model
  * @property ?string $model_type
  * @property ?int $model_id
  */
@@ -153,7 +154,8 @@ class Media extends Model
 
         $root = Str::of($prefix)
             ->when($prefix, fn ($string) => $string->finish('/'))
-            ->append($this->uuid)->finish('/');
+            ->append($this->uuid)
+            ->finish('/');
 
         if ($conversion) {
             return $root
@@ -324,16 +326,9 @@ class Media extends Model
         return $this;
     }
 
-    public function storeFileFromHttpFile(
-        UploadedFile|HttpFile $file,
-        ?string $collection_name = null,
-        ?string $basePath = null,
-        ?string $name = null,
-        ?string $disk = null,
-    ) {
-        $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
-        $this->disk = $disk ?? $this->disk ?? config('media.disk');
-
+    public function extractFileInformation(
+        UploadedFile|HttpFile $file
+    ): static {
         $this->mime_type = File::mimeType($file);
         $this->extension = File::extension($file);
         $this->size = $file->getSize();
@@ -345,6 +340,21 @@ class Media extends Model
         $this->width = $dimension?->getWidth();
         $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
         $this->duration = File::duration($file->getPathname());
+
+        return $this;
+    }
+
+    public function storeFileFromHttpFile(
+        UploadedFile|HttpFile $file,
+        ?string $collection_name = null,
+        ?string $basePath = null,
+        ?string $name = null,
+        ?string $disk = null,
+    ): static {
+        $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
+        $this->disk = $disk ?? $this->disk ?? config('media.disk');
+
+        $this->extractFileInformation($file);
 
         $basePath = Str::finish($basePath ?? $this->generateBasePath(), '/');
 

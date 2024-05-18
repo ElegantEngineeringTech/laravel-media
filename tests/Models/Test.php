@@ -2,6 +2,7 @@
 
 namespace Finller\Media\Tests\Models;
 
+use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\MediaCollection;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Spatie\Image\Enums\Fit;
 
-class Test extends Model
+class Test extends Model implements InteractWithMedia
 {
     use HasMedia;
 
@@ -20,10 +21,7 @@ class Test extends Model
 
     protected $guarded = [];
 
-    /**
-     * @return Collection<MediaCollection>
-     */
-    protected function registerMediaCollections(): Collection
+    public function registerMediaCollections(): Collection
     {
         return collect([
             new MediaCollection(
@@ -45,10 +43,7 @@ class Test extends Model
         ]);
     }
 
-    /**
-     * @return Collection<MediaConversion>
-     */
-    protected function registerMediaConversions(Media $media): Collection
+    public function registerMediaConversions(Media $media): Collection
     {
         $conversions = collect();
 

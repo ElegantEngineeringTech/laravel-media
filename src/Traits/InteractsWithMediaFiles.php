@@ -124,6 +124,42 @@ trait InteractsWithMediaFiles
         return $path;
     }
 
+    public function moveFiles(
+        ?string $disk = null,
+        ?string $path = null
+    ): static {
+        if (! $disk && ! $path) {
+            return $this;
+        }
+
+        $newDisk = $disk ?? $this->disk;
+        $newPath = $path ?? $this->path;
+
+        $temporaryDirectory = (new TemporaryDirectory())
+            ->location(storage_path('media-tmp'))
+            ->deleteWhenDestroyed()
+            ->create();
+
+        $temporaryFilePath = $this->makeTemporaryFileCopy($temporaryDirectory);
+
+        $filesystem = Storage::disk($newDisk);
+
+        $filesystem->putFileAs(
+            path: SupportFile::dirname($newPath),
+            file: new HttpFile($temporaryFilePath),
+            name: File::extractFilename($newPath)
+        );
+
+        $temporaryDirectory->delete();
+
+        $this->deleteFile();
+
+        $this->disk = $newDisk;
+        $this->path = $newPath;
+
+        return $this;
+    }
+
     public function deleteDirectory(): bool
     {
         if (! $this->path) {

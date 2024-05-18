@@ -64,7 +64,6 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function getConversion(): ?MediaConversion
     {
-        // @phpstan-ignore-next-line
         return $this->media->model?->getMediaConversion($this->media, $this->conversion);
     }
 

@@ -95,7 +95,7 @@ trait HasMedia
     /**
      * @return Arrayable<MediaCollection>|iterable<MediaCollection>|null
      */
-    protected function registerMediaCollections(): Arrayable|iterable|null
+    public function registerMediaCollections(): Arrayable|iterable|null
     {
         return collect();
     }
@@ -104,7 +104,7 @@ trait HasMedia
      * @param  TMedia  $media
      * @return Arrayable<MediaConversion>|iterable<MediaConversion>|null
      */
-    protected function registerMediaConversions(Media $media): Arrayable|iterable|null
+    public function registerMediaConversions(Media $media): Arrayable|iterable|null
     {
         return collect();
     }

@@ -2,6 +2,7 @@
 
 namespace Finller\Media\Tests\Models;
 
+use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\MediaConversion;
@@ -10,7 +11,7 @@ use Finller\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
-class TestWithNestedConversions extends Model
+class TestWithNestedConversions extends Model implements InteractWithMedia
 {
     use HasMedia;
 
@@ -18,10 +19,7 @@ class TestWithNestedConversions extends Model
 
     protected $guarded = [];
 
-    /**
-     * @return Collection<MediaConversion>
-     */
-    protected function registerMediaConversions(Media $media): Collection
+    public function registerMediaConversions(Media $media): Collection
     {
 
         if ($media->type === MediaType::Image) {

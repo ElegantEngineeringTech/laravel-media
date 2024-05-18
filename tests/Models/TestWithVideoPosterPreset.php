@@ -2,16 +2,16 @@
 
 namespace Finller\Media\Tests\Models;
 
+use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\MediaCollection;
-use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
 use Finller\Media\Support\VideoPosterConversionPreset;
 use Finller\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
-class TestWithVideoPosterPreset extends Model
+class TestWithVideoPosterPreset extends Model implements InteractWithMedia
 {
     use HasMedia;
 
@@ -19,10 +19,7 @@ class TestWithVideoPosterPreset extends Model
 
     protected $guarded = [];
 
-    /**
-     * @return Collection<MediaCollection>
-     */
-    protected function registerMediaCollections(): Collection
+    public function registerMediaCollections(): Collection
     {
         return collect([
             new MediaCollection(
@@ -33,10 +30,7 @@ class TestWithVideoPosterPreset extends Model
         ]);
     }
 
-    /**
-     * @return Collection<MediaConversion>
-     */
-    protected function registerMediaConversions(Media $media): Collection
+    public function registerMediaConversions(Media $media): Collection
     {
         if ($media->type === MediaType::Video) {
             return VideoPosterConversionPreset::get($media, withResponsiveImages: true);

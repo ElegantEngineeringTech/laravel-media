@@ -48,13 +48,15 @@ class GenerateMediaConversionsCommand extends Command
 
         $this->withProgressBar($media, function (Media $media) use ($conversions, $force) {
             $model = $media->model;
-            $modelConversions = $model->getMediaConversions($media); // @phpstan-ignore-line
+            $modelConversions = $model->getMediaConversions($media);
 
-            $conversions = empty($conversions) ? $modelConversions : array_intersect($modelConversions, $conversions);
+            $conversions = empty($conversions) ?
+                $modelConversions :
+                array_intersect($modelConversions->toArray(), $conversions);
 
             foreach ($conversions as $conversion) {
                 if ($force || ! $media->hasGeneratedConversion($conversion)) {
-                    $model->dispatchConversion($media, $conversion); // @phpstan-ignore-line
+                    $model->dispatchConversion($media, $conversion);
                 }
             }
         });
