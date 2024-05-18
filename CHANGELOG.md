@@ -2,6 +2,10 @@
 
 All notable changes to `laravel-media` will be documented in this file.
 
+## v1.2.0 - 2024-05-18
+
+Add interface
+
 ## v1.1.1 - 2024-04-03
 
 **Full Changelog**: https://github.com/finller/laravel-media/compare/v1.1.0...v1.1.1
