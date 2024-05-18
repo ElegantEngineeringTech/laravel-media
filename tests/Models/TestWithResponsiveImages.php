@@ -5,11 +5,10 @@ namespace Finller\Media\Tests\Models;
 use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\MediaCollection;
-use Finller\Media\Models\Media;
 use Finller\Media\Support\ResponsiveImagesConversionsPreset;
 use Finller\Media\Traits\HasMedia;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 class TestWithResponsiveImages extends Model implements InteractWithMedia
 {
@@ -19,7 +18,7 @@ class TestWithResponsiveImages extends Model implements InteractWithMedia
 
     protected $guarded = [];
 
-    public function registerMediaCollections(): Collection
+    public function registerMediaCollections(): Arrayable|iterable|null
     {
         return collect([
             new MediaCollection(
@@ -31,7 +30,7 @@ class TestWithResponsiveImages extends Model implements InteractWithMedia
         ]);
     }
 
-    public function registerMediaConversions(Media $media): Collection
+    public function registerMediaConversions($media): Arrayable|iterable|null
     {
         if ($media->type === MediaType::Image) {
             return ResponsiveImagesConversionsPreset::get($media);

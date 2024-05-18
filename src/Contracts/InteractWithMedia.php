@@ -22,10 +22,10 @@ interface InteractWithMedia
 
     public function hasMedia(?string $collection_name = null, ?string $collection_group = null): bool;
 
-    /**c
-     * @return TMedia
+    /**
+     * @return ?TMedia
      */
-    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null): ?Media;
+    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null);
 
     public function getFirstMediaUrl(
         ?string $collection_name = null,
@@ -42,7 +42,7 @@ interface InteractWithMedia
      * @param  TMedia  $media
      * @return Arrayable<int,MediaConversion>|iterable<MediaConversion>|null
      */
-    public function registerMediaConversions(Media $media): Arrayable|iterable|null;
+    public function registerMediaConversions($media): Arrayable|iterable|null;
 
     /**
      * @return Collection<string, MediaCollection>
@@ -57,14 +57,14 @@ interface InteractWithMedia
      * @param  TMedia  $media
      * @return Collection<string, MediaConversion>
      */
-    public function getMediaConversions(Media $media): Collection;
+    public function getMediaConversions($media): Collection;
 
     public function getMediaConversionKey(string $conversion): string;
 
     /**
      * @param  TMedia  $media
      */
-    public function getMediaConversion(Media $media, string $conversion): ?MediaConversion;
+    public function getMediaConversion($media, string $conversion): ?MediaConversion;
 
     /**
      * @param  int[]  $except  Array of Media Ids
@@ -88,18 +88,18 @@ interface InteractWithMedia
         ?string $name = null,
         ?string $order = null,
         ?array $metadata = null,
-    ): Media;
+    );
 
     /**
      * @param  TMedia  $media
      */
-    public function dispatchConversion(Media $media, string $conversionName): static;
+    public function dispatchConversion($media, string $conversionName): static;
 
     /**
      * @param  TMedia  $media
      */
     public function dispatchConversions(
-        Media $media,
+        $media,
         ?bool $force = false,
         ?array $only = null,
         ?array $except = null,

@@ -6,7 +6,6 @@ use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\MediaConversion;
-use Finller\Media\Models\Media;
 use Finller\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -19,7 +18,7 @@ class TestWithNestedConversions extends Model implements InteractWithMedia
 
     protected $guarded = [];
 
-    public function registerMediaConversions(Media $media): Collection
+    public function registerMediaConversions($media): Collection
     {
 
         if ($media->type === MediaType::Image) {

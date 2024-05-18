@@ -12,6 +12,9 @@ use ZipStream\ZipStream;
 
 class MediaZipper implements Responsable
 {
+    /**
+     * @param  Collection<int, Media>  $media
+     */
     public function __construct(
         public Collection $media = new Collection(),
         public string $fileName = 'media.zip',
@@ -44,7 +47,6 @@ class MediaZipper implements Responsable
             $options
         ));
 
-        /** @var Media $item */
         foreach ($this->media as $index => $item) {
             $stream = $item->readStream();
 
@@ -85,7 +87,6 @@ class MediaZipper implements Responsable
             ]);
 
             $zip->finish();
-
         }, 200, [
             'Content-Disposition' => "attachment; filename=\"{$this->fileName}\"",
             'Content-Type' => 'application/octet-stream',

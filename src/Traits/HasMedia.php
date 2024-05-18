@@ -68,10 +68,10 @@ trait HasMedia
         return $this->getMedia($collection_name, $collection_group)->isNotEmpty();
     }
 
-    /**c
+    /**
      * @return TMedia
      */
-    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null): ?Media
+    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null)
     {
         return $this->getMedia($collection_name, $collection_group)->first();
     }
@@ -104,7 +104,7 @@ trait HasMedia
      * @param  TMedia  $media
      * @return Arrayable<MediaConversion>|iterable<MediaConversion>|null
      */
-    public function registerMediaConversions(Media $media): Arrayable|iterable|null
+    public function registerMediaConversions($media): Arrayable|iterable|null
     {
         return collect();
     }
@@ -137,7 +137,7 @@ trait HasMedia
      * @param  TMedia  $media
      * @return Collection<string, MediaConversion>
      */
-    public function getMediaConversions(Media $media): Collection
+    public function getMediaConversions($media): Collection
     {
         return collect($this->registerMediaConversions($media))->keyBy('name');
     }
@@ -150,7 +150,7 @@ trait HasMedia
     /**
      * @param  TMedia  $media
      */
-    public function getMediaConversion(Media $media, string $conversion): ?MediaConversion
+    public function getMediaConversion($media, string $conversion): ?MediaConversion
     {
         return data_get($this->getMediaConversions($media), $this->getMediaConversionKey($conversion));
     }
@@ -185,7 +185,7 @@ trait HasMedia
         ?string $name = null,
         ?string $order = null,
         ?array $metadata = null,
-    ): Media {
+    ) {
         $collection_name ??= config('media.default_collection_name');
 
         $collection = $this->getMediaCollection($collection_name);
@@ -224,7 +224,7 @@ trait HasMedia
     /**
      * @param  TMedia  $media
      */
-    public function dispatchConversion(Media $media, string $conversionName): static
+    public function dispatchConversion($media, string $conversionName): static
     {
         $conversion = $this->getMediaConversion($media, $conversionName);
 
@@ -247,7 +247,7 @@ trait HasMedia
      * @param  TMedia  $media
      */
     public function dispatchConversions(
-        Media $media,
+        $media,
         ?bool $force = false,
         ?array $only = null,
         ?array $except = null,
