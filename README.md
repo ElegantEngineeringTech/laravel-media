@@ -136,15 +136,16 @@ This package is designed to associate media to a model but can also be used with
 
 ### Registering your media collections
 
-First you need to add the `HasMedia` trait to your Model:
+First you need to add the `HasMedia` trait and the `InteractWithMedia` interface to your Model:
 
 ```php
 namespace App\Models;
 
 use Finller\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
+use Finller\Media\Contracts\InteractWithMedia;
 
-class Post extends Model
+class Post extends Model implements InteractWithMedia
 {
     use HasMedia;
 }
@@ -162,12 +163,14 @@ use Finller\Media\Support\ResponsiveImagesConversionsPreset;
 use Finller\Media\Support\VideoPosterConversionPreset;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Finller\Media\Contracts\InteractWithMedia;
+use Illuminate\Contracts\Support\Arrayable;
 
-class Post extends Model
+class Post extends Model implements InteractWithMedia
 {
     use HasMedia;
 
-    public function registerMediaCollections(): Collection
+    public function registerMediaCollections(): Arrayable|iterable|null;
     {
         $collections = collect()
             ->push(new MediaCollection(
@@ -275,17 +278,19 @@ use Illuminate\Support\Collection;
 use Spatie\Image\Enums\Fit;
 use \App\Jobs\Media\OptimizedImageConversionJob;
 use Finller\Media\Models\Media;
+use Finller\Media\Contracts\InteractWithMedia;
+use Illuminate\Contracts\Support\Arrayable;
 
-class Post extends Model
+class Post extends Model implements InteractWithMedia
 {
     use HasMedia;
 
-    public function registerMediaCollections(): Collection
+    public function registerMediaCollections(): Arrayable|iterable|null;
     {
        // ...
     }
 
-    public function registerMediaConversions(Media $media): Collection
+    public function registerMediaConversions($media): Arrayable|iterable|null;
     {
         $conversions = collect();
 
@@ -315,6 +320,59 @@ This package provide common jobs for your conversions to make your life easier:
 -   `VideoPosterConversionJob` will extract a poster using ffmpeg.
 -   `OptimizedVideoConversionJob` will optimize, resize or convert any video using ffmpeg.
 -   `OptimizedImageConversionJob` will optimize, resize or convert any image using spatie/image.
+
+## Using your own Media model
+
+You can define your own Media model to use with the library.
+
+First create your own model class:
+
+```php
+namespace App\Models;
+
+use Finller\Media\Models\Media as FinllerMedia;
+
+class Media extends FinllerMedia
+{
+    //
+}
+
+```
+
+Then update the `config` file:
+
+```php
+use App\Models\Media;
+
+return [
+
+    'model' => Media::class,
+
+    // other configs
+];
+```
+
+The whole library is typed with generics so you can use your own Media flawlessly like that:
+
+```php
+namespace App\Models;
+
+use App\Models\Media;
+
+use Finller\Media\Traits\HasMedia;
+use Finller\Media\Contracts\InteractWithMedia;
+
+/**
+ * @implements InteractWithMedia<Media>
+ */
+class Post extends Model implements InteractWithMedia
+{
+    /** @use HasMedia<Media> **/
+    use HasMedia;
+
+    //
+}
+```
 
 ## Testing
 
