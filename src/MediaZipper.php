@@ -10,10 +10,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use ZipStream\OperationMode;
 use ZipStream\ZipStream;
 
+/**
+ * @template TMedia of Media
+ */
 class MediaZipper implements Responsable
 {
     /**
-     * @param  Collection<int, Media>  $media
+     * @param  Collection<int, TMedia>  $media
      */
     public function __construct(
         public Collection $media = new Collection(),
@@ -40,7 +43,7 @@ class MediaZipper implements Responsable
         return $success ? $path : false;
     }
 
-    public function getZipStream(array $options = [])
+    public function getZipStream(array $options = []): ZipStream
     {
         $zip = new ZipStream(...array_merge(
             $this->zipStreamOptions,
