@@ -1,36 +1,33 @@
-# A flexible media library for Laravel
+# Flexible Media Library for Laravel
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/finller/laravel-media.svg?style=flat-square)](https://packagist.org/packages/finller/laravel-media)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/finller/laravel-media/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/finller/laravel-media/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/finller/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/finller/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/finller/laravel-media.svg?style=flat-square)](https://packagist.org/packages/finller/laravel-media)
 
-This package provide an extremly flexible media library, allowing you to store any files with their conversions (nested conversions are supported).
-It is designed to be usable with any filesystem solutions (local or cloud) like Bunny.net, AWS S3/MediaConvert, Transloadit, ...
+This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions (nested conversions are supported). It is designed to work seamlessly with any filesystem solutions (local or cloud) such as Bunny.net, AWS S3/MediaConvert, Transloadit, among others.
 
-It takes its inspiration from the wonderful `spatie/laravel-media-library` package (check spatie packages, they are really great),but it's not a fork, the internal architecture is defferent and allow you to do more.
-The migration from `spatie/laravel-media-library` is possible but not that easy if you want to keep your conversions files.
+The inspiration for this package is derived from the exceptional `spatie/laravel-media-library` package (be sure to check out Spatie's packages, they are top-notch). However, it is not a fork, as the internal architecture is different, providing you with more capabilities. Migration from `spatie/laravel-media-library` is feasible but may be challenging if you wish to retain your conversion files.
 
 ## Motivation
 
-The Spatie team already put together a very nice package: `spatie/laravel-media-library`. Their package is great for most common situation, however I found myself limited by their architecture.
-For my own project, I needed to support:
+The Spatie team has developed a remarkable package, `spatie/laravel-media-library`, which is well-suited for most common scenarios. However, I found myself constrained by their architecture for my own project. To address this, I required the following features:
 
 -   File transformations
 -   Advanced media conversions
 -   Nested media conversions
 
-That's why I put together this package in the most flexible way I could. I've been using it in production for almost a year now, moving terbytes of files every months.
+Consequently, I developed this package with the highest degree of flexibility possible. I have been utilizing it in production for nearly a year, handling terabytes of files monthly.
 
 ## Full Example
 
-The following example will give you a better understanding of what is possible to do with this package.
+The following example will provide you with a better understanding of the package's capabilities.
 
-Let's recreate a Youtube like service. We will have a model called `Channel`, this channel will have two kind of media: `avatar` and `videos`. We will do that in `registerMediaCollections`.
+We will create a YouTube-like service, with a model named `Channel`. This `Channel` will have two types of media: `avatar` and `videos`. We will define these media types in the `registerMediaCollections` method.
 
-We only want to store avatar in a square format, not larger than 500px and as a webp. We will do that in `registerMediaTransformations`
+We want to store the avatars in a square format, with dimensions not exceeding 500px, and in the WebP format. We will accomplish this in the `registerMediaTransformations` method.
 
-For each media, we will need conversions described in the following tree:
+For each media type, we will need a set of conversions, as illustrated in the following tree:
 
 ```php
 /avatar
@@ -45,9 +42,9 @@ For each media, we will need conversions described in the following tree:
   /hls
 ```
 
-We will do that in `registerMediaConversions`.
+We will define these conversions in the `registerMediaConversions` method.
 
-Our `Channel` class will be defined like that:
+Here is how our `Channel` class will be defined:
 
 ```php
 namespace App\Models;
@@ -87,7 +84,7 @@ class Channel extends Model implements InteractWithMedia
        ];
     }
 
-    public function registerMediaTransformations($media, UploadedFile|File $file): void
+    public function registerMediaTransformations($media, UploadedFile|File $file): UploadedFile|File
     {
         if($media->collection_name === "avatar"){
             Image::load($file->getRealPath())
@@ -139,6 +136,55 @@ class Channel extends Model implements InteractWithMedia
         }
 
         return null;
+    }
+}
+```
+
+From now, we will be able to store files in the easiest way possible:
+
+From a Controller
+
+```php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+
+class ChannelAvatarController extends Controller
+{
+    function function store(Request $request, Channel $channel)
+    {
+        $channel->addMedia(
+            file: $file->file('avatar'),
+            collection_name: 'avatar',
+            name: "{$channel->name}-avatar",
+        )
+    }
+}
+```
+
+From a Livewire component:
+
+```php
+namespace App\Livewire;
+
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
+use Livewire\Component;
+
+class ImageUploader extends Component
+{
+    use WithFileUploads;
+
+    function function save()
+    {
+        /** @var TemporaryUploadedFile */
+        $file = $this->avatar;
+
+        $this->channel->addMedia(
+            file: $file->getRealPath(),
+            collection_name: 'avatar',
+            name: "{$channel->name}-avatar",
+        )
     }
 }
 ```
@@ -251,25 +297,23 @@ Optionally, you can publish the views using
 php artisan vendor:publish --tag="laravel-media-views"
 ```
 
-## Introduction to the concept
+## Introduction to the Concepts
 
-There are 2 important concepts to understand, both are tied to the Model associated with its media:
+There are two essential concepts to understand, both of which are associated with the Model and its media:
 
--   **Media Collection:** Define a group of media with its own settings (the group can only have 1 media).
-    For exemple: avatar, thumbnail, upload, ... are media collections.
--   **Media Conversion:** Define a file conversion of a media.
-    For exemple: A 720p version of a larger 1440p video, a webp conversion or a png image, ... Are media conversion.
-    A Media conversion can have media conversions too!
+-   **Media Collection**: This defines a group of media with its specific settings (the group can only contain one media item). For example, avatar, thumbnail, and upload are all media collections.
+
+-   **Media Conversion**: This defines a file conversion of a particular media item. For instance, a 720p version of a larger 1440p video, a WebP or PNG conversion of an image, are all examples of media conversions. Notably, a media conversion can also have its own media conversions.
 
 ## Usage
 
-### Preparing your models
+### Preparing Your Models
 
-This package is designed to associate media with a model but can also be used without any model association.
+This package is designed to associate media with a model, but it can also be used without any model association.
 
-#### Registering your media collections
+#### Registering Media Collections
 
-First you need to add the `HasMedia` trait and the `InteractWithMedia` interface to your Model:
+First, you need to add the `HasMedia` trait and the `InteractWithMedia` interface to your Model:
 
 ```php
 namespace App\Models;
@@ -285,7 +329,7 @@ class Channel extends Model implements InteractWithMedia
 }
 ```
 
-Then you can define your Media collection and Media conversion like in this exemple:
+You can then define your media collections in the `registerMediaCollections` method:
 
 ```php
 namespace App\Models;
@@ -320,15 +364,15 @@ class Channel extends Model implements InteractWithMedia
 }
 ```
 
-#### Registering your media conversions
+#### Registering Media Conversions
 
-This package provides common jobs for your conversions to make your life easier:
+This package provides common jobs for your conversions to simplify your work:
 
--   `VideoPosterConversionJob` will extract a poster using `pbmedia/laravel-ffmpeg`.
--   `OptimizedVideoConversionJob` will optimize, resize or convert any video using `pbmedia/laravel-ffmpeg`.
--   `OptimizedImageConversionJob` will optimize, resize or convert any image using `spatie/image`.
--   `ResponsiveImagesConversionsPreset` will create a set of optimized images of differents sizes
--   `ResponsiveVideosConversionsPreset` will create a set of optimized videos of differents sizes
+-   `VideoPosterConversionJob`: This job extracts a poster using `pbmedia/laravel-ffmpeg`.
+-   `OptimizedVideoConversionJob`: This job optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
+-   `OptimizedImageConversionJob`: This job optimizes, resizes, or converts any image using `spatie/image`.
+-   `ResponsiveImagesConversionsPreset`: This preset creates a set of optimized images of different sizes.
+-   `ResponsiveVideosConversionsPreset`: This preset creates a set of optimized videos of different sizes.
 
 ```php
 namespace App\Models;
@@ -396,20 +440,19 @@ class Channel extends Model implements InteractWithMedia
 }
 ```
 
-### Defining your own MediaConversion
+### Defining Your Own MediaConversion
 
-You can create your own conversion, create a new class somewhere in your app (ex: `\App\Support\MediaConversions`) and extend `MediaConversionJob`.
+You can create your own conversion by creating a new class in your app (e.g., `App\Support\MediaConversions`) and extending `MediaConversionJob`.
 
-Media conversions are run through Laravel Jobs, you can do anything in the job as long as:
+Media conversions are executed through Laravel Jobs. You can perform any task in the job, provided that:
 
--   Your job extends `\Finller\Media\Jobs\MediaConversion`.
--   Your job define a `run` method.
--   Your job call `$this->media->storeConversion(...)`.
+-   Your job extends `Finller\Media\Jobs\MediaConversion`.
+-   Your job defines a `run` method.
+-   Your job calls `$this->media->storeConversion(...)`.
 
-Let's take a look at a common media conversion task: Optimizing an image. Here is how you would implement it in your app:
+Let's consider a common media conversion task: optimizing an image. Here's how you could implement it in your app:
 
-> [!NOTE]
-> The following job is already provided by this package, but it's a great introduction to the concept
+> **Note:** The following job is already provided by this package, but it serves as an excellent introduction to the concept.
 
 ```php
 namespace App\Support\MediaConversions;
@@ -458,14 +501,13 @@ class OptimizedImageConversionJob extends MediaConversionJob
         );
     }
 }
-
 ```
 
-## Using your own Media model
+## Using Your Own Media Model
 
 You can define your own Media model to use with the library.
 
-First create your own model class:
+First, create your own model class:
 
 ```php
 namespace App\Models;
@@ -474,12 +516,11 @@ use Finller\Media\Models\Media as FinllerMedia;
 
 class Media extends FinllerMedia
 {
-    //
+    // ...
 }
-
 ```
 
-Then update the `config` file:
+Then, update the `config` file:
 
 ```php
 use App\Models\Media;
@@ -488,17 +529,17 @@ return [
 
     'model' => Media::class,
 
-    // other configs
+    // ...
+
 ];
 ```
 
-The whole library is typed with generics so you can use your own Media flawlessly like that:
+The library is typed with generics, so you can use your own Media model seamlessly:
 
 ```php
 namespace App\Models;
 
 use App\Models\Media;
-
 use Finller\Media\Traits\HasMedia;
 use Finller\Media\Contracts\InteractWithMedia;
 
@@ -510,7 +551,7 @@ class Post extends Model implements InteractWithMedia
     /** @use HasMedia<Media> **/
     use HasMedia;
 
-    //
+    // ...
 }
 ```
 
@@ -522,21 +563,21 @@ composer test
 
 ## Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+Please see the [CHANGELOG](CHANGELOG.md) for more information on recent changes.
 
 ## Contributing
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+Feel free to open an issue or a discussion.
 
 ## Security Vulnerabilities
 
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+Please contact [me](https://github.com/QuentinGab) to report security vulnerabilities.
 
 ## Credits
 
--   [Quentin Gabriele](https://github.com/finller)
+-   [Quentin Gabriele](https://github.com/QuentinGab)
 -   [All Contributors](../../contributors)
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+The MIT License (MIT). Please see the [License File](LICENSE.md) for more information.

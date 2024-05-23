@@ -206,11 +206,18 @@ trait HasMedia
         ?string $collection_group = null,
         array $except = []
     ): Collection {
-        return $this->getMedia($collection_name, $collection_group)
+        $media = $this->getMedia($collection_name, $collection_group)
             ->except($except)
             ->each(function (Media $model) {
                 $model->delete();
             });
+
+        $this->setRelation(
+            'media',
+            $this->media->except($media->modelKeys())
+        );
+
+        return $media;
     }
 
     /**
@@ -251,6 +258,13 @@ trait HasMedia
             name: $name,
             disk: $disk ?? $collection->disk
         );
+
+        if ($this->relationLoaded('media')) {
+            $this->setRelation(
+                'media',
+                $this->media->push($media)
+            );
+        }
 
         if ($collection->single) {
             $this->clearMediaCollection($collection_name, except: [$media->id]);

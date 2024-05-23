@@ -159,6 +159,60 @@ it('gets the media url when a media exists in a collection', function () {
     expect($model->getFirstMediaUrl())->toBe($media->getUrl());
 });
 
+it('adds the new added media to the model relation', function () {
+    Storage::fake('media');
+
+    $model = new Test();
+    $model->save();
+
+    $model->load('media');
+
+    expect($model->media)->toHaveLength(0);
+
+    $model->addMedia(
+        file: UploadedFile::fake()->image('foo.jpg'),
+        collection_name: 'files',
+        disk: 'media'
+    );
+
+    expect($model->media)->toHaveLength(1);
+
+    $model->addMedia(
+        file: UploadedFile::fake()->image('bar.jpg'),
+        collection_name: 'fallback',
+        disk: 'media'
+    );
+
+    expect($model->media)->toHaveLength(2);
+});
+
+it('removes media from the model when clearing media collection', function () {
+    Storage::fake('media');
+
+    $model = new Test();
+    $model->save();
+
+    $model->addMedia(
+        file: UploadedFile::fake()->image('foo.jpg'),
+        collection_name: 'files',
+        disk: 'media'
+    );
+
+    $model->addMedia(
+        file: UploadedFile::fake()->image('bar.jpg'),
+        collection_name: 'fallback',
+        disk: 'media'
+    );
+
+    expect($model->media)->toHaveLength(2);
+    expect($model->getMedia('files'))->toHaveLength(1);
+
+    $model->clearMediaCollection('files');
+
+    expect($model->media)->toHaveLength(1);
+    expect($model->getMedia('files'))->toHaveLength(0);
+});
+
 it('deletes media and its files with the model when delete_media_with_model is true', function () {
     config()->set('media.delete_media_with_model', true);
 

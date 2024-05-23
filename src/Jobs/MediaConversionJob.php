@@ -32,6 +32,7 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
         public Media $media,
         ?string $queue = null,
     ) {
+        $this->media = $media->withoutRelations();
         $this->onConnection(config('media.queue_connection'));
         $this->onQueue($queue ?? config('media.queue'));
     }
