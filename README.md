@@ -142,7 +142,7 @@ class Channel extends Model implements InteractWithMedia
 
 From now, we will be able to store files in the easiest way possible:
 
-From a Controller
+### Storing a file from a Controller
 
 ```php
 namespace App\Http\Controllers;
@@ -162,7 +162,7 @@ class ChannelAvatarController extends Controller
 }
 ```
 
-From a Livewire component:
+### Storing a file from a Livewire component
 
 ```php
 namespace App\Livewire;
