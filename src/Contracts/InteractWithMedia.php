@@ -83,6 +83,11 @@ interface InteractWithMedia
     ): Collection;
 
     /**
+     * @return ?TMedia
+     */
+    public function deleteMedia(int $mediaId);
+
+    /**
      * @param  string|UploadedFile|resource  $file
      * @return TMedia
      */

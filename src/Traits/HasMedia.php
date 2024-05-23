@@ -221,6 +221,27 @@ trait HasMedia
     }
 
     /**
+     * @return ?TMedia
+     */
+    public function deleteMedia(int $mediaId)
+    {
+        $media = $this->media->find($mediaId);
+
+        if (! $media) {
+            return null;
+        }
+
+        $media->delete();
+
+        $this->setRelation(
+            'media',
+            $this->media->except([$mediaId])
+        );
+
+        return $media;
+    }
+
+    /**
      * @param  string|UploadedFile|resource  $file
      * @return TMedia
      */
