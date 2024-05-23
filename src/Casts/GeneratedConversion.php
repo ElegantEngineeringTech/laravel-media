@@ -1,10 +1,10 @@
 <?php
 
-namespace Finller\Media\Casts;
+namespace ElegantEngineeringTech\Media\Casts;
 
 use Carbon\Carbon;
-use Finller\Media\Enums\MediaType;
-use Finller\Media\Traits\InteractsWithMediaFiles;
+use ElegantEngineeringTech\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;

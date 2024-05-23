@@ -1,10 +1,10 @@
 <?php
 
+use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
+use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
+use ElegantEngineeringTech\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Models\Media;
 use FFMpeg\Coordinate\Dimension;
-use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\Database\Factories\MediaFactory;
-use Finller\Media\Enums\MediaType;
-use Finller\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -461,7 +461,6 @@ it('reorder models', function () {
     expect($third_media->refresh()->order_column)->toBe(0);
     expect($first_media->refresh()->order_column)->toBe(1);
     expect($second_media->refresh()->order_column)->toBe(2);
-
 });
 
 it('reorder models using uuids', function () {
@@ -479,7 +478,6 @@ it('reorder models using uuids', function () {
     expect($third_media->refresh()->order_column)->toBe(0);
     expect($first_media->refresh()->order_column)->toBe(1);
     expect($second_media->refresh()->order_column)->toBe(2);
-
 });
 
 it('reorder models from a custom sequence', function () {
@@ -497,5 +495,4 @@ it('reorder models from a custom sequence', function () {
     expect($third_media->refresh()->order_column)->toBe(0);
     expect($first_media->refresh()->order_column)->toBe(2);
     expect($second_media->refresh()->order_column)->toBe(4);
-
 });

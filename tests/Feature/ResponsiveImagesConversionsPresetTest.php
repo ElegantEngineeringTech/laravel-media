@@ -1,7 +1,7 @@
 <?php
 
-use Finller\Media\Support\ResponsiveImagesConversionsPreset;
-use Finller\Media\Tests\Models\TestWithResponsiveImages;
+use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
+use ElegantEngineeringTech\Media\Tests\Models\TestWithResponsiveImages;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

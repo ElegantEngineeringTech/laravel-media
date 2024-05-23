@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\Media\Helpers;
+namespace ElegantEngineeringTech\Media\Helpers;
 
 use FFMpeg\Coordinate\AspectRatio;
 use FFMpeg\Coordinate\Dimension;

@@ -1,6 +1,6 @@
 <?php
 
-use Finller\Media\Helpers\Video;
+use ElegantEngineeringTech\Media\Helpers\Video;
 
 it('get the correct dimention from a non rotated video', function () {
 

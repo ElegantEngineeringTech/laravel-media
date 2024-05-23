@@ -1,9 +1,9 @@
 <?php
 
-namespace Finller\Media\Helpers;
+namespace ElegantEngineeringTech\Media\Helpers;
 
+use ElegantEngineeringTech\Media\Enums\MediaType;
 use FFMpeg\Coordinate\Dimension;
-use Finller\Media\Enums\MediaType;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;

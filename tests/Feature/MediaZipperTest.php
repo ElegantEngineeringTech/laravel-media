@@ -1,8 +1,8 @@
 <?php
 
-use Finller\Media\Database\Factories\MediaFactory;
-use Finller\Media\MediaZipper;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
+use ElegantEngineeringTech\Media\MediaZipper;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -26,5 +26,4 @@ it('zip media and store it in a file', function () {
     $zipper->toFile($storage, $zipper->fileName);
 
     Storage::disk('media')->assertExists($zipper->fileName);
-
 });

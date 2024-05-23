@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\Media\FileDownloaders;
+namespace ElegantEngineeringTech\Media\FileDownloaders;
 
 use Exception;
 use Spatie\TemporaryDirectory\TemporaryDirectory;

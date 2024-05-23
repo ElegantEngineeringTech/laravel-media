@@ -1,9 +1,9 @@
 <?php
 
-namespace Finller\Media\Jobs;
+namespace ElegantEngineeringTech\Media\Jobs;
 
+use ElegantEngineeringTech\Media\Models\Media;
 use FFMpeg\Coordinate\TimeCode;
-use Finller\Media\Models\Media;
 use Illuminate\Support\Facades\File;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\Image\Enums\Fit;

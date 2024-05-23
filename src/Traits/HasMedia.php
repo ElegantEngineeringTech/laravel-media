@@ -1,11 +1,11 @@
 <?php
 
-namespace Finller\Media\Traits;
+namespace ElegantEngineeringTech\Media\Traits;
 
-use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\MediaCollection;
-use Finller\Media\MediaConversion;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
+use ElegantEngineeringTech\Media\MediaCollection;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;

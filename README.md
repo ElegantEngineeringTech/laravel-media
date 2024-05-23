@@ -1,9 +1,9 @@
 # Flexible Media Library for Laravel
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/finller/laravel-media.svg?style=flat-square)](https://packagist.org/packages/finller/laravel-media)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/finller/laravel-media/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/finller/laravel-media/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/finller/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/finller/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/finller/laravel-media.svg?style=flat-square)](https://packagist.org/packages/finller/laravel-media)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/ElegantEngineeringTech/laravel-media.svg?style=flat-square)](https://packagist.org/packages/ElegantEngineeringTech/laravel-media)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/ElegantEngineeringTech/laravel-media.svg?style=flat-square)](https://packagist.org/packages/ElegantEngineeringTech/laravel-media)
 
 This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions (nested conversions are supported). It is designed to work seamlessly with any filesystem solutions (local or cloud) such as Bunny.net, AWS S3/MediaConvert, Transloadit, among others.
 
@@ -49,18 +49,18 @@ Here is how our `Channel` class will be defined:
 ```php
 namespace App\Models;
 
-use Finller\Media\Traits\HasMedia;
-use Finller\Media\MediaCollection;
-use Finller\Media\MediaConversion;
-use Finller\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Traits\HasMedia;
+use ElegantEngineeringTech\Media\MediaCollection;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Enums\MediaType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Spatie\Image\Enums\Fit;
 use \App\Jobs\Media\OptimizedImageConversionJob;
-use Finller\Media\Models\Media;
-use Finller\Media\Contracts\InteractWithMedia;
+use ElegantEngineeringTech\Media\Models\Media;
+use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
 use Illuminate\Contracts\Support\Arrayable;
-use Finller\Media\Support\ResponsiveImagesConversionsPreset;
+use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
 
 class Channel extends Model implements InteractWithMedia
 {
@@ -194,7 +194,7 @@ class ImageUploader extends Component
 You can install the package via composer:
 
 ```bash
-composer require finller/laravel-media
+composer require ElegantEngineeringTech/laravel-media
 ```
 
 You have to publish and run the migrations with:
@@ -213,13 +213,13 @@ php artisan vendor:publish --tag="laravel-media-config"
 This is the contents of the published config file:
 
 ```php
-use Finller\Media\Jobs\DeleteModelMediaJob;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Jobs\DeleteModelMediaJob;
+use ElegantEngineeringTech\Media\Models\Media;
 
 return [
     /**
      * The media model
-     * Define your own model here by extending \Finller\Media\Models\Media::class
+     * Define your own model here by extending \ElegantEngineeringTech\Media\Models\Media::class
      */
     'model' => Media::class,
 
@@ -318,9 +318,9 @@ First, you need to add the `HasMedia` trait and the `InteractWithMedia` interfac
 ```php
 namespace App\Models;
 
-use Finller\Media\Traits\HasMedia;
+use ElegantEngineeringTech\Media\Traits\HasMedia;
 use Illuminate\Database\Eloquent\Model;
-use Finller\Media\Contracts\InteractWithMedia;
+use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
 
 class Channel extends Model implements InteractWithMedia
 {
@@ -334,10 +334,10 @@ You can then define your media collections in the `registerMediaCollections` met
 ```php
 namespace App\Models;
 
-use Finller\Media\Traits\HasMedia;
-use Finller\Media\MediaCollection;
+use ElegantEngineeringTech\Media\Traits\HasMedia;
+use ElegantEngineeringTech\Media\MediaCollection;
 use Illuminate\Database\Eloquent\Model;
-use Finller\Media\Contracts\InteractWithMedia;
+use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
 use Illuminate\Contracts\Support\Arrayable;
 
 class Channel extends Model implements InteractWithMedia
@@ -377,18 +377,18 @@ This package provides common jobs for your conversions to simplify your work:
 ```php
 namespace App\Models;
 
-use Finller\Media\Traits\HasMedia;
-use Finller\Media\MediaCollection;
-use Finller\Media\MediaConversion;
-use Finller\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Traits\HasMedia;
+use ElegantEngineeringTech\Media\MediaCollection;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Enums\MediaType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Spatie\Image\Enums\Fit;
 use \App\Jobs\Media\OptimizedImageConversionJob;
-use Finller\Media\Models\Media;
-use Finller\Media\Contracts\InteractWithMedia;
+use ElegantEngineeringTech\Media\Models\Media;
+use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
 use Illuminate\Contracts\Support\Arrayable;
-use Finller\Media\Support\ResponsiveImagesConversionsPreset;
+use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
 
 class Channel extends Model implements InteractWithMedia
 {
@@ -446,7 +446,7 @@ You can create your own conversion by creating a new class in your app (e.g., `A
 
 Media conversions are executed through Laravel Jobs. You can perform any task in the job, provided that:
 
--   Your job extends `Finller\Media\Jobs\MediaConversion`.
+-   Your job extends `ElegantEngineeringTech\Media\Jobs\MediaConversion`.
 -   Your job defines a `run` method.
 -   Your job calls `$this->media->storeConversion(...)`.
 
@@ -457,12 +457,12 @@ Let's consider a common media conversion task: optimizing an image. Here's how y
 ```php
 namespace App\Support\MediaConversions;
 
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Support\Facades\File;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
-use Finller\Media\Jobs\MediaConversionJob;
+use ElegantEngineeringTech\Media\Jobs\MediaConversionJob;
 
 class OptimizedImageConversionJob extends MediaConversionJob
 {
@@ -512,7 +512,7 @@ First, create your own model class:
 ```php
 namespace App\Models;
 
-use Finller\Media\Models\Media as FinllerMedia;
+use ElegantEngineeringTech\Media\Models\Media as FinllerMedia;
 
 class Media extends FinllerMedia
 {
@@ -540,8 +540,8 @@ The library is typed with generics, so you can use your own Media model seamless
 namespace App\Models;
 
 use App\Models\Media;
-use Finller\Media\Traits\HasMedia;
-use Finller\Media\Contracts\InteractWithMedia;
+use ElegantEngineeringTech\Media\Traits\HasMedia;
+use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
 
 /**
  * @implements InteractWithMedia<Media>

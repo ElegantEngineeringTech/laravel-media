@@ -1,11 +1,11 @@
 <?php
 
-namespace Finller\Media;
+namespace ElegantEngineeringTech\Media;
 
 use Closure;
-use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\Jobs\MediaConversionJob;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
+use ElegantEngineeringTech\Media\Jobs\MediaConversionJob;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 

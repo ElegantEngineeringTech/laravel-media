@@ -1,10 +1,10 @@
 <?php
 
-namespace Finller\Media\Tests\Models;
+namespace ElegantEngineeringTech\Media\Tests\Models;
 
+use ElegantEngineeringTech\Media\MediaCollection;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\Video\X264;
-use Finller\Media\MediaCollection;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;

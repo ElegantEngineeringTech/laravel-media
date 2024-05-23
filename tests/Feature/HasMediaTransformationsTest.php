@@ -1,6 +1,6 @@
 <?php
 
-use Finller\Media\Tests\Models\TestWithMediaTransformations;
+use ElegantEngineeringTech\Media\Tests\Models\TestWithMediaTransformations;
 use Illuminate\Support\Facades\Storage;
 
 it('perform media transformations before storing files', function () {

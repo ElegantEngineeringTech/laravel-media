@@ -1,12 +1,12 @@
 <?php
 
-use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\Database\Factories\MediaFactory;
-use Finller\Media\Enums\MediaType;
-use Finller\Media\Models\Media;
-use Finller\Media\Tests\Models\Test;
-use Finller\Media\Tests\Models\TestSoftDelete;
-use Finller\Media\Tests\Models\TestWithNestedConversions;
+use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
+use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
+use ElegantEngineeringTech\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Models\Media;
+use ElegantEngineeringTech\Media\Tests\Models\Test;
+use ElegantEngineeringTech\Media\Tests\Models\TestSoftDelete;
+use ElegantEngineeringTech\Media\Tests\Models\TestWithNestedConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

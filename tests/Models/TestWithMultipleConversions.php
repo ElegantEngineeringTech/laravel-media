@@ -1,13 +1,13 @@
 <?php
 
-namespace Finller\Media\Tests\Models;
+namespace ElegantEngineeringTech\Media\Tests\Models;
 
-use Finller\Media\Contracts\InteractWithMedia;
-use Finller\Media\Enums\MediaType;
-use Finller\Media\Jobs\OptimizedImageConversionJob;
-use Finller\Media\MediaCollection;
-use Finller\Media\MediaConversion;
-use Finller\Media\Traits\HasMedia;
+use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
+use ElegantEngineeringTech\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Jobs\OptimizedImageConversionJob;
+use ElegantEngineeringTech\Media\MediaCollection;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Traits\HasMedia;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 

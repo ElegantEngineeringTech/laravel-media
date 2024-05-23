@@ -1,7 +1,7 @@
 <?php
 
-use Finller\Media\Database\Factories\MediaFactory;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;

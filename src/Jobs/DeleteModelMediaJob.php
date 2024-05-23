@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\Media\Jobs;
+namespace ElegantEngineeringTech\Media\Jobs;
 
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;

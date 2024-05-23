@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\Media\Tests;
+namespace ElegantEngineeringTech\Media\Tests;
 
-use Finller\Media\MediaServiceProvider;
+use ElegantEngineeringTech\Media\MediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -19,7 +19,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'Finller\\Media\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'ElegantEngineeringTech\\Media\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 

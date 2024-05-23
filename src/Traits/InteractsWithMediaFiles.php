@@ -1,11 +1,11 @@
 <?php
 
-namespace Finller\Media\Traits;
+namespace ElegantEngineeringTech\Media\Traits;
 
 use Carbon\CarbonInterval;
+use ElegantEngineeringTech\Media\FileDownloaders\FileDownloader;
+use ElegantEngineeringTech\Media\Helpers\File;
 use Exception;
-use Finller\Media\FileDownloaders\FileDownloader;
-use Finller\Media\Helpers\File;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;

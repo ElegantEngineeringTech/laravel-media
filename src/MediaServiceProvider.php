@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\Media;
+namespace ElegantEngineeringTech\Media;
 
-use Finller\Media\Commands\GenerateMediaConversionsCommand;
+use ElegantEngineeringTech\Media\Commands\GenerateMediaConversionsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

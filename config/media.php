@@ -1,12 +1,12 @@
 <?php
 
-use Finller\Media\Jobs\DeleteModelMediaJob;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Jobs\DeleteModelMediaJob;
+use ElegantEngineeringTech\Media\Models\Media;
 
 return [
     /**
      * The media model
-     * Define your own model here by extending \Finller\Media\Models\Media::class
+     * Define your own model here by extending \ElegantEngineeringTech\Media\Models\Media::class
      */
     'model' => Media::class,
 

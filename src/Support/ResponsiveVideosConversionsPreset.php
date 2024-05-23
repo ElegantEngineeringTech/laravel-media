@@ -1,14 +1,14 @@
 <?php
 
-namespace Finller\Media\Support;
+namespace ElegantEngineeringTech\Media\Support;
 
+use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
+use ElegantEngineeringTech\Media\Jobs\OptimizedVideoConversionJob;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Models\Media;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\Video\X264;
-use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\Jobs\OptimizedVideoConversionJob;
-use Finller\Media\MediaConversion;
-use Finller\Media\Models\Media;
 
 class ResponsiveVideosConversionsPreset
 {

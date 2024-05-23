@@ -1,10 +1,10 @@
 <?php
 
-namespace Finller\Media\Contracts;
+namespace ElegantEngineeringTech\Media\Contracts;
 
-use Finller\Media\MediaCollection;
-use Finller\Media\MediaConversion;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\MediaCollection;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\File;

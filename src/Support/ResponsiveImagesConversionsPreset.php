@@ -1,11 +1,11 @@
 <?php
 
-namespace Finller\Media\Support;
+namespace ElegantEngineeringTech\Media\Support;
 
-use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\Jobs\OptimizedImageConversionJob;
-use Finller\Media\MediaConversion;
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
+use ElegantEngineeringTech\Media\Jobs\OptimizedImageConversionJob;
+use ElegantEngineeringTech\Media\MediaConversion;
+use ElegantEngineeringTech\Media\Models\Media;
 
 class ResponsiveImagesConversionsPreset
 {

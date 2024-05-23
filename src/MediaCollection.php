@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\Media;
+namespace ElegantEngineeringTech\Media;
 
 use Closure;
 use Illuminate\Support\Collection;

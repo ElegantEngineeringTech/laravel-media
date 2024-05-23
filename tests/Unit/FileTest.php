@@ -1,7 +1,7 @@
 <?php
 
-use Finller\Media\Enums\MediaType;
-use Finller\Media\Helpers\File;
+use ElegantEngineeringTech\Media\Enums\MediaType;
+use ElegantEngineeringTech\Media\Helpers\File;
 use Illuminate\Http\UploadedFile;
 
 it('get the correct name from Uploaded file', function () {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Finller\Media\Traits;
+namespace ElegantEngineeringTech\Media\Traits;
 
 use Illuminate\Support\Str;
 

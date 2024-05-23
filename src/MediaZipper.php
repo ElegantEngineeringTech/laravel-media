@@ -1,8 +1,8 @@
 <?php
 
-namespace Finller\Media;
+namespace ElegantEngineeringTech\Media;
 
-use Finller\Media\Models\Media;
+use ElegantEngineeringTech\Media\Models\Media;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Support\Collection;

@@ -1,6 +1,6 @@
 <?php
 
-use Finller\Media\FileDownloaders\FileDownloader;
+use ElegantEngineeringTech\Media\FileDownloaders\FileDownloader;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('download a file from an url as a temporary file', function () {

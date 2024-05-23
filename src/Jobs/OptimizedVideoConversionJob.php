@@ -1,11 +1,11 @@
 <?php
 
-namespace Finller\Media\Jobs;
+namespace ElegantEngineeringTech\Media\Jobs;
 
+use ElegantEngineeringTech\Media\Models\Media;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\Video\X264;
-use Finller\Media\Models\Media;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\File;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
