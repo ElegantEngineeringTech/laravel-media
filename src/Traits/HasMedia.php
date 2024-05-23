@@ -10,6 +10,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 
@@ -97,7 +98,7 @@ trait HasMedia
      */
     public function registerMediaCollections(): Arrayable|iterable|null
     {
-        return collect();
+        return [];
     }
 
     /**
@@ -106,7 +107,15 @@ trait HasMedia
      */
     public function registerMediaConversions($media): Arrayable|iterable|null
     {
-        return collect();
+        return [];
+    }
+
+    /**
+     * @param  TMedia  $media
+     */
+    public function registerMediaTransformations($media, UploadedFile|File $file): UploadedFile|File
+    {
+        return $file;
     }
 
     /**
@@ -123,14 +132,14 @@ trait HasMedia
             ->keyBy('name');
     }
 
-    public function hasMediaCollection(string $collection_name): bool
+    public function getMediaCollection(string $collectionName): ?MediaCollection
     {
-        return $this->getMediaCollections()->has($collection_name);
+        return $this->getMediaCollections()->get($collectionName);
     }
 
-    public function getMediaCollection(string $collection_name): ?MediaCollection
+    public function hasMediaCollection(string $collectionName): bool
     {
-        return $this->getMediaCollections()->get($collection_name);
+        return (bool) $this->getMediaCollection($collectionName);
     }
 
     /**
@@ -139,7 +148,7 @@ trait HasMedia
      */
     public function getMediaConversions($media): Collection
     {
-        return collect($this->registerMediaConversions($media))->keyBy('name');
+        return collect($this->registerMediaConversions($media))->keyBy('conversionName');
     }
 
     public function getMediaConversionKey(string $conversion): string
@@ -152,7 +161,40 @@ trait HasMedia
      */
     public function getMediaConversion($media, string $conversion): ?MediaConversion
     {
-        return data_get($this->getMediaConversions($media), $this->getMediaConversionKey($conversion));
+        $conversionsNames = explode('.', $conversion);
+
+        $conversions = $this->getMediaConversions($media);
+
+        return $this->getNestedMediaConversion(
+            $media,
+            $conversions->get($conversionsNames[0]),
+            array_slice($conversionsNames, 1),
+        );
+    }
+
+    /**
+     * @param  TMedia  $media
+     * @param  string[]  $conversionsNames
+     */
+    protected function getNestedMediaConversion(
+        $media,
+        ?MediaConversion $mediaConversion,
+        array $conversionsNames,
+    ): ?MediaConversion {
+
+        if (empty($conversionsNames) || ! $mediaConversion) {
+            return $mediaConversion;
+        }
+
+        $conversionName = $conversionsNames[0];
+
+        $conversions = $mediaConversion->getConversions($media);
+
+        return $this->getNestedMediaConversion(
+            $media,
+            $conversions->get($conversionName),
+            array_slice($conversionsNames, 1),
+        );
     }
 
     /**
@@ -164,13 +206,11 @@ trait HasMedia
         ?string $collection_group = null,
         array $except = []
     ): Collection {
-        $media = $this->getMedia($collection_name, $collection_group)
+        return $this->getMedia($collection_name, $collection_group)
             ->except($except)
             ->each(function (Media $model) {
                 $model->delete();
             });
-
-        return $media;
     }
 
     /**
@@ -192,7 +232,7 @@ trait HasMedia
 
         if (! $collection) {
             $class = static::class;
-            throw new Exception("The media collection {$collection_name} is not registered for the model {$class}.");
+            throw new Exception("[Media collection not registered] {$collection_name} is not registered for the model {$class}.");
         }
 
         $model = config('media.model');
@@ -232,13 +272,13 @@ trait HasMedia
             return $this;
         }
 
-        $media->deleteGeneratedConversion($conversion->name);
+        $media->deleteGeneratedConversion($conversion->conversionName);
 
         $media
-            ->putGeneratedConversion($conversion->name, new GeneratedConversion(state: 'pending'))
+            ->putGeneratedConversion($conversion->conversionName, new GeneratedConversion(state: 'pending'))
             ->save();
 
-        dispatch($conversion->job);
+        dispatch($conversion->getJob());
 
         return $this;
     }
@@ -254,30 +294,27 @@ trait HasMedia
     ): static {
         $conversions = $this->getMediaConversions($media)
             ->only($only)
-            ->except($except)
-            ->when(! $force, function (Collection $collection) use ($media) {
-                return $collection->filter(function (MediaConversion $conversion) use ($media) {
-                    return ! $media->hasGeneratedConversion($conversion->name);
-                });
+            ->except($except);
+
+        if (! $force) {
+            $conversions = $conversions->filter(function (MediaConversion $conversion) use ($media) {
+                return ! $media->hasGeneratedConversion($conversion->conversionName);
             });
+        }
 
         if ($conversions->isEmpty()) {
             return $this;
         }
 
         foreach ($conversions as $conversion) {
-            $media->deleteGeneratedConversionFiles($conversion->name);
-            $media->putGeneratedConversion($conversion->name, new GeneratedConversion(state: 'pending'));
+            $media->deleteGeneratedConversionFiles($conversion->conversionName);
+            $media->putGeneratedConversion($conversion->conversionName, new GeneratedConversion(state: 'pending'));
         }
 
         $media->save();
 
         foreach ($conversions as $conversion) {
-            if ($conversion->sync) {
-                dispatch_sync($conversion->job);
-            } else {
-                dispatch($conversion->job);
-            }
+            dispatch($conversion->getJob());
         }
 
         return $this;

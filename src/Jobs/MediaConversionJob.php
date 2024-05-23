@@ -15,7 +15,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
-class ConversionJob implements ShouldBeUnique, ShouldQueue
+class MediaConversionJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -23,10 +23,29 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
 
     public $deleteWhenMissingModels = true;
 
-    public function __construct(public Media $media, public string $conversion)
-    {
+    /**
+     * Path of the conversion
+     */
+    public string $conversionName;
+
+    public function __construct(
+        public Media $media,
+        ?string $queue = null,
+    ) {
         $this->onConnection(config('media.queue_connection'));
-        $this->onQueue(config('media.queue'));
+        $this->onQueue($queue ?? config('media.queue'));
+    }
+
+    public function setConversionName(string $conversionName): static
+    {
+        $this->conversionName = $conversionName;
+
+        return $this;
+    }
+
+    public function uniqueId(): string
+    {
+        return "{$this->media->id}:{$this->conversionName}";
     }
 
     /**
@@ -43,15 +62,10 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
             ->expireAfter(config('media.queue_overlapping.expire_after', 60 * 60));
     }
 
-    public function uniqueId()
-    {
-        return "{$this->media->id}:{$this->conversion}";
-    }
-
     public function middleware(): array
     {
         /**
-         * When the connection is 'sync', overlapping jobs are skipped
+         * Skip overlapping job with sync queue or it will prevent jobs to be running
          */
         if ($this->job?->getConnectionName() === 'sync') {
             return [];
@@ -62,23 +76,31 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
         ];
     }
 
-    public function getConversion(): ?MediaConversion
+    public function getMediaConversion(): ?MediaConversion
     {
-        return $this->media->model?->getMediaConversion($this->media, $this->conversion);
+        return $this->media->model?->getMediaConversion($this->media, $this->conversionName);
     }
 
-    public function isNestedConversion()
+    public function isNestedConversion(): bool
     {
-        return count(explode('.', $this->conversion)) > 1;
+        return count(explode('.', $this->conversionName)) > 1;
     }
 
     public function getGeneratedParentConversion(): ?GeneratedConversion
     {
         if ($this->isNestedConversion()) {
-            return $this->media->getGeneratedParentConversion($this->conversion);
+            return $this->media->getGeneratedParentConversion($this->conversionName);
         }
 
         return null;
+    }
+
+    public function getTemporaryDisk(): \Illuminate\Contracts\Filesystem\Filesystem
+    {
+        return Storage::build([
+            'driver' => 'local',
+            'root' => $this->temporaryDirectory->path(),
+        ]);
     }
 
     public function makeTemporaryFileCopy(): string|false
@@ -90,17 +112,9 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
         return $this->media->makeTemporaryFileCopy($this->temporaryDirectory);
     }
 
-    public function getTemporaryDisk(): \Illuminate\Contracts\Filesystem\Filesystem
+    public function handle(): void
     {
-        return Storage::build([
-            'driver' => 'local',
-            'root' => $this->temporaryDirectory->path(),
-        ]);
-    }
-
-    public function handle()
-    {
-        $this->start();
+        $this->init();
 
         try {
             $this->run();
@@ -111,10 +125,10 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
             throw $th;
         }
 
-        $this->end();
+        $this->destroy();
     }
 
-    public function start()
+    public function init(): void
     {
         $this->temporaryDirectory = (new TemporaryDirectory())
             ->location(storage_path('media-tmp'))
@@ -122,48 +136,43 @@ class ConversionJob implements ShouldBeUnique, ShouldQueue
             ->create();
     }
 
-    public function run()
+    public function run(): void
     {
         //
     }
 
-    public function end()
+    /**
+     * Cleanup temporary files and dispatch children conversions
+     */
+    public function destroy(): void
     {
         $this->temporaryDirectory->delete();
 
         $this->dispatchChildrenConversions();
     }
 
-    protected function dispatchChildrenConversions()
+    protected function dispatchChildrenConversions(): void
     {
-        $conversion = $this->getConversion();
+        $childrenConversions = $this->getMediaConversion()->getConversions($this->media);
 
-        if (! $conversion || $conversion->conversions->isEmpty()) {
-            return;
-        }
+        foreach ($childrenConversions as $childConversion) {
+            $mediaConversionJob = $childConversion->getJob();
 
-        foreach ($conversion->conversions as $childConversion) {
-            $childConversion->job->conversion = implode('.', [$this->conversion, $childConversion->job->conversion]);
+            $mediaConversionJob->setConversionName("{$this->conversionName}.{$mediaConversionJob->conversionName}");
 
-            if ($childConversion->sync) {
-                dispatch_sync($childConversion->job);
-            } else {
-                dispatch($childConversion->job);
-            }
+            dispatch($mediaConversionJob);
         }
     }
 
     /**
      * Get the tags that should be assigned to the job.
-     *
-     * @return array
      */
-    public function tags()
+    public function tags(): array
     {
         return [
             'media',
             get_class($this),
-            $this->conversion,
+            $this->conversionName,
         ];
     }
 }

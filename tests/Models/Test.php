@@ -22,7 +22,7 @@ class Test extends Model implements InteractWithMedia
 
     public function registerMediaCollections(): Arrayable|iterable|null
     {
-        return collect([
+        return [
             new MediaCollection(
                 name: 'files',
                 single: false,
@@ -39,7 +39,7 @@ class Test extends Model implements InteractWithMedia
                 public: true,
                 fallback: fn () => 'fallback-value'
             ),
-        ]);
+        ];
     }
 
     public function registerMediaConversions($media): Arrayable|iterable|null
@@ -47,18 +47,18 @@ class Test extends Model implements InteractWithMedia
         $conversions = collect();
 
         if ($media->type === MediaType::Image) {
-            $conversions
-                ->push(new MediaConversion(
-                    name: 'optimized',
-                    job: new OptimizedImageConversionJob($media, 'optimized')
-                ));
+            $conversions->push(new MediaConversion(
+                conversionName: 'optimized',
+                job: new OptimizedImageConversionJob(
+                    media: $media,
+                )
+            ));
 
             if ($media->collection_name === 'avatar') {
                 $conversions->push(new MediaConversion(
-                    name: 'small',
+                    conversionName: 'small',
                     job: new OptimizedImageConversionJob(
                         media: $media,
-                        conversion: 'small',
                         width: 5,
                         height: 5,
                         fit: Fit::Crop

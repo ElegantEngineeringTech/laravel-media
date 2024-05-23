@@ -5,7 +5,7 @@ use Finller\Media\Tests\Models\TestWithResponsiveImages;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
-it('register & generate all responsive image conversions from preset', function () {
+it('registers & generates all responsive image conversions from preset', function () {
 
     Storage::fake('media');
 
@@ -22,19 +22,22 @@ it('register & generate all responsive image conversions from preset', function 
 
     $media->refresh();
 
-    expect($model->getMediaConversions($media)->count())->toBe(4);
-    expect($media->generated_conversions->count())->toBe(4);
+    expect($model->getMediaConversions($media))->toHaveLength(4);
+    expect($media->generated_conversions)->toHaveLength(4);
 
     Storage::disk('media')->assertExists($media->path);
 
-    foreach (ResponsiveImagesConversionsPreset::$widths as $width) {
+    foreach (ResponsiveImagesConversionsPreset::DEFAULT_WIDTH as $width) {
         $generatedConversion = $media->getGeneratedConversion((string) $width);
         expect($generatedConversion)->not->toBe(null);
         expect($generatedConversion->width)->toBe($width);
     }
 
-    expect($media->getResponsiveImages()->count())->toBe(count(ResponsiveImagesConversionsPreset::$widths));
-    expect(count($media->getSrcset()))->toBe(count(ResponsiveImagesConversionsPreset::$widths));
+    expect($media->getResponsiveImages())
+        ->toHaveLength(count(ResponsiveImagesConversionsPreset::DEFAULT_WIDTH));
+
+    expect($media->getSrcset())
+        ->toHaveLength(count(ResponsiveImagesConversionsPreset::DEFAULT_WIDTH));
 
     Storage::disk('media')->assertExists($generatedConversion->path);
 });

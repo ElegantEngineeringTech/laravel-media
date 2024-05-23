@@ -2,20 +2,48 @@
 
 namespace Finller\Media;
 
-use Finller\Media\Jobs\ConversionJob;
+use Closure;
+use Finller\Media\Casts\GeneratedConversion;
+use Finller\Media\Jobs\MediaConversionJob;
+use Finller\Media\Models\Media;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Collection;
 
 class MediaConversion
 {
     /**
-     * @param  bool  $sync  When sync is true, dispatch_sync is used
+     * @param  null|(Closure(GeneratedConversion):(Arrayable<int|string,MediaConversion>|iterable<MediaConversion>))  $conversions
      */
     public function __construct(
-        public string $name,
-        public ConversionJob $job,
-        public bool $sync = false,
-        public Collection $conversions = new Collection(),
+        public string $conversionName,
+        protected MediaConversionJob $job,
+        public ?Closure $conversions = null,
     ) {
-        $this->conversions = $conversions->keyBy('name');
+        //
+    }
+
+    /**
+     * @return Collection<string, MediaConversion>
+     */
+    public function getConversions(Media $media): Collection
+    {
+        $conversions = $this->conversions;
+
+        if ($conversions instanceof Closure) {
+            $generatedConversion = $media->getGeneratedConversion($this->conversionName);
+
+            if ($generatedConversion) {
+                $conversions = $conversions($generatedConversion);
+            } else {
+                $conversions = [];
+            }
+        }
+
+        return collect($conversions)->keyBy('conversionName');
+    }
+
+    public function getJob(): MediaConversionJob
+    {
+        return $this->job->setConversionName($this->conversionName);
     }
 }

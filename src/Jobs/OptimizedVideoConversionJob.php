@@ -10,15 +10,9 @@ use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\File;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
-class OptimizedVideoConversionJob extends ConversionJob
+class OptimizedVideoConversionJob extends MediaConversionJob
 {
     public string $fileName;
-
-    public FormatInterface $format;
-
-    public string $fitMethod = ResizeFilter::RESIZEMODE_FIT;
-
-    public bool $forceStandards = false;
 
     public function withoutOverlapping(): WithoutOverlapping
     {
@@ -30,24 +24,20 @@ class OptimizedVideoConversionJob extends ConversionJob
 
     public function __construct(
         public Media $media,
-        public string $conversion,
-        public ?int $width,
-        public ?int $height,
-        ?FormatInterface $format = new X264,
-        ?string $fitMethod = ResizeFilter::RESIZEMODE_FIT,
-        ?bool $forceStandards = false,
+        ?string $queue = null,
+        public ?int $width = null,
+        public ?int $height = null,
+        public FormatInterface $format = new X264,
+        public string $fitMethod = ResizeFilter::RESIZEMODE_FIT,
+        public bool $forceStandards = false,
         ?string $fileName = null,
     ) {
-        parent::__construct($media, $conversion);
+        parent::__construct($media, $queue);
 
         $this->fileName = $fileName ?? $this->media->file_name;
-
-        $this->format = $format;
-        $this->fitMethod = $fitMethod;
-        $this->forceStandards = $forceStandards;
     }
 
-    public function run()
+    public function run(): void
     {
         $temporaryDisk = $this->getTemporaryDisk();
         $path = $this->makeTemporaryFileCopy();
@@ -62,7 +52,7 @@ class OptimizedVideoConversionJob extends ConversionJob
 
         $this->media->storeConversion(
             file: $temporaryDisk->path($this->fileName),
-            conversion: $this->conversion,
+            conversion: $this->conversionName,
             name: File::name($this->fileName)
         );
     }

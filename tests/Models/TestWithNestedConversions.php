@@ -2,13 +2,14 @@
 
 namespace Finller\Media\Tests\Models;
 
+use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Jobs\OptimizedImageConversionJob;
 use Finller\Media\MediaConversion;
 use Finller\Media\Traits\HasMedia;
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 class TestWithNestedConversions extends Model implements InteractWithMedia
 {
@@ -18,22 +19,38 @@ class TestWithNestedConversions extends Model implements InteractWithMedia
 
     protected $guarded = [];
 
-    public function registerMediaConversions($media): Collection
+    public function registerMediaConversions($media): Arrayable|iterable|null
     {
 
         if ($media->type === MediaType::Image) {
-            return collect()
-                ->push(new MediaConversion(
-                    name: 'optimized',
-                    job: new OptimizedImageConversionJob($media, 'optimized'),
-                    conversions: collect()
-                        ->push(new MediaConversion(
-                            name: 'webp',
-                            job: new OptimizedImageConversionJob($media, 'webp', fileName: "{$media->name}.webp")
-                        ))
-                ));
+            return [
+                new MediaConversion(
+                    conversionName: 'optimized',
+                    job: new OptimizedImageConversionJob(
+                        media: $media,
+                        fileName: 'optimized.jpg'
+                    ),
+                    conversions: fn (GeneratedConversion $generatedConversion) => [
+                        new MediaConversion(
+                            conversionName: 'webp',
+                            job: new OptimizedImageConversionJob(
+                                media: $media,
+                                fileName: "{$generatedConversion->name}.webp" // expected to be optimized.webp
+                            ),
+                        ),
+                    ]
+                ),
+                new MediaConversion(
+                    conversionName: '360',
+                    job: new OptimizedImageConversionJob(
+                        media: $media,
+                        width: 360,
+                        fileName: '360.jpg'
+                    ),
+                ),
+            ];
         }
 
-        return collect();
+        return [];
     }
 }

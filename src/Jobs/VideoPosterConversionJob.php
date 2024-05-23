@@ -10,13 +10,13 @@ use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
 
-class VideoPosterConversionJob extends ConversionJob
+class VideoPosterConversionJob extends MediaConversionJob
 {
     public string $fileName;
 
     public function __construct(
         public Media $media,
-        public string $conversion,
+        ?string $queue = null,
         public null|int|string|TimeCode $seconds = 0,
         public ?int $width = null,
         public ?int $height = null,
@@ -24,12 +24,12 @@ class VideoPosterConversionJob extends ConversionJob
         public ?OptimizerChain $optimizerChain = null,
         ?string $fileName = null,
     ) {
-        parent::__construct($media, $conversion);
+        parent::__construct($media, $queue);
 
         $this->fileName = $fileName ?? "{$this->media->name}.jpg";
     }
 
-    public function run()
+    public function run(): void
     {
         $temporaryDisk = $this->getTemporaryDisk();
         $path = $this->makeTemporaryFileCopy();
@@ -47,7 +47,7 @@ class VideoPosterConversionJob extends ConversionJob
 
         $this->media->storeConversion(
             file: $temporaryDisk->path($this->fileName),
-            conversion: $this->conversion,
+            conversion: $this->conversionName,
             name: File::name($this->fileName)
         );
     }

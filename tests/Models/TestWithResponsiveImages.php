@@ -20,20 +20,22 @@ class TestWithResponsiveImages extends Model implements InteractWithMedia
 
     public function registerMediaCollections(): Arrayable|iterable|null
     {
-        return collect([
+        return [
             new MediaCollection(
                 name: 'images',
                 single: false,
                 public: false,
                 acceptedMimeTypes: ['image/*']
             ),
-        ]);
+        ];
     }
 
     public function registerMediaConversions($media): Arrayable|iterable|null
     {
         if ($media->type === MediaType::Image) {
-            return ResponsiveImagesConversionsPreset::get($media);
+            return ResponsiveImagesConversionsPreset::make(
+                media: $media,
+            );
         }
 
         return collect();

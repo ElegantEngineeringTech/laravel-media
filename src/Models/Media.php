@@ -326,9 +326,8 @@ class Media extends Model
         return $this;
     }
 
-    public function extractFileInformation(
-        UploadedFile|HttpFile $file
-    ): static {
+    public function extractFileInformation(UploadedFile|HttpFile $file): static
+    {
         $this->mime_type = File::mimeType($file);
         $this->extension = File::extension($file);
         $this->size = $file->getSize();
@@ -344,6 +343,15 @@ class Media extends Model
         return $this;
     }
 
+    protected function performMediaTransformations(UploadedFile|HttpFile $file): UploadedFile|HttpFile
+    {
+        if ($this->relationLoaded('model')) {
+            return $this->model->registerMediaTransformations($this, $file);
+        }
+
+        return $file;
+    }
+
     public function storeFileFromHttpFile(
         UploadedFile|HttpFile $file,
         ?string $collection_name = null,
@@ -353,6 +361,8 @@ class Media extends Model
     ): static {
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
         $this->disk = $disk ?? $this->disk ?? config('media.disk');
+
+        $file = $this->performMediaTransformations($file);
 
         $this->extractFileInformation($file);
 
@@ -553,9 +563,11 @@ class Media extends Model
         return $generatedConversion;
     }
 
-    public function getResponsiveImages(?string $conversion = null): Collection
-    {
-        return collect(ResponsiveImagesConversionsPreset::$widths)
+    public function getResponsiveImages(
+        ?string $conversion = null,
+        array $widths = ResponsiveImagesConversionsPreset::DEFAULT_WIDTH
+    ): Collection {
+        return collect($widths)
             ->when(
                 $conversion,
                 fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion("{$conversion}.{$width}")),

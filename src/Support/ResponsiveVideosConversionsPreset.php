@@ -2,12 +2,15 @@
 
 namespace Finller\Media\Support;
 
+use FFMpeg\Filters\Video\ResizeFilter;
+use FFMpeg\Format\FormatInterface;
+use FFMpeg\Format\Video\X264;
 use Finller\Media\Casts\GeneratedConversion;
-use Finller\Media\Jobs\OptimizedImageConversionJob;
+use Finller\Media\Jobs\OptimizedVideoConversionJob;
 use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
 
-class ResponsiveImagesConversionsPreset
+class ResponsiveVideosConversionsPreset
 {
     const DEFAULT_WIDTH = [360, 720, 1080, 1440];
 
@@ -16,9 +19,11 @@ class ResponsiveImagesConversionsPreset
      */
     public static function make(
         Media $media,
-        ?GeneratedConversion $generatedConversion = null,
-        string $extension = 'jpg',
-        ?string $queue = null,
+        ?GeneratedConversion $generatedConversion,
+        ?string $queue,
+        ?FormatInterface $format = new X264,
+        ?string $fitMethod = ResizeFilter::RESIZEMODE_FIT,
+        ?bool $forceStandards = false,
         array $widths = ResponsiveImagesConversionsPreset::DEFAULT_WIDTH,
     ): array {
 
@@ -32,11 +37,14 @@ class ResponsiveImagesConversionsPreset
 
             $conversions[] = new MediaConversion(
                 conversionName: $name,
-                job: new OptimizedImageConversionJob(
+                job: new OptimizedVideoConversionJob(
                     media: $media,
                     queue: $queue,
                     width: $width,
-                    fileName: "{$baseName}-{$name}.{$extension}"
+                    format: $format,
+                    fitMethod: $fitMethod,
+                    forceStandards: $forceStandards,
+                    fileName: "{$baseName}-{$name}.mp4"
                 )
             );
         }

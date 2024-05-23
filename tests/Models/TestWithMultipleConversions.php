@@ -34,19 +34,21 @@ class TestWithMultipleConversions extends Model implements InteractWithMedia
     {
 
         if ($media->type === MediaType::Image) {
-            return collect()
-                ->push(new MediaConversion(
-                    name: 'optimized',
-                    job: new OptimizedImageConversionJob($media, 'optimized')
-                ))
-                ->push(new MediaConversion(
-                    name: 'webp',
+            return [
+                new MediaConversion(
+                    conversionName: 'optimized',
                     job: new OptimizedImageConversionJob(
-                        $media,
-                        conversion: 'webp',
+                        media: $media,
+                    )
+                ),
+                new MediaConversion(
+                    conversionName: 'webp',
+                    job: new OptimizedImageConversionJob(
+                        media: $media,
                         fileName: "{$media->name}.webp"
                     )
-                ));
+                ),
+            ];
         }
 
         return collect();

@@ -8,25 +8,25 @@ use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
 
-class OptimizedImageConversionJob extends ConversionJob
+class OptimizedImageConversionJob extends MediaConversionJob
 {
     public string $fileName;
 
     public function __construct(
         public Media $media,
-        public string $conversion,
+        ?string $queue = null,
         public ?int $width = null,
         public ?int $height = null,
         public Fit $fit = Fit::Contain,
         public ?OptimizerChain $optimizerChain = null,
         ?string $fileName = null,
     ) {
-        parent::__construct($media, $conversion);
+        parent::__construct($media, $queue);
 
         $this->fileName = $fileName ?? $this->media->file_name;
     }
 
-    public function run()
+    public function run(): void
     {
         $temporaryDisk = $this->getTemporaryDisk();
         $path = $this->makeTemporaryFileCopy();
@@ -40,7 +40,7 @@ class OptimizedImageConversionJob extends ConversionJob
 
         $this->media->storeConversion(
             file: $newPath,
-            conversion: $this->conversion,
+            conversion: $this->conversionName,
             name: File::name($this->fileName)
         );
     }

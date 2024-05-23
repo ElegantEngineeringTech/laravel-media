@@ -2,11 +2,13 @@
 
 namespace Finller\Media\Tests\Models;
 
+use Finller\Media\Casts\GeneratedConversion;
 use Finller\Media\Contracts\InteractWithMedia;
 use Finller\Media\Enums\MediaType;
 use Finller\Media\Jobs\VideoPosterConversionJob;
 use Finller\Media\MediaCollection;
 use Finller\Media\MediaConversion;
+use Finller\Media\Support\ResponsiveImagesConversionsPreset;
 use Finller\Media\Traits\HasMedia;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
@@ -33,18 +35,24 @@ class TestWithVideoConversions extends Model implements InteractWithMedia
     public function registerMediaConversions($media): Arrayable|iterable|null
     {
         if ($media->type === MediaType::Video) {
-            return collect()
-                ->push(new MediaConversion(
-                    name: 'poster',
+            return [
+                new MediaConversion(
+                    conversionName: 'poster',
                     job: new VideoPosterConversionJob(
                         media: $media,
-                        conversion: 'poster',
                         seconds: 0,
-                        fileName: "{$media->name}.jpg"
-                    )
-                ));
+                        fileName: "{$media->name}.jpg",
+                    ),
+                    conversions: function (GeneratedConversion $generatedConversion) use ($media) {
+                        return ResponsiveImagesConversionsPreset::make(
+                            media: $media,
+                            generatedConversion: $generatedConversion
+                        );
+                    }
+                ),
+            ];
         }
 
-        return collect();
+        return [];
     }
 }

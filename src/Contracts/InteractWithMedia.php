@@ -7,6 +7,7 @@ use Finller\Media\MediaConversion;
 use Finller\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 
@@ -40,9 +41,14 @@ interface InteractWithMedia
 
     /**
      * @param  TMedia  $media
-     * @return Arrayable<int,MediaConversion>|iterable<MediaConversion>|null
+     * @return Arrayable<int|string,MediaConversion>|iterable<MediaConversion>|null
      */
     public function registerMediaConversions($media): Arrayable|iterable|null;
+
+    /**
+     * @param  TMedia  $media
+     */
+    public function registerMediaTransformations($media, UploadedFile|File $file): UploadedFile|File;
 
     /**
      * @return Collection<string, MediaCollection>
