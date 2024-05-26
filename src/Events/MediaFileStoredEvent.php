@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Events;
+namespace Elegantly\Media\Events;
 
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Models\Media;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

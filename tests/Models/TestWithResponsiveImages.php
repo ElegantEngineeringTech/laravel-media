@@ -1,12 +1,12 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Tests\Models;
+namespace Elegantly\Media\Tests\Models;
 
-use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
-use ElegantEngineeringTech\Media\Enums\MediaType;
-use ElegantEngineeringTech\Media\MediaCollection;
-use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
-use ElegantEngineeringTech\Media\Traits\HasMedia;
+use Elegantly\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\MediaCollection;
+use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
+use Elegantly\Media\Traits\HasMedia;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 

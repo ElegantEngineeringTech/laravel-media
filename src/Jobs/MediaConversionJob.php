@@ -1,10 +1,10 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Jobs;
+namespace Elegantly\Media\Jobs;
 
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\MediaConversion;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\MediaConversion;
+use Elegantly\Media\Models\Media;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;

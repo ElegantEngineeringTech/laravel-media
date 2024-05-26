@@ -1,11 +1,11 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Support;
+namespace Elegantly\Media\Support;
 
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\Jobs\OptimizedImageConversionJob;
-use ElegantEngineeringTech\Media\MediaConversion;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\Jobs\OptimizedImageConversionJob;
+use Elegantly\Media\MediaConversion;
+use Elegantly\Media\Models\Media;
 
 class ResponsiveImagesConversionsPreset
 {

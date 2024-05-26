@@ -1,7 +1,7 @@
 <?php
 
-use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
-use ElegantEngineeringTech\Media\Tests\Models\TestWithVideoConversions;
+use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
+use Elegantly\Media\Tests\Models\TestWithVideoConversions;
 use Illuminate\Support\Facades\Storage;
 
 it('generate a poster conversion from a video', function () {

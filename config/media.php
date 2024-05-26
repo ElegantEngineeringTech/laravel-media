@@ -1,12 +1,12 @@
 <?php
 
-use ElegantEngineeringTech\Media\Jobs\DeleteModelMediaJob;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Jobs\DeleteModelMediaJob;
+use Elegantly\Media\Models\Media;
 
 return [
     /**
      * The media model
-     * Define your own model here by extending \ElegantEngineeringTech\Media\Models\Media::class
+     * Define your own model here by extending \Elegantly\Media\Models\Media::class
      */
     'model' => Media::class,
 

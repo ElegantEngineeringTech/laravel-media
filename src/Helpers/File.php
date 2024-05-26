@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Helpers;
+namespace Elegantly\Media\Helpers;
 
-use ElegantEngineeringTech\Media\Enums\MediaType;
+use Elegantly\Media\Enums\MediaType;
 use FFMpeg\Coordinate\Dimension;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;

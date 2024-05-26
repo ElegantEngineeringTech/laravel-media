@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Enums;
+namespace Elegantly\Media\Enums;
 
-use ElegantEngineeringTech\Media\Helpers\File;
+use Elegantly\Media\Helpers\File;
 use ProtoneMedia\LaravelFFMpeg\FFMpeg\FFProbe;
 
 enum MediaType: string

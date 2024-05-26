@@ -1,7 +1,7 @@
 <?php
 
-use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
-use ElegantEngineeringTech\Media\Tests\Models\TestWithResponsiveImages;
+use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
+use Elegantly\Media\Tests\Models\TestWithResponsiveImages;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

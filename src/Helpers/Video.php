@@ -1,6 +1,6 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Helpers;
+namespace Elegantly\Media\Helpers;
 
 use FFMpeg\Coordinate\AspectRatio;
 use FFMpeg\Coordinate\Dimension;

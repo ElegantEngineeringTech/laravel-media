@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media;
+namespace Elegantly\Media;
 
-use ElegantEngineeringTech\Media\Commands\GenerateMediaConversionsCommand;
+use Elegantly\Media\Commands\GenerateMediaConversionsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

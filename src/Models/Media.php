@@ -1,18 +1,18 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Models;
+namespace Elegantly\Media\Models;
 
 use Closure;
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\Casts\GeneratedConversions;
-use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
-use ElegantEngineeringTech\Media\Enums\MediaType;
-use ElegantEngineeringTech\Media\Events\MediaFileStoredEvent;
-use ElegantEngineeringTech\Media\FileDownloaders\FileDownloader;
-use ElegantEngineeringTech\Media\Helpers\File;
-use ElegantEngineeringTech\Media\Support\ResponsiveImagesConversionsPreset;
-use ElegantEngineeringTech\Media\Traits\HasUuid;
-use ElegantEngineeringTech\Media\Traits\InteractsWithMediaFiles;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\Casts\GeneratedConversions;
+use Elegantly\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Events\MediaFileStoredEvent;
+use Elegantly\Media\FileDownloaders\FileDownloader;
+use Elegantly\Media\Helpers\File;
+use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
+use Elegantly\Media\Traits\HasUuid;
+use Elegantly\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Casts\Attribute;

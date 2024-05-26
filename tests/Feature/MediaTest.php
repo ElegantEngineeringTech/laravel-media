@@ -1,9 +1,9 @@
 <?php
 
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
-use ElegantEngineeringTech\Media\Enums\MediaType;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Models\Media;
 use FFMpeg\Coordinate\Dimension;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;

@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Tests;
+namespace Elegantly\Media\Tests;
 
-use ElegantEngineeringTech\Media\MediaServiceProvider;
+use Elegantly\Media\MediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -19,7 +19,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'ElegantEngineeringTech\\Media\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Elegantly\\Media\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 

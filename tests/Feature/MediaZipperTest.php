@@ -1,8 +1,8 @@
 <?php
 
-use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
-use ElegantEngineeringTech\Media\MediaZipper;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\MediaZipper;
+use Elegantly\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

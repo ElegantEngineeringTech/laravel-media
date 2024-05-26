@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Commands;
+namespace Elegantly\Media\Commands;
 
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;

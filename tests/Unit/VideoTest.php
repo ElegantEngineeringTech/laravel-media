@@ -1,6 +1,6 @@
 <?php
 
-use ElegantEngineeringTech\Media\Helpers\Video;
+use Elegantly\Media\Helpers\Video;
 
 it('get the correct dimention from a non rotated video', function () {
 

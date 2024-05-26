@@ -1,10 +1,10 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Database\Factories;
+namespace Elegantly\Media\Database\Factories;
 
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\Enums\MediaType;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Models\Media;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

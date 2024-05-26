@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Jobs;
+namespace Elegantly\Media\Jobs;
 
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Models\Media;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\Video\X264;

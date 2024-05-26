@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Tests\Models;
+namespace Elegantly\Media\Tests\Models;
 
-use ElegantEngineeringTech\Media\MediaCollection;
+use Elegantly\Media\MediaCollection;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Format\Video\X264;
 use Illuminate\Contracts\Support\Arrayable;

@@ -1,6 +1,6 @@
 <?php
 
-use ElegantEngineeringTech\Media\Tests\Models\TestWithMultipleConversions;
+use Elegantly\Media\Tests\Models\TestWithMultipleConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

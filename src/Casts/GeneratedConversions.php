@@ -1,6 +1,6 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Casts;
+namespace Elegantly\Media\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\Model;

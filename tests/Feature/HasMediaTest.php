@@ -1,12 +1,12 @@
 <?php
 
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\Database\Factories\MediaFactory;
-use ElegantEngineeringTech\Media\Enums\MediaType;
-use ElegantEngineeringTech\Media\Models\Media;
-use ElegantEngineeringTech\Media\Tests\Models\Test;
-use ElegantEngineeringTech\Media\Tests\Models\TestSoftDelete;
-use ElegantEngineeringTech\Media\Tests\Models\TestWithNestedConversions;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Models\Media;
+use Elegantly\Media\Tests\Models\Test;
+use Elegantly\Media\Tests\Models\TestSoftDelete;
+use Elegantly\Media\Tests\Models\TestWithNestedConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 

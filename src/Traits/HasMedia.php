@@ -1,11 +1,11 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Traits;
+namespace Elegantly\Media\Traits;
 
-use ElegantEngineeringTech\Media\Casts\GeneratedConversion;
-use ElegantEngineeringTech\Media\MediaCollection;
-use ElegantEngineeringTech\Media\MediaConversion;
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Casts\GeneratedConversion;
+use Elegantly\Media\MediaCollection;
+use Elegantly\Media\MediaConversion;
+use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;

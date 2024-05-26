@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Jobs;
+namespace Elegantly\Media\Jobs;
 
-use ElegantEngineeringTech\Media\Models\Media;
+use Elegantly\Media\Models\Media;
 use Illuminate\Support\Facades\File;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;

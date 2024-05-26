@@ -1,8 +1,8 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Tests\Models;
+namespace Elegantly\Media\Tests\Models;
 
-use ElegantEngineeringTech\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\Contracts\InteractWithMedia;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TestSoftDelete extends Test implements InteractWithMedia

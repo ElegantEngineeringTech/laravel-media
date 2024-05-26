@@ -1,10 +1,10 @@
 <?php
 
-namespace ElegantEngineeringTech\Media\Traits;
+namespace Elegantly\Media\Traits;
 
 use Carbon\CarbonInterval;
-use ElegantEngineeringTech\Media\FileDownloaders\FileDownloader;
-use ElegantEngineeringTech\Media\Helpers\File;
+use Elegantly\Media\FileDownloaders\FileDownloader;
+use Elegantly\Media\Helpers\File;
 use Exception;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
