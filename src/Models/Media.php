@@ -266,7 +266,24 @@ class Media extends Model
         if ($conversion) {
             $name = $this->getGeneratedConversion($conversion)?->name;
 
-            return $fallback ? ($name ?? $this->name) : $name;
+            return match ($fallback) {
+                true => $name ?? $this->name,
+                false => $name,
+            };
+        }
+
+        return $this->name;
+    }
+
+    public function getFileName(?string $conversion = null, bool $fallback = false): ?string
+    {
+        if ($conversion) {
+            $file_name = $this->getGeneratedConversion($conversion)?->file_name;
+
+            return match ($fallback) {
+                true => $file_name ?? $this->file_name,
+                false => $file_name,
+            };
         }
 
         return $this->name;
@@ -277,7 +294,10 @@ class Media extends Model
         if ($conversion) {
             $size = $this->getGeneratedConversion($conversion)?->size;
 
-            return $fallback ? ($size ?? $this->size) : $size;
+            return match ($fallback) {
+                true => $size ?? $this->size,
+                false => $size,
+            };
         }
 
         return $this->size;
@@ -288,10 +308,27 @@ class Media extends Model
         if ($conversion) {
             $aspect_ratio = $this->getGeneratedConversion($conversion)?->aspect_ratio;
 
-            return $fallback ? ($aspect_ratio ?? $this->aspect_ratio) : $aspect_ratio;
+            return match ($fallback) {
+                true => $aspect_ratio ?? $this->aspect_ratio,
+                false => $aspect_ratio,
+            };
         }
 
         return $this->aspect_ratio;
+    }
+
+    public function getMimeType(?string $conversion = null, bool $fallback = false): ?string
+    {
+        if ($conversion) {
+            $mime_type = $this->getGeneratedConversion($conversion)?->mime_type;
+
+            return match ($fallback) {
+                true => $mime_type ?? $this->mime_type,
+                false => $mime_type,
+            };
+        }
+
+        return $this->mime_type;
     }
 
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
