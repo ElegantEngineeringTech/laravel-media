@@ -512,9 +512,9 @@ First, create your own model class:
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Models\Media as FinllerMedia;
+use Elegantly\Media\Models\Media as ElegantlyMedia;
 
-class Media extends FinllerMedia
+class Media extends ElegantlyMedia
 {
     // ...
 }
