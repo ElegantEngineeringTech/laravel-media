@@ -283,7 +283,7 @@ trait HasMedia
         if ($this->relationLoaded('media')) {
             $this->setRelation(
                 'media',
-                $this->media->push($media)
+                $this->media->push($media->withoutRelations())
             );
         }
 
