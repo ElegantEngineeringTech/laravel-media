@@ -157,11 +157,9 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
         $childrenConversions = $this->getMediaConversion()->getConversions($this->media);
 
         foreach ($childrenConversions as $childConversion) {
-            $mediaConversionJob = $childConversion->getJob();
-
-            $mediaConversionJob->setConversionName("{$this->conversionName}.{$mediaConversionJob->conversionName}");
-
-            dispatch($mediaConversionJob);
+            $childConversion->dispatch(
+                withConversionName: "{$this->conversionName}.{$childConversion->conversionName}"
+            );
         }
     }
 

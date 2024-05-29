@@ -313,7 +313,7 @@ trait HasMedia
             ->putGeneratedConversion($conversion->conversionName, new GeneratedConversion(state: 'pending'))
             ->save();
 
-        dispatch($conversion->getJob());
+        $conversion->dispatch();
 
         return $this;
     }
@@ -349,7 +349,7 @@ trait HasMedia
         $media->save();
 
         foreach ($conversions as $conversion) {
-            dispatch($conversion->getJob());
+            $conversion->dispatch();
         }
 
         return $this;

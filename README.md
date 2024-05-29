@@ -114,9 +114,9 @@ class Channel extends Model implements InteractWithMedia
             return [
                 new MediaConversion(
                     conversionName: 'poster',
+                    sync: true,// The conversion will not be queued, you will have access to it immediatly
                     job: new VideoPosterConversionJob(
                         media: $media,
-                        queue: 'sync',// The conversion will not be queued, you will have access to it immediatly
                         seconds: 1,
                         fileName: "{$media->name}-poster.jpg"
                     ),
@@ -414,9 +414,9 @@ class Channel extends Model implements InteractWithMedia
             return [
                 new MediaConversion(
                     conversionName: 'poster',
+                    sync: true, // The conversion will not be queued, you will have access to it immediatly
                     job: new VideoPosterConversionJob(
                         media: $media,
-                        queue: 'sync', // The conversion will not be queued, you will have access to it immediatly
                         seconds: 1,
                         fileName: "{$media->name}-poster.jpg"
                     ),

@@ -17,6 +17,7 @@ class MediaConversion
     public function __construct(
         public string $conversionName,
         protected MediaConversionJob $job,
+        public bool $sync = false,
         public ?Closure $conversions = null,
     ) {
         //
@@ -45,5 +46,23 @@ class MediaConversion
     public function getJob(): MediaConversionJob
     {
         return $this->job->setConversionName($this->conversionName);
+    }
+
+    public function dispatch(
+        ?string $withConversionName = null
+    ): static {
+        $job = $this->getJob();
+
+        if ($withConversionName) {
+            $job->setConversionName($withConversionName);
+        }
+
+        if ($this->sync) {
+            dispatch_sync($job);
+        } else {
+            dispatch($job);
+        }
+
+        return $this;
     }
 }
