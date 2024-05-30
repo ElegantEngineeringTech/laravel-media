@@ -382,10 +382,13 @@ class Media extends Model
 
     protected function performMediaTransformations(UploadedFile|HttpFile $file): UploadedFile|HttpFile
     {
-
-        $file = $this->model->registerMediaTransformations($this, $file);
-
-        $this->extractFileInformation($file); // refresh file informations
+        if (
+            $this->relationLoaded('model') ||
+            ($this->model_id && $this->model_type)
+        ) {
+            $file = $this->model->registerMediaTransformations($this, $file);
+            $this->extractFileInformation($file); // refresh file informations
+        }
 
         return $file;
     }
