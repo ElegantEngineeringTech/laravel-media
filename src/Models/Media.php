@@ -382,9 +382,10 @@ class Media extends Model
 
     protected function performMediaTransformations(UploadedFile|HttpFile $file): UploadedFile|HttpFile
     {
-        if ($this->relationLoaded('model')) {
-            return $this->model->registerMediaTransformations($this, $file);
-        }
+
+        $file = $this->model->registerMediaTransformations($this, $file);
+
+        $this->extractFileInformation($file); // refresh file informations
 
         return $file;
     }
@@ -399,9 +400,9 @@ class Media extends Model
         $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
         $this->disk = $disk ?? $this->disk ?? config('media.disk');
 
-        $file = $this->performMediaTransformations($file);
-
         $this->extractFileInformation($file);
+
+        $file = $this->performMediaTransformations($file);
 
         $basePath = Str::finish($basePath ?? $this->generateBasePath(), '/');
 
