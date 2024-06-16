@@ -26,14 +26,14 @@ trait HasMedia
     {
         static::deleting(function (Model $model) {
 
-            if (!config('media.delete_media_with_model')) {
+            if (! config('media.delete_media_with_model')) {
                 return true;
             }
 
-            $isSoftDeleting = method_exists($model, 'isForceDeleting') && !$model->isForceDeleting();
+            $isSoftDeleting = method_exists($model, 'isForceDeleting') && ! $model->isForceDeleting();
 
             if (
-                $isSoftDeleting && !config('media.delete_media_with_trashed_model')
+                $isSoftDeleting && ! config('media.delete_media_with_trashed_model')
             ) {
                 return true;
             }
@@ -182,7 +182,7 @@ trait HasMedia
         array $conversionsNames,
     ): ?MediaConversion {
 
-        if (empty($conversionsNames) || !$mediaConversion) {
+        if (empty($conversionsNames) || ! $mediaConversion) {
             return $mediaConversion;
         }
 
@@ -227,7 +227,7 @@ trait HasMedia
     {
         $media = $this->media->find($mediaId);
 
-        if (!$media) {
+        if (! $media) {
             return null;
         }
 
@@ -258,7 +258,7 @@ trait HasMedia
 
         $collection = $this->getMediaCollection($collection_name);
 
-        if (!$collection) {
+        if (! $collection) {
             $class = static::class;
             throw new Exception("[Media collection not registered] {$collection_name} is not registered for the model {$class}.");
         }
@@ -303,7 +303,7 @@ trait HasMedia
     {
         $conversion = $this->getMediaConversion($media, $conversionName);
 
-        if (!$conversion) {
+        if (! $conversion) {
             return $this;
         }
 
@@ -354,9 +354,9 @@ trait HasMedia
             ->only($only)
             ->except($except);
 
-        if (!$force) {
+        if (! $force) {
             $conversions = $conversions->filter(function (MediaConversion $conversion) use ($media) {
-                return !$media->hasGeneratedConversion($conversion->conversionName);
+                return ! $media->hasGeneratedConversion($conversion->conversionName);
             });
         }
 
