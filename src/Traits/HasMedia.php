@@ -330,13 +330,18 @@ trait HasMedia
         ?array $except = null,
         ?bool $sync = null,
     ): static {
-        return $this->dispatchConversions(
-            media: $this->getMedia($collectionName),
-            force: $force,
-            only: $only,
-            except: $except,
-            sync: $sync,
-        );
+
+        foreach ($this->getMedia($collectionName) as $media) {
+            $this->dispatchConversions(
+                media: $media,
+                force: $force,
+                only: $only,
+                except: $except,
+                sync: $sync,
+            );
+        }
+
+        return $this;
     }
 
     /**
