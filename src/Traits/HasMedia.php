@@ -319,13 +319,41 @@ trait HasMedia
     }
 
     /**
+     * Dispatch media conversions for a specific media collection
+     *
+     * @param  bool  $forceSync  Will use dispatch_sync
+     * @param  bool  $forceQueued  Will use dispatch
+     */
+    public function dispatchCollectionConversions(
+        string $collectionName,
+        ?bool $force = false,
+        ?array $only = null,
+        ?array $except = null,
+        bool $forceSync = false,
+        bool $forceQueued = false,
+    ): static {
+        return $this->dispatchConversions(
+            media: $this->getMedia($collectionName),
+            force: $force,
+            only: $only,
+            except: $except,
+            forceSync: $forceSync,
+            forceQueued: $forceQueued,
+        );
+    }
+
+    /**
      * @param  TMedia  $media
+     * @param  bool  $forceSync  Will use dispatch_sync
+     * @param  bool  $forceQueued  Will use dispatch
      */
     public function dispatchConversions(
         $media,
         ?bool $force = false,
         ?array $only = null,
         ?array $except = null,
+        bool $forceSync = false,
+        bool $forceQueued = false,
     ): static {
         $conversions = $this->getMediaConversions($media)
             ->only($only)
@@ -349,7 +377,10 @@ trait HasMedia
         $media->save();
 
         foreach ($conversions as $conversion) {
-            $conversion->dispatch();
+            $conversion->dispatch(
+                forceSync: $forceSync,
+                forceQueued: $forceQueued
+            );
         }
 
         return $this;
