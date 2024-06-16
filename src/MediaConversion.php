@@ -50,8 +50,7 @@ class MediaConversion
 
     public function dispatch(
         ?string $withConversionName = null,
-        bool $forceSync = false,
-        bool $forceQueued = false,
+        ?bool $sync = null,
     ): static {
         $job = $this->getJob();
 
@@ -59,7 +58,7 @@ class MediaConversion
             $job->setConversionName($withConversionName);
         }
 
-        if (($this->sync || $forceSync) && ! $forceQueued) {
+        if ($sync ?? $this->sync) {
             dispatch_sync($job);
         } else {
             dispatch($job);
