@@ -130,3 +130,105 @@ it('put file to the Generated conversion path', function () {
 
     expect(SupportFile::dirname($path))->toBe($generatedConversion->getDirname());
 });
+
+it('moves the main file to a new path', function () {
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media-from');
+    Storage::fake('media-to');
+
+    $file = UploadedFile::fake()->image('foo.jpg');
+
+    $media->storeFile(
+        file: $file,
+        disk: 'media-from'
+    );
+
+    Storage::disk('media-from')->assertExists($media->path);
+
+    $media->moveFile(
+        disk: 'media-to'
+    );
+
+    expect($media->disk)->toBe('media-to');
+
+    Storage::disk('media-from')->assertMissing($media->path);
+    Storage::disk('media-to')->assertExists($media->path);
+});
+
+it('moves a conversion file to a new path', function () {
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media-from');
+    Storage::fake('media-to');
+
+    $file = UploadedFile::fake()->image('foo.jpg');
+
+    $media->storeFile(
+        file: $file,
+        disk: 'media-from'
+    );
+
+    $poster = UploadedFile::fake()->image('foo-poster.jpg');
+
+    $generatedConversion = $media->storeConversion(
+        file: $poster->getPathname(),
+        conversion: 'poster',
+        name: 'avatar-poster'
+    );
+
+    Storage::disk('media-from')->assertExists($generatedConversion->path);
+
+    $media->moveGeneratedConversion(
+        conversion: 'poster',
+        disk: 'media-to'
+    );
+
+    expect($generatedConversion->disk)->toBe('media-to');
+
+    Storage::disk('media-from')->assertMissing($media->getPath('poster'));
+    Storage::disk('media-to')->assertExists($media->getPath('poster'));
+});
+
+it('moves media to a new disk', function () {
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    Storage::fake('media-from');
+    Storage::fake('media-to');
+
+    $file = UploadedFile::fake()->image('foo.jpg');
+
+    $media->storeFile(
+        file: $file,
+        disk: 'media-from'
+    );
+
+    $poster = UploadedFile::fake()->image('foo-poster.jpg');
+
+    $generatedConversion = $media->storeConversion(
+        file: $poster->getPathname(),
+        conversion: 'poster',
+        name: 'avatar-poster'
+    );
+
+    Storage::disk('media-from')->assertExists($media->path);
+    Storage::disk('media-from')->assertExists($generatedConversion->path);
+
+    $media->moveToDisk(
+        disk: 'media-to'
+    );
+
+    expect($media->disk)->toBe('media-to');
+    expect($generatedConversion->disk)->toBe('media-to');
+
+    Storage::disk('media-from')->assertMissing($media->path);
+    Storage::disk('media-from')->assertMissing($media->getPath('poster'));
+    Storage::disk('media-to')->assertExists($media->path);
+    Storage::disk('media-to')->assertExists($media->getPath('poster'));
+});

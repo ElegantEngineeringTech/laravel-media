@@ -66,7 +66,15 @@ trait InteractsWithMediaFiles
             return null;
         }
 
-        file_put_contents($path, $this->readStream());
+        $storage = Storage::build([
+            'driver' => 'local',
+            'root' => SupportFile::dirname($path),
+        ]);
+
+        $storage->put(
+            SupportFile::basename($path),
+            $this->readStream()
+        );
 
         return $path;
     }
@@ -124,38 +132,17 @@ trait InteractsWithMediaFiles
         return $path;
     }
 
-    public function moveFiles(
-        ?string $disk = null,
-        ?string $path = null
+    public function copyFileTo(
+        string $disk,
+        string $path
     ): static {
-        if (! $disk && ! $path) {
-            return $this;
-        }
 
-        $newDisk = $disk ?? $this->disk;
-        $newPath = $path ?? $this->path;
+        $filesystem = Storage::disk($disk);
 
-        $temporaryDirectory = (new TemporaryDirectory())
-            ->location(storage_path('media-tmp'))
-            ->deleteWhenDestroyed()
-            ->create();
-
-        $temporaryFilePath = $this->makeTemporaryFileCopy($temporaryDirectory);
-
-        $filesystem = Storage::disk($newDisk);
-
-        $filesystem->putFileAs(
-            path: SupportFile::dirname($newPath),
-            file: new HttpFile($temporaryFilePath),
-            name: File::extractFilename($newPath)
+        $filesystem->writeStream(
+            $path,
+            $this->readStream()
         );
-
-        $temporaryDirectory->delete();
-
-        $this->deleteFile();
-
-        $this->disk = $newDisk;
-        $this->path = $newPath;
 
         return $this;
     }

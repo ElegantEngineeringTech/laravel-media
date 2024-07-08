@@ -604,6 +604,119 @@ class Media extends Model
         return $generatedConversion;
     }
 
+    public function moveGeneratedConversion(
+        string $conversion,
+        ?string $disk = null,
+        ?string $path = null,
+    ): ?GeneratedConversion {
+        if (
+            (! $disk && ! $path) ||
+            ($disk === $this->disk && $path === $this->path) ||
+            ($disk === null && $path === $this->path) ||
+            ($disk === $this->disk && $path === null)
+        ) {
+            return null;
+        }
+
+        $generatedConversion = $this->getGeneratedConversion($conversion);
+
+        if (! $generatedConversion) {
+            return null;
+        }
+
+        $newDisk = $disk ?? $generatedConversion->disk;
+        $newPath = $path ?? $generatedConversion->path;
+
+        $generatedConversion->copyFileTo(
+            disk: $newDisk,
+            path: $newPath
+        );
+
+        $generatedConversion->deleteFile();
+
+        $generatedConversion->disk = $newDisk;
+        $generatedConversion->path = $newPath;
+
+        $this->putGeneratedConversion(
+            $conversion,
+            $generatedConversion
+        );
+
+        $this->save();
+
+        return $generatedConversion;
+    }
+
+    public function moveFile(
+        ?string $disk = null,
+        ?string $path = null,
+    ): static {
+        if (
+            (! $disk && ! $path) ||
+            ($disk === $this->disk && $path === $this->path) ||
+            ($disk === null && $path === $this->path) ||
+            ($disk === $this->disk && $path === null)
+        ) {
+            return $this;
+        }
+
+        $newDisk = $disk ?? $this->disk;
+        $newPath = $path ?? $this->path;
+
+        $this->copyFileTo(
+            disk: $newDisk,
+            path: $newPath
+        );
+
+        $this->deleteFile();
+
+        $this->disk = $newDisk;
+        $this->path = $newPath;
+
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * Recursively move generated and nested conversions files to a new disk
+     */
+    protected function moveGeneratedConversionToDisk(string $disk, string $conversion): ?GeneratedConversion
+    {
+        $generatedConversion = $this->moveGeneratedConversion($conversion, $disk);
+
+        if (! $generatedConversion) {
+            return null;
+        }
+
+        foreach ($generatedConversion->generated_conversions->keys() as $childConversionName) {
+            $this->moveGeneratedConversionToDisk(
+                disk: $disk,
+                conversion: "{$conversion}.{$childConversionName}"
+            );
+        }
+
+        return $generatedConversion;
+    }
+
+    public function moveToDisk(
+        string $disk,
+    ): static {
+
+        if ($this->generated_conversions) {
+            foreach ($this->generated_conversions->keys() as $conversionName) {
+                $this->moveGeneratedConversionToDisk(
+                    disk: $disk,
+                    conversion: $conversionName
+                );
+            }
+        }
+
+        return $this->moveFile(
+            disk: $disk
+        );
+    }
+
     public function getResponsiveImages(
         ?string $conversion = null,
         array $widths = ResponsiveImagesConversionsPreset::DEFAULT_WIDTH
