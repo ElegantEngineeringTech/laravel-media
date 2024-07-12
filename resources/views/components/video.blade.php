@@ -3,9 +3,9 @@
     'poster' => null,
     'src' => null,
     'autoplay' => false,
-    'muted' => muted,
-    'playsinline' => playsinline,
-    'loop' => loop,
+    'muted' => false,
+    'playsinline' => false,
+    'loop' => false,
     'media',
 ])
 
