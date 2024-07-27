@@ -9,7 +9,7 @@ it('registers & generates all responsive image conversions from preset', functio
 
     Storage::fake('media');
 
-    $model = new TestWithResponsiveImages();
+    $model = new TestWithResponsiveImages;
     $model->save();
 
     $orginial = UploadedFile::fake()->image('original.jpg', width: 1920, height: 1920);

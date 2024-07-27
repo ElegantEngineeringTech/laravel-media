@@ -36,7 +36,7 @@ class GeneratedConversion implements Arrayable
         public ?float $aspect_ratio = null,
         public ?string $average_color = null,
         public array $metadata = [],
-        public Collection $generated_conversions = new Collection(),
+        public Collection $generated_conversions = new Collection,
         ?Carbon $created_at = null,
         ?Carbon $state_set_at = null,
     ) {

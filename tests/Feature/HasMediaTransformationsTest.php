@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 it('perform media transformations before storing files', function () {
     Storage::fake('media');
 
-    $model = new TestWithMediaTransformations();
+    $model = new TestWithMediaTransformations;
     $model->save();
 
     $file = $this->getTestFile('images/800x900.jpg');

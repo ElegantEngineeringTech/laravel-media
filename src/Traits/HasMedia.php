@@ -265,7 +265,7 @@ trait HasMedia
 
         $model = config('media.model');
         /** @var TMedia $media */
-        $media = new $model();
+        $media = new $model;
 
         $media->model()->associate($this);
 

@@ -131,7 +131,7 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function init(): void
     {
-        $this->temporaryDirectory = (new TemporaryDirectory())
+        $this->temporaryDirectory = (new TemporaryDirectory)
             ->location(storage_path('media-tmp'))
             ->deleteWhenDestroyed()
             ->create();

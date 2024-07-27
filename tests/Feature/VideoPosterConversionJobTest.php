@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 it('generate a poster conversion from a video', function () {
     Storage::fake('media');
 
-    $model = new TestWithVideoConversions();
+    $model = new TestWithVideoConversions;
     $model->save();
 
     $file = $this->getTestFile('videos/horizontal.mp4');
@@ -31,7 +31,7 @@ it('generate a poster conversion from a video', function () {
 it('generate a poster with its responsive images from a video', function () {
     Storage::fake('media');
 
-    $model = new TestWithVideoConversions();
+    $model = new TestWithVideoConversions;
     $model->save();
 
     $file = $this->getTestFile('videos/horizontal.mp4');

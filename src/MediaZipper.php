@@ -19,7 +19,7 @@ class MediaZipper implements Responsable
      * @param  Collection<int, TMedia>  $media
      */
     public function __construct(
-        public Collection $media = new Collection(),
+        public Collection $media = new Collection,
         public string $fileName = 'media.zip',
         public array $zipStreamOptions = [],
     ) {

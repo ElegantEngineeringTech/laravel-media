@@ -19,7 +19,7 @@ class FileDownloader
             throw new Exception("Can't reach the url: {$url}");
         }
 
-        $temporaryDirectory ??= (new TemporaryDirectory())
+        $temporaryDirectory ??= (new TemporaryDirectory)
             ->location(storage_path('media-tmp'))
             ->deleteWhenDestroyed()
             ->create();

@@ -23,7 +23,7 @@ it('copy the Media file to a temporary directory', function () {
 
     expect($media->getDisk()->exists($media->path))->toBe(true);
 
-    $temporaryDirectory = (new TemporaryDirectory())
+    $temporaryDirectory = (new TemporaryDirectory)
         ->location(storage_path('media-tmp'))
         ->create();
 
@@ -62,7 +62,7 @@ it('copy the GeneratedConversion file to a temporary directory', function () {
 
     expect($generatedConversion->getDisk()->exists($generatedConversion->path))->toBe(true);
 
-    $temporaryDirectory = (new TemporaryDirectory())
+    $temporaryDirectory = (new TemporaryDirectory)
         ->location(storage_path('media-tmp'))
         ->create();
 

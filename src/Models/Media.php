@@ -434,7 +434,7 @@ class Media extends Model
         ?string $disk = null,
     ): static {
 
-        $temporaryDirectory = (new TemporaryDirectory())
+        $temporaryDirectory = (new TemporaryDirectory)
             ->location(storage_path('media-tmp'))
             ->create();
 
@@ -458,7 +458,7 @@ class Media extends Model
         ?string $disk = null
     ): static {
 
-        $temporaryDirectory = (new TemporaryDirectory())
+        $temporaryDirectory = (new TemporaryDirectory)
             ->location(storage_path('media-tmp'))
             ->create();
 
@@ -543,7 +543,7 @@ class Media extends Model
         ?string $basePath = null,
         string $state = 'success',
     ): GeneratedConversion {
-        $temporaryDirectory = (new TemporaryDirectory())
+        $temporaryDirectory = (new TemporaryDirectory)
             ->location(storage_path('media-tmp'))
             ->create();
 

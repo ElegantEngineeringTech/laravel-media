@@ -11,13 +11,13 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 it('gets the correct media collection', function () {
-    $model = new Test();
+    $model = new Test;
 
     expect($model->getMediaCollections()->toArray())->toHaveKeys(['files', 'avatar', 'fallback']);
 });
 
 it('keys media conversion by conversionName', function () {
-    $model = new TestWithNestedConversions();
+    $model = new TestWithNestedConversions;
 
     /** @var Media $media */
     $media = MediaFactory::new()->make([
@@ -28,7 +28,7 @@ it('keys media conversion by conversionName', function () {
 });
 
 it('gets the correct media conversion', function () {
-    $model = new TestWithNestedConversions();
+    $model = new TestWithNestedConversions;
 
     /** @var Media $media */
     $media = MediaFactory::new()->make([
@@ -40,7 +40,7 @@ it('gets the correct media conversion', function () {
 });
 
 it('gets the correct nested media conversion', function () {
-    $model = new TestWithNestedConversions();
+    $model = new TestWithNestedConversions;
 
     /** @var Media $media */
     $media = MediaFactory::new()->make([
@@ -64,7 +64,7 @@ it('gets the correct nested media conversion', function () {
 it('creates a media, store files and generate conversions', function () {
     Storage::fake('media');
 
-    $model = new Test();
+    $model = new Test;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -95,7 +95,7 @@ it('creates a media, store files and generate conversions', function () {
 it('generates nested conversions', function () {
     Storage::fake('media');
 
-    $model = new TestWithNestedConversions();
+    $model = new TestWithNestedConversions;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -136,7 +136,7 @@ it('generates nested conversions', function () {
 });
 
 it('gets the fallback value when no media extist', function () {
-    $model = new Test();
+    $model = new Test;
 
     expect($model->getFirstMediaUrl('fallback'))->toBe('fallback-value');
 });
@@ -144,7 +144,7 @@ it('gets the fallback value when no media extist', function () {
 it('gets the media url when a media exists in a collection', function () {
     Storage::fake('media');
 
-    $model = new Test();
+    $model = new Test;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -162,7 +162,7 @@ it('gets the media url when a media exists in a collection', function () {
 it('adds the new added media to the model relation', function () {
     Storage::fake('media');
 
-    $model = new Test();
+    $model = new Test;
     $model->save();
 
     $model->load('media');
@@ -189,7 +189,7 @@ it('adds the new added media to the model relation', function () {
 it('removes media from the model when clearing media collection', function () {
     Storage::fake('media');
 
-    $model = new Test();
+    $model = new Test;
     $model->save();
 
     $model->addMedia(
@@ -218,7 +218,7 @@ it('deletes media and its files with the model when delete_media_with_model is t
 
     Storage::fake('media');
 
-    $model = new Test();
+    $model = new Test;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -243,7 +243,7 @@ it('does not delete media and its files with the model when delete_media_with_mo
 
     Storage::fake('media');
 
-    $model = new Test();
+    $model = new Test;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -269,7 +269,7 @@ it('deletes media and its files with the trashed model when delete_media_with_tr
 
     Storage::fake('media');
 
-    $model = new TestSoftDelete();
+    $model = new TestSoftDelete;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -295,7 +295,7 @@ it('does not delete media and its files with the trashed model when delete_media
 
     Storage::fake('media');
 
-    $model = new TestSoftDelete();
+    $model = new TestSoftDelete;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -321,7 +321,7 @@ it('deletes media and its files with the force deleted model when delete_media_w
 
     Storage::fake('media');
 
-    $model = new TestSoftDelete();
+    $model = new TestSoftDelete;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');

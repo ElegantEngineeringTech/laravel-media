@@ -5,7 +5,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('download a file from an url as a temporary file', function () {
 
-    $temporaryDirectory = (new TemporaryDirectory())
+    $temporaryDirectory = (new TemporaryDirectory)
         ->location(storage_path('media-tmp'))
         ->create();
 

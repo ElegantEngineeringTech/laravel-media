@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 it('generate a webp file conversion', function () {
     Storage::fake('media');
 
-    $model = new TestWithMultipleConversions();
+    $model = new TestWithMultipleConversions;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');

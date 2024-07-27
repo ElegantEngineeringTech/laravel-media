@@ -81,7 +81,7 @@ trait InteractsWithMediaFiles
 
     public function makeTemporaryFileCopy(?TemporaryDirectory $temporaryDirectory = null): string|false
     {
-        $temporaryDirectory ??= (new TemporaryDirectory())
+        $temporaryDirectory ??= (new TemporaryDirectory)
             ->location(storage_path('media-tmp'))
             ->deleteWhenDestroyed()
             ->create();
