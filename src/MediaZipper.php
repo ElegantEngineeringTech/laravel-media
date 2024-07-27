@@ -38,7 +38,9 @@ class MediaZipper implements Responsable
 
         $success = $storage->writeStream($path, $temporaryStream, $options);
 
-        fclose($temporaryStream);
+        if (is_resource($temporaryStream)) {
+            fclose($temporaryStream);
+        }
 
         return $success ? $path : false;
     }
