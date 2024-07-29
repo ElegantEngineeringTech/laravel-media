@@ -25,12 +25,12 @@ it('download a file from an url as a temporary file and sets the right extension
         ->create();
 
     $path = FileDownloader::getTemporaryFile(
-        "https://icon.horse/icon/discord.com",
+        'https://icon.horse/icon/discord.com',
         $temporaryDirectory
     );
 
     expect(is_file($path))->toBe(true);
-    expect(str($path)->endsWith(".png"))->toBe(true);
+    expect(str($path)->endsWith('.png'))->toBe(true);
 
     $temporaryDirectory->delete();
 
