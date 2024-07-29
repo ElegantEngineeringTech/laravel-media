@@ -2,6 +2,7 @@
 
 namespace Elegantly\Media\FileDownloaders;
 
+use Elegantly\Media\Helpers\File;
 use Exception;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
@@ -15,7 +16,7 @@ class FileDownloader
             ],
         ]);
 
-        if (! $stream = @fopen($url, 'r', false, $context)) {
+        if (!$stream = @fopen($url, 'r', false, $context)) {
             throw new Exception("Can't reach the url: {$url}");
         }
 
@@ -29,6 +30,15 @@ class FileDownloader
         file_put_contents($path, $stream);
 
         fclose($stream);
+
+
+        if ($extension = File::extension($path)) {
+            $pathWithExtension = "{$path}.{$extension}";
+
+            rename($path, $pathWithExtension);
+
+            return $pathWithExtension;
+        }
 
         return $path;
     }

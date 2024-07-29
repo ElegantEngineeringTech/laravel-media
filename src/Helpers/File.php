@@ -50,7 +50,7 @@ class File
             return $file->guessExtension() ?? $file->getExtension();
         }
 
-        return SupportFile::extension($file);
+        return SupportFile::extension($file) ?: SupportFile::guessExtension($file);
     }
 
     public static function type(string $path): MediaType
