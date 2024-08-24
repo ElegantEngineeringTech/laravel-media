@@ -18,6 +18,5 @@ class MediaCollection
         public bool $public = false,
         public ?string $disk = null,
         public null|string|Closure $fallback = null,
-    ) {
-    }
+    ) {}
 }
