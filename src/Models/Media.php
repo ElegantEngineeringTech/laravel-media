@@ -702,9 +702,9 @@ class Media extends Model
         ?Closure $when = null
     ): ?GeneratedConversion {
         $generatedConversion = $this->moveGeneratedConversion(
-            $conversion,
-            $disk,
-            $when
+            conversion: $conversion,
+            disk: $disk,
+            when: $when
         );
 
         if (! $generatedConversion) {
