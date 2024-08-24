@@ -604,15 +604,23 @@ class Media extends Model
         return $generatedConversion;
     }
 
+    /**
+     * @param  null|Closure(GeneratedConversion $item):bool  $when
+     */
     public function moveGeneratedConversion(
         string $conversion,
         ?string $disk = null,
         ?string $path = null,
+        ?Closure $when = null
     ): ?GeneratedConversion {
         $generatedConversion = $this->getGeneratedConversion($conversion);
 
         if (! $generatedConversion) {
             return null;
+        }
+
+        if ($when && ! $when($generatedConversion)) {
+            return $generatedConversion;
         }
 
         if (! $generatedConversion->disk || ! $generatedConversion->path) {
@@ -685,10 +693,19 @@ class Media extends Model
 
     /**
      * Recursively move generated and nested conversions files to a new disk
+     *
+     * @param  null|Closure(GeneratedConversion $item):bool  $when
      */
-    protected function moveGeneratedConversionToDisk(string $disk, string $conversion): ?GeneratedConversion
-    {
-        $generatedConversion = $this->moveGeneratedConversion($conversion, $disk);
+    protected function moveGeneratedConversionToDisk(
+        string $disk,
+        string $conversion,
+        ?Closure $when = null
+    ): ?GeneratedConversion {
+        $generatedConversion = $this->moveGeneratedConversion(
+            $conversion,
+            $disk,
+            $when
+        );
 
         if (! $generatedConversion) {
             return null;
@@ -697,22 +714,32 @@ class Media extends Model
         foreach ($generatedConversion->generated_conversions->keys() as $childConversionName) {
             $this->moveGeneratedConversionToDisk(
                 disk: $disk,
-                conversion: "{$conversion}.{$childConversionName}"
+                conversion: "{$conversion}.{$childConversionName}",
+                when: $when,
             );
         }
 
         return $generatedConversion;
     }
 
+    /**
+     * @param  null|Closure(GeneratedConversion|static $item):bool  $when
+     */
     public function moveToDisk(
         string $disk,
+        ?Closure $when = null
     ): static {
+
+        if ($when && ! $when($this)) {
+            return $this;
+        }
 
         if ($this->generated_conversions) {
             foreach ($this->generated_conversions->keys() as $conversionName) {
                 $this->moveGeneratedConversionToDisk(
                     disk: $disk,
-                    conversion: $conversionName
+                    conversion: $conversionName,
+                    when: $when
                 );
             }
         }
