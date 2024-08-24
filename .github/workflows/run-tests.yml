@@ -38,11 +38,7 @@ jobs:
           coverage: none
 
       - name: Setup ffmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        with:
-          ffmpeg-version: release
-          architecture: ""
-          github-token: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+        uses: AnimMouse/setup-ffmpeg@v1
 
       - name: Setup problem matchers
         run: |
