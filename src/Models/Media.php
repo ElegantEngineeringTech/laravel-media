@@ -609,23 +609,25 @@ class Media extends Model
         ?string $disk = null,
         ?string $path = null,
     ): ?GeneratedConversion {
-        if (
-            (! $disk && ! $path) ||
-            ($disk === $this->disk && $path === $this->path) ||
-            ($disk === null && $path === $this->path) ||
-            ($disk === $this->disk && $path === null)
-        ) {
-            return null;
-        }
-
         $generatedConversion = $this->getGeneratedConversion($conversion);
 
         if (! $generatedConversion) {
             return null;
         }
 
+        if (! $generatedConversion->disk || ! $generatedConversion->path) {
+            return $generatedConversion;
+        }
+
         $newDisk = $disk ?? $generatedConversion->disk;
         $newPath = $path ?? $generatedConversion->path;
+
+        if (
+            $newDisk === $generatedConversion->disk &&
+            $newPath === $generatedConversion->path
+        ) {
+            return $generatedConversion;
+        }
 
         $generatedConversion->copyFileTo(
             disk: $newDisk,
@@ -651,17 +653,20 @@ class Media extends Model
         ?string $disk = null,
         ?string $path = null,
     ): static {
-        if (
-            (! $disk && ! $path) ||
-            ($disk === $this->disk && $path === $this->path) ||
-            ($disk === null && $path === $this->path) ||
-            ($disk === $this->disk && $path === null)
-        ) {
+
+        if (! $this->disk || ! $this->path) {
             return $this;
         }
 
         $newDisk = $disk ?? $this->disk;
         $newPath = $path ?? $this->path;
+
+        if (
+            $newDisk === $this->disk &&
+            $newPath === $this->path
+        ) {
+            return $this;
+        }
 
         $this->copyFileTo(
             disk: $newDisk,
