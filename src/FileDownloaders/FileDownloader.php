@@ -12,7 +12,7 @@ class FileDownloader
     {
         $context = stream_context_create([
             'http' => [
-                'header' => 'User-Agent: Finller laravel-media package',
+                'header' => 'User-Agent: Elegantly laravel-media package',
             ],
         ]);
 
