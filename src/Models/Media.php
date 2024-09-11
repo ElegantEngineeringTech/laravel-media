@@ -587,7 +587,7 @@ class Media extends Model
             state: $state,
             disk: $this->disk,
             height: $dimension?->getHeight(),
-            width: $dimension->getWidth(),
+            width: $dimension?->getWidth(),
             aspect_ratio: $dimension?->getRatio(forceStandards: false)->getValue(),
             size: $file->getSize(),
             duration: File::duration($file->getPathname()),
