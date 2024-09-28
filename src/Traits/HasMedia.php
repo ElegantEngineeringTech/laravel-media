@@ -72,20 +72,31 @@ trait HasMedia
     /**
      * @return TMedia
      */
-    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null)
-    {
+    public function getFirstMedia(
+        ?string $collection_name = null,
+        ?string $collection_group = null
+    ) {
         return $this->getMedia($collection_name, $collection_group)->first();
     }
 
+    /**
+     * @param  null|bool|string|array<int, string>  $fallback
+     */
     public function getFirstMediaUrl(
         ?string $collection_name = null,
         ?string $collection_group = null,
         ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+        ?array $parameters = null,
     ): ?string {
         $media = $this->getFirstMedia($collection_name, $collection_group);
 
         if ($media) {
-            return $media->getUrl($conversion);
+            return $media->getUrl(
+                conversion: $conversion,
+                fallback: $fallback,
+                parameters: $parameters
+            );
         }
 
         $collection = $this->getMediaCollection($collection_name);
