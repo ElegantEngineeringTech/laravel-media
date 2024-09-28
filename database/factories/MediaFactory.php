@@ -29,6 +29,23 @@ class MediaFactory extends Factory
         ];
     }
 
+    public function withPoster(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'generated_conversions' => collect($attributes['generated_conversions'] ?? [])
+                    ->put('poster', new GeneratedConversion(
+                        state: 'success',
+                        type: MediaType::Image,
+                        file_name: 'poster.png',
+                        name: 'poster',
+                        path: '/uuid/poster/poster.png',
+                        disk: $attributes['disk'],
+                    )),
+            ];
+        });
+    }
+
     public static function generatedConversion(?string $disk = null)
     {
         return new GeneratedConversion(

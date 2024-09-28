@@ -8,6 +8,61 @@ use FFMpeg\Coordinate\Dimension;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
+it('retrieve the url', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    expect($media->getUrl())->toBe('/storage//uuid/empty.jpg');
+    expect($media->getUrl(
+        parameters: [
+            'width' => 200,
+            'height' => 200,
+        ]
+    ))->toBe('/storage//uuid/empty.jpg?width=200&height=200');
+
+});
+
+it('retrieve the fallback url', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
+    expect($media->getUrl(
+        conversion: 'poster',
+        fallback: true,
+    ))->toBe('/storage//uuid/empty.jpg');
+
+    expect($media->getUrl(
+        conversion: 'poster',
+        fallback: true,
+        parameters: [
+            'width' => 200,
+            'height' => 200,
+        ]
+    ))->toBe('/storage//uuid/empty.jpg?width=200&height=200');
+
+});
+
+it('retrieve the conversion url', function () {
+
+    /** @var Media $media */
+    $media = MediaFactory::new()->withPoster()->make();
+
+    expect($media->getUrl(
+        conversion: 'poster',
+        fallback: true,
+    ))->toBe('/storage//uuid/poster/poster.png');
+
+    expect($media->getUrl(
+        conversion: 'poster',
+        fallback: true,
+        parameters: [
+            'width' => 200,
+            'height' => 200,
+        ]
+    ))->toBe('/storage//uuid/poster/poster.png?width=200&height=200');
+
+});
+
 it('retrieve the generated conversion key', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
@@ -64,25 +119,28 @@ it('retrieve the generated conversion url fallback', function () {
     Storage::fake('media');
 
     /** @var Media $media */
-    $media = MediaFactory::new()->make([
+    $media = MediaFactory::new()->withPoster()->make([
         'path' => '/uuid/empty.jpg',
     ]);
 
-    $media->generated_conversions = collect([
-        'poster' => new GeneratedConversion(
-            state: 'success',
-            type: MediaType::Image,
-            file_name: 'poster.png',
-            name: 'poster',
-            path: '/poster/poster.png',
-            disk: 'media',
-        ),
-    ]);
+    expect($media->getUrl(
+        conversion: 'missing',
+        fallback: true
+    ))->toBe('/storage//uuid/empty.jpg');
 
-    expect($media->getUrl('missing', true))->toBe('/storage//uuid/empty.jpg');
-    expect($media->getUrl('missing', 'poster'))->toBe('/storage//poster/poster.png');
-    expect($media->getUrl('missing', fn () => 'foo'))->toBe('foo');
-    expect($media->getUrl('missing'))->toBe(null);
+    expect($media->getUrl(
+        conversion: 'missing',
+        fallback: 'poster'
+    ))->toBe('/storage//uuid/poster/poster.png');
+
+    expect($media->getUrl(
+        conversion: 'missing',
+        fallback: 'foo'
+    ))->toBe('foo');
+
+    expect($media->getUrl(
+        conversion: 'missing'
+    ))->toBe(null);
 });
 
 it('add the generated conversion', function () {

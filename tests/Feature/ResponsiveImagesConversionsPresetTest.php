@@ -33,11 +33,5 @@ it('registers & generates all responsive image conversions from preset', functio
         expect($generatedConversion->width)->toBe($width);
     }
 
-    expect($media->getResponsiveImages())
-        ->toHaveLength(count(ResponsiveImagesConversionsPreset::DEFAULT_WIDTH));
-
-    expect($media->getSrcset())
-        ->toHaveLength(count(ResponsiveImagesConversionsPreset::DEFAULT_WIDTH));
-
     Storage::disk('media')->assertExists($generatedConversion->path);
 });

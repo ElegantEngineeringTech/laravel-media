@@ -1,19 +1,24 @@
 @props([
+    'media',
     'conversion' => null,
-    'poster' => null,
+    'fallback' => false,
+    'parameters' => null,
     'src' => null,
+    'height' => null,
+    'width' => null,
+    'alt' => null,
+    'poster' => null,
+    'posterConversion' => 'poster',
     'autoplay' => false,
     'muted' => false,
     'playsinline' => false,
     'loop' => false,
-    'media',
 ])
 
-<video {!! $attributes !!} height="{{ $media->getHeight($conversion) }}" width="{{ $media->getWidth($conversion) }}"
-    alt="{{ $media->getName($conversion) }}"
-    poster="{{ $poster ?? $media->getUrl($conversion ? $conversion . '.poster' : 'poster') }}"
-    src="{{ $src ?? $media->getUrl($conversion) }}" @if ($autoplay) autoplay @endif
-    @if ($muted) muted @endif @if ($playsinline) playsinline @endif
-    @if ($loop) loop @endif>
+<video {!! $attributes !!} src="{{ $src ?? $media->getUrl($conversion, $parameters) }}"
+    height="{{ $height ?? $media->getHeight($conversion) }}" width="{{ $width ?? $media->getWidth($conversion) }}"
+    alt="{{ $alt ?? $media->getName($conversion) }}" poster="{{ $poster ?? $media->getUrl($posterConversion) }}"
+    {{ when($autoplay, 'autoplay') }} {{ when($muted, 'muted') }} {{ when($playsinline, 'playsinline') }}
+    {{ when($loop, 'loop') }}>
     {{ $slot }}
 </video>

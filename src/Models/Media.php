@@ -10,7 +10,6 @@ use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
-use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\Traits\InteractsWithMediaFiles;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
@@ -33,6 +32,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property string $collection_name
  * @property ?string $collection_group
  * @property ?MediaType $type
+ * @property ?string $path
  * @property ?string $name
  * @property ?string $file_name
  * @property ?string $mime_type
@@ -41,12 +41,15 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $height
  * @property ?float $aspect_ratio
  * @property ?string $average_color
+ * @property ?int $size
  * @property ?int $order_column
+ * @property ?float $duration
  * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
  * @property ?InteractWithMedia $model
  * @property ?string $model_type
  * @property ?int $model_id
+ * @property-read ?string $url
  */
 class Media extends Model
 {
@@ -126,21 +129,6 @@ class Media extends Model
     }
 
     /**
-     * Retreive the path of a conversion or nested conversion
-     * Ex: $media->getPath('poster.480p')
-     */
-    public function getPath(?string $conversion = null, bool $fallback = false): ?string
-    {
-        if ($conversion) {
-            $path = $this->getGeneratedConversion($conversion)?->path;
-
-            return $fallback ? ($path ?? $this->path) : $path;
-        }
-
-        return $this->path;
-    }
-
-    /**
      * Generate the default base path for storing files
      * uuid/
      *  files
@@ -165,170 +153,6 @@ class Media extends Model
         }
 
         return $root;
-    }
-
-    /**
-     * Retreive the url of a conversion or nested conversion
-     * Ex: $media->getUrl('poster.480p')
-     *
-     * @param  null|true|string|(callable(): ?string)  $fallback
-     */
-    public function getUrl(?string $conversion = null, null|true|string|callable $fallback = null): ?string
-    {
-        $url = null;
-
-        if ($conversion) {
-            $url = $this->getGeneratedConversion($conversion)?->getUrl();
-        } elseif ($this->path) {
-            /** @var null|string $url */
-            $url = $this->getDisk()?->url($this->path);
-        }
-
-        if ($url) {
-            return $url;
-        } elseif ($fallback) {
-            if ($fallback === true) {
-                return $this->getUrl();
-            }
-
-            if (is_string($fallback)) {
-                return $this->getUrl(conversion: $fallback);
-            }
-
-            return value($fallback);
-        }
-
-        return $url;
-    }
-
-    /**
-     * Retreive the temporary url of a conversion or nested conversion
-     * Ex: $media->getTemporaryUrl('poster.480p', now()->addHour())
-     *
-     * @param  null|true|string|(callable(): ?string)  $fallback
-     */
-    public function getTemporaryUrl(
-        ?string $conversion,
-        \DateTimeInterface $expiration,
-        array $options = [],
-        null|true|string|callable $fallback = null
-    ): ?string {
-        $url = null;
-
-        if ($conversion) {
-            $url = $this->getGeneratedConversion($conversion)?->getTemporaryUrl($expiration, $options);
-        } elseif ($this->path) {
-            /** @var null|string $url */
-            $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
-        }
-
-        if ($url) {
-            return $url;
-        } elseif ($fallback) {
-            if ($fallback === true) {
-                return $this->getTemporaryUrl(null, $expiration, $options);
-            }
-
-            if (is_string($fallback)) {
-                return $this->getTemporaryUrl(conversion: $fallback, expiration: $expiration, options: $options);
-            }
-
-            return value($fallback);
-        }
-
-        return $url;
-    }
-
-    public function getWidth(?string $conversion = null, bool $fallback = false): ?int
-    {
-        if ($conversion) {
-            $width = $this->getGeneratedConversion($conversion)?->width;
-
-            return $fallback ? ($width ?? $this->width) : $width;
-        }
-
-        return $this->width;
-    }
-
-    public function getHeight(?string $conversion = null, bool $fallback = false): ?int
-    {
-        if ($conversion) {
-            $height = $this->getGeneratedConversion($conversion)?->height;
-
-            return $fallback ? ($height ?? $this->height) : $height;
-        }
-
-        return $this->height;
-    }
-
-    public function getName(?string $conversion = null, bool $fallback = false): ?string
-    {
-        if ($conversion) {
-            $name = $this->getGeneratedConversion($conversion)?->name;
-
-            return match ($fallback) {
-                true => $name ?? $this->name,
-                false => $name,
-            };
-        }
-
-        return $this->name;
-    }
-
-    public function getFileName(?string $conversion = null, bool $fallback = false): ?string
-    {
-        if ($conversion) {
-            $file_name = $this->getGeneratedConversion($conversion)?->file_name;
-
-            return match ($fallback) {
-                true => $file_name ?? $this->file_name,
-                false => $file_name,
-            };
-        }
-
-        return $this->name;
-    }
-
-    public function getSize(?string $conversion = null, bool $fallback = false): ?int
-    {
-        if ($conversion) {
-            $size = $this->getGeneratedConversion($conversion)?->size;
-
-            return match ($fallback) {
-                true => $size ?? $this->size,
-                false => $size,
-            };
-        }
-
-        return $this->size;
-    }
-
-    public function getAspectRatio(?string $conversion = null, bool $fallback = false): ?float
-    {
-        if ($conversion) {
-            $aspect_ratio = $this->getGeneratedConversion($conversion)?->aspect_ratio;
-
-            return match ($fallback) {
-                true => $aspect_ratio ?? $this->aspect_ratio,
-                false => $aspect_ratio,
-            };
-        }
-
-        return $this->aspect_ratio;
-    }
-
-    public function getMimeType(?string $conversion = null, bool $fallback = false): ?string
-    {
-        if ($conversion) {
-            $mime_type = $this->getGeneratedConversion($conversion)?->mime_type;
-
-            return match ($fallback) {
-                true => $mime_type ?? $this->mime_type,
-                false => $mime_type,
-            };
-        }
-
-        return $this->mime_type;
     }
 
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
@@ -749,30 +573,6 @@ class Media extends Model
         );
     }
 
-    public function getResponsiveImages(
-        ?string $conversion = null,
-        array $widths = ResponsiveImagesConversionsPreset::DEFAULT_WIDTH
-    ): Collection {
-        return collect($widths)
-            ->when(
-                $conversion,
-                fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion("{$conversion}.{$width}")),
-                fn (Collection $collection) => $collection->map(fn (int $width) => $this->getGeneratedConversion($width)),
-            )
-            ->filter();
-    }
-
-    /**
-     * Exemple: elva-fairy-480w.jpg 480w, elva-fairy-800w.jpg 800w
-     */
-    public function getSrcset(?string $conversion = null): Collection
-    {
-        return $this
-            ->getResponsiveImages($conversion)
-            ->filter(fn (GeneratedConversion $generatedConversion) => $generatedConversion->getUrl())
-            ->map(fn (GeneratedConversion $generatedConversion) => "{$generatedConversion->getUrl()} {$generatedConversion->width}w");
-    }
-
     /**
      * @param  null|(Closure(null|int $previous): int)  $sequence
      * @return EloquentCollection<int, static>
@@ -862,4 +662,363 @@ class Media extends Model
 
         return $this;
     }
+
+    // Attributes Getters ----------------------------------------------------------------------
+
+    /**
+     * Retreive the path of a conversion or nested conversion
+     * Ex: $media->getPath('poster.480p')
+     */
+    public function getPath(
+        ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+    ): ?string {
+        $path = null;
+
+        if ($conversion) {
+            $path = $this->getGeneratedConversion($conversion)?->path;
+        } elseif ($this->path) {
+            $path = $this->path;
+        }
+
+        if ($path) {
+            return $path;
+        } elseif ($fallback === true) {
+            return $this->getPath();
+        } elseif (is_string($fallback)) {
+            return $this->getPath(
+                conversion: $fallback,
+            ) ?? $fallback;
+        } elseif (is_array($fallback)) {
+            return $this->getPath(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Retreive the url of a conversion or nested conversion
+     * Ex: $media->getUrl('poster.480p')
+     *
+     * @param  null|bool|string|array<int, string>  $fallback
+     */
+    public function getUrl(
+        ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+        ?array $parameters = null,
+    ): ?string {
+        $url = null;
+
+        if ($conversion) {
+            $url = $this->getGeneratedConversion($conversion)?->getUrl();
+        } elseif ($this->path) {
+            /** @var null|string $url */
+            $url = $this->getDisk()?->url($this->path);
+        }
+
+        if ($url) {
+
+            if (empty($parameters)) {
+                return $url;
+            }
+
+            return $url.'?'.http_build_query($parameters);
+        } elseif ($fallback === true) {
+            return $this->getUrl(
+                parameters: $parameters,
+            );
+        } elseif (is_string($fallback)) {
+            return $this->getUrl(
+                conversion: $fallback,
+                parameters: $parameters
+            ) ?? $fallback;
+        } elseif (is_array($fallback)) {
+            return $this->getUrl(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+                parameters: $parameters
+            );
+        }
+
+        return null;
+    }
+
+    /**
+     * Retreive the temporary url of a conversion or nested conversion
+     * Ex: $media->getTemporaryUrl('poster.480p', now()->addHour())
+     *
+     * @param  null|bool|string|array<int, string>  $fallback
+     */
+    public function getTemporaryUrl(
+        \DateTimeInterface $expiration,
+        ?string $conversion = null,
+        array $options = [],
+        null|bool|string|array $fallback = null,
+        ?array $parameters = null,
+    ): ?string {
+
+        $url = null;
+
+        if ($conversion) {
+            $url = $this->getGeneratedConversion($conversion)?->getTemporaryUrl($expiration, $options);
+        } elseif ($this->path) {
+            /** @var null|string $url */
+            $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
+        }
+
+        if ($url) {
+
+            if (! empty($parameters)) {
+                return $url.'?'.http_build_query($parameters);
+            }
+
+            return $url;
+        } elseif ($fallback === true) {
+            return $this->getTemporaryUrl(
+                expiration: $expiration,
+                options: $options,
+                parameters: $parameters,
+            );
+        } elseif (is_string($fallback)) {
+            return $this->getTemporaryUrl(
+                expiration: $expiration,
+                conversion: $fallback,
+                options: $options,
+                parameters: $parameters
+            );
+        } elseif (is_array($fallback)) {
+            return $this->getTemporaryUrl(
+                expiration: $expiration,
+                conversion: array_shift($fallback),
+                options: $options,
+                fallback: $fallback,
+                parameters: $parameters
+            );
+        }
+
+        return null;
+    }
+
+    public function getWidth(
+        ?string $conversion = null,
+        null|bool|string|array|int $fallback = null,
+    ): ?int {
+        $width = null;
+
+        if ($conversion) {
+            $width = $this->getGeneratedConversion($conversion)?->width;
+        } elseif ($this->path) {
+            $width = $this->width;
+        }
+
+        if ($width) {
+            return $width;
+        } elseif ($fallback === true) {
+            return $this->getWidth();
+        } elseif (is_string($fallback)) {
+            return $this->getWidth(
+                conversion: $fallback,
+            );
+        } elseif (is_array($fallback)) {
+            return $this->getWidth(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        } elseif (is_int($fallback)) {
+            return $fallback;
+        }
+
+        return null;
+    }
+
+    public function getHeight(
+        ?string $conversion = null,
+        null|bool|string|array|int $fallback = null,
+    ): ?int {
+        $height = null;
+
+        if ($conversion) {
+            $height = $this->getGeneratedConversion($conversion)?->height;
+        } elseif ($this->path) {
+            $height = $this->height;
+        }
+
+        if ($height) {
+            return $height;
+        } elseif ($fallback === true) {
+            return $this->getHeight();
+        } elseif (is_string($fallback)) {
+            return $this->getHeight(
+                conversion: $fallback,
+            );
+        } elseif (is_array($fallback)) {
+            return $this->getHeight(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        } elseif (is_int($fallback)) {
+            return $fallback;
+        }
+
+        return null;
+    }
+
+    public function getName(
+        ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+    ): ?string {
+        $name = null;
+
+        if ($conversion) {
+            $name = $this->getGeneratedConversion($conversion)?->name;
+        } elseif ($this->path) {
+            $name = $this->name;
+        }
+
+        if ($name) {
+            return $name;
+        } elseif ($fallback === true) {
+            return $this->getName();
+        } elseif (is_string($fallback)) {
+            return $this->getName(
+                conversion: $fallback,
+            ) ?? $fallback;
+        } elseif (is_array($fallback)) {
+            return $this->getName(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        }
+
+        return null;
+    }
+
+    public function getFileName(
+        ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+    ): ?string {
+        $fileName = null;
+
+        if ($conversion) {
+            $fileName = $this->getGeneratedConversion($conversion)?->file_name;
+        } elseif ($this->path) {
+            $fileName = $this->file_name;
+        }
+
+        if ($fileName) {
+            return $fileName;
+        } elseif ($fallback === true) {
+            return $this->getFileName();
+        } elseif (is_string($fallback)) {
+            return $this->getFileName(
+                conversion: $fallback,
+            ) ?? $fallback;
+        } elseif (is_array($fallback)) {
+            return $this->getFileName(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        }
+
+        return null;
+    }
+
+    public function getSize(
+        ?string $conversion = null,
+        null|bool|string|array|int $fallback = null,
+    ): ?int {
+        $size = null;
+
+        if ($conversion) {
+            $size = $this->getGeneratedConversion($conversion)?->size;
+        } elseif ($this->path) {
+            $size = $this->size;
+        }
+
+        if ($size) {
+            return $size;
+        } elseif ($fallback === true) {
+            return $this->getSize();
+        } elseif (is_string($fallback)) {
+            return $this->getSize(
+                conversion: $fallback,
+            );
+        } elseif (is_array($fallback)) {
+            return $this->getSize(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        } elseif (is_int($fallback)) {
+            return $fallback;
+        }
+
+        return null;
+    }
+
+    public function getAspectRatio(
+        ?string $conversion = null,
+        null|bool|string|array|float $fallback = null,
+    ): ?float {
+        $aspectRatio = null;
+
+        if ($conversion) {
+            $aspectRatio = $this->getGeneratedConversion($conversion)?->aspect_ratio;
+        } elseif ($this->path) {
+            $aspectRatio = $this->aspect_ratio;
+        }
+
+        if ($aspectRatio) {
+            return $aspectRatio;
+        } elseif ($fallback === true) {
+            return $this->getAspectRatio();
+        } elseif (is_string($fallback)) {
+            return $this->getAspectRatio(
+                conversion: $fallback,
+            );
+        } elseif (is_array($fallback)) {
+            return $this->getAspectRatio(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        } elseif (is_float($fallback)) {
+            return $fallback;
+        }
+
+        return null;
+    }
+
+    public function getMimeType(
+        ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+    ): ?string {
+        $mimeType = null;
+
+        if ($conversion) {
+            $mimeType = $this->getGeneratedConversion($conversion)?->mime_type;
+        } elseif ($this->path) {
+            $mimeType = $this->mime_type;
+        }
+
+        if ($mimeType) {
+            return $mimeType;
+        } elseif ($fallback === true) {
+            return $this->getMimeType();
+        } elseif (is_string($fallback)) {
+            return $this->getMimeType(
+                conversion: $fallback,
+            ) ?? $fallback;
+        } elseif (is_array($fallback)) {
+            return $this->getMimeType(
+                conversion: array_shift($fallback),
+                fallback: $fallback,
+            );
+        }
+
+        return null;
+    }
+
+    // End attributes getters ----------------------------------------------------------------------
 }
