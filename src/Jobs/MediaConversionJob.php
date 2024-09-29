@@ -84,13 +84,15 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function isNestedConversion(): bool
     {
-        return count(explode('.', $this->conversionName)) > 1;
+        return str($this->conversionName)->contains('.');
     }
 
     public function getGeneratedParentConversion(): ?GeneratedConversion
     {
         if ($this->isNestedConversion()) {
-            return $this->media->getGeneratedParentConversion($this->conversionName);
+            return $this->media->getGeneratedConversion(
+                str($this->conversionName)->beforeLast('.')->value()
+            );
         }
 
         return null;

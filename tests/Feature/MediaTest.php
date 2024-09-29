@@ -67,9 +67,9 @@ it('retrieve the generated conversion key', function () {
     /** @var Media $media */
     $media = MediaFactory::new()->make();
 
-    expect($media->getConversionKey('poster'))->toBe('poster');
-    expect($media->getConversionKey('poster.480p'))->toBe('poster.generated_conversions.480p');
-    expect($media->getConversionKey('poster.square.480p'))->toBe('poster.generated_conversions.square.generated_conversions.480p');
+    expect($media->makeGeneratedConversionKey('poster'))->toBe('poster');
+    expect($media->makeGeneratedConversionKey('poster.480p'))->toBe('poster.generated_conversions.480p');
+    expect($media->makeGeneratedConversionKey('poster.square.480p'))->toBe('poster.generated_conversions.square.generated_conversions.480p');
 });
 
 it('retrieve the generated conversion', function () {

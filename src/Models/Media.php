@@ -95,7 +95,7 @@ class Media extends Model
         return Attribute::get(fn () => $this->getUrl());
     }
 
-    public function getConversionKey(string $conversion): string
+    public function makeGeneratedConversionKey(string $conversion): string
     {
         return str_replace('.', '.generated_conversions.', $conversion);
     }
@@ -106,21 +106,16 @@ class Media extends Model
      */
     public function getGeneratedConversion(string $conversion, ?string $state = null): ?GeneratedConversion
     {
-        $generatedConversion = data_get($this->generated_conversions, $this->getConversionKey($conversion));
+        $generatedConversion = data_get(
+            $this->generated_conversions,
+            $this->makeGeneratedConversionKey($conversion)
+        );
 
         if ($state) {
             return $generatedConversion?->state === $state ? $generatedConversion : null;
         }
 
         return $generatedConversion;
-    }
-
-    public function getGeneratedParentConversion(string $conversion, ?string $state = null): ?GeneratedConversion
-    {
-        $genealogy = explode('.', $conversion);
-        $parents = implode('.', array_slice($genealogy, 0, -1));
-
-        return $this->getGeneratedConversion($parents, $state);
     }
 
     public function hasGeneratedConversion(string $conversion, ?string $state = null): bool
@@ -136,8 +131,10 @@ class Media extends Model
      *      /conversionName
      *      files
      */
-    public function generateBasePath(?string $conversion = null): string
-    {
+    public function makePath(
+        ?string $conversion = null,
+        ?string $fileName = null
+    ): string {
         $prefix = config('media.generated_path_prefix', '');
 
         $root = Str::of($prefix)
@@ -148,11 +145,12 @@ class Media extends Model
         if ($conversion) {
             return $root
                 ->append('generated_conversions/')
-                ->append(str_replace('.', '/', $this->getConversionKey($conversion)))
-                ->finish('/');
+                ->append(str_replace('.', '/', $this->makeGeneratedConversionKey($conversion)))
+                ->finish('/')
+                ->append($fileName ?? '');
         }
 
-        return $root;
+        return $root->append($fileName ?? '');
     }
 
     public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
@@ -231,7 +229,7 @@ class Media extends Model
 
         $file = $this->performMediaTransformations($file);
 
-        $basePath = Str::finish($basePath ?? $this->generateBasePath(), '/');
+        $basePath = Str::finish($basePath ?? $this->makePath(), '/');
 
         $this->name = Str::limit(
             File::sanitizeFilename($name ?? File::name($file)),
@@ -405,7 +403,7 @@ class Media extends Model
             name: $name,
             extension: $extension,
             file_name: $file_name,
-            path: Str::of($basePath ?? $this->generateBasePath($conversion))->finish('/')->append($file_name),
+            path: Str::of($basePath ?? $this->makePath($conversion))->finish('/')->append($file_name),
             mime_type: $mime_type,
             type: $type,
             state: $state,
@@ -610,9 +608,10 @@ class Media extends Model
             return null;
         }
 
-        $this->deleteGeneratedConversionFiles($conversion);
-        $this->forgetGeneratedConversion($conversion);
-        $this->save();
+        $this
+            ->deleteGeneratedConversionFiles($conversion)
+            ->forgetGeneratedConversion($conversion)
+            ->save();
 
         return $generatedConversion;
     }
