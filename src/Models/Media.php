@@ -809,7 +809,7 @@ class Media extends Model
 
         if ($conversion) {
             $width = $this->getGeneratedConversion($conversion)?->width;
-        } elseif ($this->path) {
+        } else {
             $width = $this->width;
         }
 
@@ -841,7 +841,7 @@ class Media extends Model
 
         if ($conversion) {
             $height = $this->getGeneratedConversion($conversion)?->height;
-        } elseif ($this->path) {
+        } else {
             $height = $this->height;
         }
 
@@ -873,7 +873,7 @@ class Media extends Model
 
         if ($conversion) {
             $name = $this->getGeneratedConversion($conversion)?->name;
-        } elseif ($this->path) {
+        } else {
             $name = $this->name;
         }
 
@@ -903,7 +903,7 @@ class Media extends Model
 
         if ($conversion) {
             $fileName = $this->getGeneratedConversion($conversion)?->file_name;
-        } elseif ($this->path) {
+        } else {
             $fileName = $this->file_name;
         }
 
@@ -933,7 +933,7 @@ class Media extends Model
 
         if ($conversion) {
             $size = $this->getGeneratedConversion($conversion)?->size;
-        } elseif ($this->path) {
+        } else {
             $size = $this->size;
         }
 
@@ -965,7 +965,7 @@ class Media extends Model
 
         if ($conversion) {
             $aspectRatio = $this->getGeneratedConversion($conversion)?->aspect_ratio;
-        } elseif ($this->path) {
+        } else {
             $aspectRatio = $this->aspect_ratio;
         }
 
@@ -997,7 +997,7 @@ class Media extends Model
 
         if ($conversion) {
             $mimeType = $this->getGeneratedConversion($conversion)?->mime_type;
-        } elseif ($this->path) {
+        } else {
             $mimeType = $this->mime_type;
         }
 
