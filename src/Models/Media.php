@@ -230,30 +230,30 @@ class Media extends Model
         return $value;
     }
 
+    /**
+     * @return array<string, MediaConversionDefinition>
+     */
+    public function getChildrenConversionsDefinitions(string $name): array
+    {
+        return $this->getConversionDefinition($name)?->conversions ?? [];
+    }
+
     public function dispatchConversion(string $conversion): ?PendingDispatch
     {
-
-        $definition = $this->getConversionDefinition($conversion);
-
-        if (! $definition) {
-            return null;
+        if ($definition = $this->getConversionDefinition($conversion)) {
+            return $definition->dispatch($this, $this->getParentConversion($conversion));
         }
 
-        return $definition->dispatch($this, $this->getParentConversion($conversion));
-
+        return null;
     }
 
     public function executeConversion(string $conversion): ?MediaConversion
     {
-
-        $definition = $this->getConversionDefinition($conversion);
-
-        if (! $definition) {
-            return null;
+        if ($definition = $this->getConversionDefinition($conversion)) {
+            return $definition->execute($this, $this->getParentConversion($conversion));
         }
 
-        return $definition->execute($this, $this->getParentConversion($conversion));
-
+        return null;
     }
 
     public function getConversion(string $name): ?MediaConversion
@@ -321,7 +321,7 @@ class Media extends Model
         if ($existingConversion) {
             $existingConversion->deleteFile();
             $this->deleteChildrenConversion($conversionName);
-        } elseif ($this->relationLoaded('conversions')) {
+        } else {
             $this->conversions->push($conversion);
         }
 
@@ -339,7 +339,7 @@ class Media extends Model
         ?MediaConversion $parent = null
     ): static {
         if ($parent) {
-            $definitions = $this->getConversionDefinition($parent->conversion_name)?->conversions ?? [];
+            $definitions = $this->getChildrenConversionsDefinitions($parent->conversion_name);
         } else {
             $definitions = $this->getConversionsDefinitions();
         }
@@ -426,7 +426,8 @@ class Media extends Model
         ?string $conversion = null,
         ?string $fileName = null
     ): string {
-        $prefix = config()->string('media.generated_path_prefix', '');
+        /** @var string $prefix */
+        $prefix = config('media.generated_path_prefix') ?? '';
 
         $root = Str::of($prefix)
             ->when($prefix, fn ($string) => $string->finish('/'))
