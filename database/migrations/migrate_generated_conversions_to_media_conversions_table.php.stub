@@ -1,0 +1,102 @@
+<?php
+
+use Elegantly\Media\Models\Media;
+use Elegantly\Media\Models\MediaConversion;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Arr;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Media::query()
+            ->chunkById(5_000, function ($items) {
+
+                foreach ($items as $media) {
+
+                    if (! $media->generated_conversions) {
+                        continue;
+                    }
+
+                    /** @var array<int, array> $generatedConversions */
+                    $generatedConversions = json_decode($media->generated_conversions, true);
+
+                    if (empty($generatedConversions)) {
+                        continue;
+                    }
+
+                    $conversions = $this->generatedConversionsToMediaConversions(
+                        $generatedConversions,
+                    );
+
+                    $media->conversions()->saveMany($conversions);
+
+                }
+
+            });
+
+        Schema::create('media', function (Blueprint $table) {
+            $table->dropColumn('generated_conversions');
+        });
+
+    }
+
+    public function down()
+    {
+        Schema::create('media', function (Blueprint $table) {
+            $table->json('generated_conversions')->nullable();
+        });
+    }
+
+    /**
+     * @return array<int, MediaConversion>
+     */
+    public function generatedConversionsToMediaConversions(
+        array $generatedConversions,
+        ?string $parent = null,
+    ): array {
+
+        return collect($generatedConversions)
+            ->flatMap(function (array $generatedConversion, string $conversionName) use ($parent) {
+
+                $fullName = $parent ? "{$parent}.{$conversionName}" : $conversionName;
+
+                $root = new MediaConversion([
+                    'conversion_name' => $fullName,
+                    ...Arr::only($generatedConversion, [
+                        'state',
+                        'state_set_at',
+                        'disk',
+                        'path',
+                        'type',
+                        'name',
+                        'extension',
+                        'file_name',
+                        'mime_type',
+                        'width',
+                        'height',
+                        'aspect_ratio',
+                        'average_color',
+                        'size',
+                        'duration',
+                        'metadata',
+                        'created_at',
+                        'updated_at',
+                    ]),
+                ]);
+
+                if ($children = data_get($generatedConversion, 'generated_conversions')) {
+                    return [
+                        $root,
+                        ...$this->generatedConversionsToMediaConversions($children, $fullName),
+                    ];
+                }
+
+                return [$root];
+
+            })
+            ->toArray();
+
+    }
+};

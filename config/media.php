@@ -10,6 +10,8 @@ return [
      */
     'model' => Media::class,
 
+    'temporary_storage_path' => 'app/tmp/media',
+
     /**
      * The default disk used for storing files
      */
@@ -57,22 +59,5 @@ return [
      * null will fall back to the default Laravel queue
      */
     'queue' => null,
-
-    /**
-     * Customize WithoutOverlapping middleware settings
-     */
-    'queue_overlapping' => [
-        /**
-         * The release value should be longer than the longest conversion job that might run
-         * Default is: 1 minute. Increase it if your jobs are longer.
-         */
-        'release_after' => 60,
-        /**
-         * The expire value allows you to forget a lock in case of an unexpected job failure
-         *
-         * @see https://laravel.com/docs/10.x/queues#preventing-job-overlaps
-         */
-        'expire_after' => 60 * 60,
-    ],
 
 ];

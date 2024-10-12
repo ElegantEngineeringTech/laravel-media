@@ -3,22 +3,21 @@
 namespace Elegantly\Media\Events;
 
 use Elegantly\Media\Models\Media;
+use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Disptached when any new file
+ * Disptached when a new file is strored
  */
 class MediaFileStoredEvent
 {
     use Dispatchable, SerializesModels;
 
     /**
-     * Create a new event instance.
-     *
      * @return void
      */
-    public function __construct(public Media $media, public string $path)
+    public function __construct(public Media|MediaConversion $media)
     {
         //
     }

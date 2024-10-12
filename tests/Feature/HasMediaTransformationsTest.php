@@ -1,19 +1,26 @@
 <?php
 
-use Elegantly\Media\Tests\Models\TestWithMediaTransformations;
+use Elegantly\Media\Tests\Models\Test;
 use Illuminate\Support\Facades\Storage;
 
 it('perform media transformations before storing files', function () {
     Storage::fake('media');
 
-    $model = new TestWithMediaTransformations;
+    $model = new Test;
     $model->save();
 
-    $file = $this->getTestFile('images/800x900.jpg');
+    $original = $this->getTestFile('images/800x900.png');
+
+    $path = Storage::disk('media')
+        ->putFileAs(
+            'copy',
+            $original,
+            '800x900.jpg'
+        );
 
     $media = $model->addMedia(
-        file: $file,
-        collection_name: 'avatar',
+        file: Storage::disk('media')->path($path),
+        collectionName: 'transform',
         disk: 'media'
     );
 

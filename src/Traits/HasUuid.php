@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
  */
 trait HasUuid
 {
-    public function initializeHasUuid()
+    public function initializeHasUuid(): void
     {
         if (blank($this->uuid)) {
             $this->uuid = (string) Str::uuid();

@@ -8,12 +8,19 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('media', function (Blueprint $table) {
+        Schema::create('media_conversions', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
 
-            $table->string('collection_name')->index();
-            $table->string('collection_group')->nullable();
+            $table->string('conversion_name');
+
+            $table->foreignId('media_id');
+
+            $table->string('state')->nullable();
+            $table->dateTime('state_set_at')->nullable();
+
+            $table->longText('contents')->nullable();
+
             $table->string('disk')->nullable();
 
             $table->text('path')->nullable();
@@ -29,20 +36,14 @@ return new class extends Migration
             $table->string('average_color')->nullable();
             $table->decimal('duration', 19, 2, true)->nullable();
 
-            $table->unsignedBigInteger('order_column')->nullable()->index();
             $table->json('metadata')->nullable();
 
-            $table->json('generated_conversions')->nullable();
-
-            $table->nullableMorphs('model');
-
             $table->timestamps();
-
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('media');
+        Schema::dropIfExists('media_conversations');
     }
 };

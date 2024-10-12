@@ -3,116 +3,97 @@
 namespace Elegantly\Media\Contracts;
 
 use Elegantly\Media\MediaCollection;
-use Elegantly\Media\MediaConversion;
 use Elegantly\Media\Models\Media;
+use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Collection;
 
 /**
+ * @mixin \Illuminate\Database\Eloquent\Model
+ *
  * @template TMedia of Media
+ *
+ * @property Collection<int, TMedia> $media
  */
 interface InteractWithMedia
 {
     /**
-     * @return EloquentCollection<int, TMedia>
+     * @return MorphMany<TMedia>
      */
-    public function getMedia(?string $collection_name = null, ?string $collection_group = null): EloquentCollection;
-
-    public function hasMedia(?string $collection_name = null, ?string $collection_group = null): bool;
+    public function media(): MorphMany;
 
     /**
-     * @return ?TMedia
-     */
-    public function getFirstMedia(?string $collection_name = null, ?string $collection_group = null);
-
-    public function getFirstMediaUrl(
-        ?string $collection_name = null,
-        ?string $collection_group = null,
-        ?string $conversion = null,
-    ): ?string;
-
-    /**
-     * @return Arrayable<int,MediaCollection>|iterable<MediaCollection>|null
+     * @return Arrayable<array-key, MediaCollection>|iterable<MediaCollection>|null
      */
     public function registerMediaCollections(): Arrayable|iterable|null;
 
-    /**
-     * @param  TMedia  $media
-     * @return Arrayable<int|string,MediaConversion>|iterable<MediaConversion>|null
-     */
-    public function registerMediaConversions($media): Arrayable|iterable|null;
+    public function getMediaCollection(string $collectionName): ?MediaCollection;
 
     /**
-     * @param  TMedia  $media
+     * @return Collection<int, TMedia>
      */
-    public function registerMediaTransformations($media, UploadedFile|File $file): UploadedFile|File;
-
-    /**
-     * @return Collection<string, MediaCollection>
-     */
-    public function getMediaCollections(): Collection;
-
-    public function hasMediaCollection(string $collection_name): bool;
-
-    public function getMediaCollection(string $collection_name): ?MediaCollection;
-
-    /**
-     * @param  TMedia  $media
-     * @return Collection<string, MediaConversion>
-     */
-    public function getMediaConversions($media): Collection;
-
-    public function getMediaConversionKey(string $conversion): string;
-
-    /**
-     * @param  TMedia  $media
-     */
-    public function getMediaConversion($media, string $conversion): ?MediaConversion;
-
-    /**
-     * @param  int[]  $except  Array of Media Ids
-     * @return Collection<int, TMedia> The deleted media list
-     */
-    public function clearMediaCollection(
-        string $collection_name,
-        ?string $collection_group = null,
-        array $except = []
+    public function getMedia(
+        ?string $collectionName = null,
+        ?string $collectionGroup = null
     ): Collection;
 
     /**
      * @return ?TMedia
      */
-    public function deleteMedia(int $mediaId);
+    public function getFirstMedia(
+        ?string $collectionName = null,
+        ?string $collectionGroup = null
+    ): ?Media;
+
+    public function getFirstMediaUrl(
+        ?string $collectionName = null,
+        ?string $collectionGroup = null
+    ): ?string;
 
     /**
-     * @param  string|UploadedFile|resource  $file
+     * @param  string|resource|UploadedFile|File  $file
      * @return TMedia
      */
     public function addMedia(
         mixed $file,
-        ?string $collection_name = null,
-        ?string $collection_group = null,
-        ?string $disk = null,
+        ?string $collectionName = null,
+        ?string $collectionGroup = null,
         ?string $name = null,
-        ?string $order = null,
-        ?array $metadata = null,
-    );
+        ?string $disk = null,
+    ): Media;
 
     /**
-     * @param  TMedia  $media
+     * @return $this
      */
-    public function dispatchConversion($media, string $conversionName): static;
+    public function deleteMedia(int $mediaId): static;
 
     /**
-     * @param  TMedia  $media
+     * @param  array<array-key, string|int>  $except
+     * @return $this
      */
-    public function dispatchConversions(
-        $media,
-        ?bool $force = false,
-        ?array $only = null,
-        ?array $except = null,
+    public function clearMediaCollection(
+        string $collectionName,
+        ?string $collectionGroup = null,
+        array $except = [],
     ): static;
+
+    /**
+     * @param  int|TMedia  $media
+     */
+    public function dispatchMediaConversion(
+        int|Media $media,
+        string $conversion
+    ): ?PendingDispatch;
+
+    /**
+     * @param  int|TMedia  $media
+     */
+    public function executeMediaConversion(
+        int|Media $media,
+        string $conversion
+    ): ?MediaConversion;
 }

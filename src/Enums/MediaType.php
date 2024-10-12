@@ -40,7 +40,7 @@ enum MediaType: string
      */
     public static function tryFromStreams(string $path): self
     {
-        $type = self::tryFromMimeType(File::mimeType($path));
+        $type = self::tryFromMimeType(File::mimeType($path) ?? '');
 
         if (
             $type === self::Video ||

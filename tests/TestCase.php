@@ -37,6 +37,8 @@ class TestCase extends Orchestra
 
         $migration = include __DIR__.'/../database/migrations/create_media_table.php.stub';
         $migration->up();
+        $migration = include __DIR__.'/../database/migrations/create_media_conversions_table.php.stub';
+        $migration->up();
 
         $app['db']->connection()->getSchemaBuilder()->create('tests', function (Blueprint $table) {
             $table->increments('id');

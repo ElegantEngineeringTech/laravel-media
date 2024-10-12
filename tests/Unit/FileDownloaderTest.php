@@ -9,7 +9,10 @@ it('download a file from an url as a temporary file', function () {
         ->location(storage_path('media-tmp'))
         ->create();
 
-    $path = FileDownloader::getTemporaryFile($this->dummy_pdf_url, $temporaryDirectory);
+    $path = FileDownloader::fromUrl(
+        $this->dummy_pdf_url,
+        $temporaryDirectory->path()
+    );
 
     expect(is_file($path))->toBe(true);
 
@@ -24,9 +27,9 @@ it('download a file from an url as a temporary file and sets the right extension
         ->location(storage_path('media-tmp'))
         ->create();
 
-    $path = FileDownloader::getTemporaryFile(
+    $path = FileDownloader::fromUrl(
         'https://icon.horse/icon/discord.com',
-        $temporaryDirectory
+        $temporaryDirectory->path()
     );
 
     expect(is_file($path))->toBe(true);

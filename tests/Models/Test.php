@@ -2,17 +2,19 @@
 
 namespace Elegantly\Media\Tests\Models;
 
-use Elegantly\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\Concerns\HasMedia;
+use Elegantly\Media\Definitions\MediaConversionImage;
+use Elegantly\Media\Definitions\MediaConversionPoster;
+use Elegantly\Media\Definitions\MediaConversionVideo;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\Jobs\OptimizedImageConversionJob;
+use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaCollection;
-use Elegantly\Media\MediaConversion;
-use Elegantly\Media\Traits\HasMedia;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Image\Enums\Fit;
+use Spatie\Image\Image;
 
-class Test extends Model implements InteractWithMedia
+class Test extends Model
 {
     use HasMedia;
 
@@ -29,7 +31,7 @@ class Test extends Model implements InteractWithMedia
                 public: false,
             ),
             new MediaCollection(
-                name: 'avatar',
+                name: 'single',
                 single: true,
                 public: true,
             ),
@@ -39,34 +41,49 @@ class Test extends Model implements InteractWithMedia
                 public: true,
                 fallback: fn () => 'fallback-value'
             ),
+            new MediaCollection(
+                name: 'transform',
+                single: false,
+                public: true,
+                transform: function ($file) {
+                    $path = $file->getRealPath();
+                    $type = File::type($path);
+
+                    if ($type === MediaType::Image) {
+
+                        Image::load($path)
+                            ->fit(Fit::Crop, 500, 500)
+                            ->optimize()
+                            ->save();
+
+                    }
+
+                    return $file;
+                }
+            ),
+            new MediaCollection(
+                name: 'conversions',
+                single: false,
+                public: false,
+                conversions: [
+                    new MediaConversionPoster(
+                        name: 'poster',
+                        queued: false,
+                        conversions: [
+                            new MediaConversionImage(
+                                name: '360',
+                                width: 360,
+                                queued: false,
+                            ),
+                        ]
+                    ),
+                    new MediaConversionVideo(
+                        name: 'small',
+                        queued: true,
+                        width: 100,
+                    ),
+                ]
+            ),
         ];
-    }
-
-    public function registerMediaConversions($media): Arrayable|iterable|null
-    {
-        $conversions = collect();
-
-        if ($media->type === MediaType::Image) {
-            $conversions->push(new MediaConversion(
-                conversionName: 'optimized',
-                job: new OptimizedImageConversionJob(
-                    media: $media,
-                )
-            ));
-
-            if ($media->collection_name === 'avatar') {
-                $conversions->push(new MediaConversion(
-                    conversionName: 'small',
-                    job: new OptimizedImageConversionJob(
-                        media: $media,
-                        width: 5,
-                        height: 5,
-                        fit: Fit::Crop
-                    )
-                ));
-            }
-        }
-
-        return $conversions;
     }
 }

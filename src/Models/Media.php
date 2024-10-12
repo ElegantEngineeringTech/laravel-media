@@ -2,29 +2,31 @@
 
 namespace Elegantly\Media\Models;
 
+use Carbon\Carbon;
 use Closure;
-use Elegantly\Media\Casts\GeneratedConversion;
-use Elegantly\Media\Casts\GeneratedConversions;
+use Elegantly\Media\Concerns\InteractWithFiles;
 use Elegantly\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
-use Elegantly\Media\Traits\InteractsWithMediaFiles;
+use Exception;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 /**
  * @property int $id
@@ -32,6 +34,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property string $collection_name
  * @property ?string $collection_group
  * @property ?MediaType $type
+ * @property ?string $disk
  * @property ?string $path
  * @property ?string $name
  * @property ?string $file_name
@@ -44,17 +47,22 @@ use Spatie\TemporaryDirectory\TemporaryDirectory;
  * @property ?int $size
  * @property ?int $order_column
  * @property ?float $duration
- * @property ?Collection<string, GeneratedConversion> $generated_conversions
  * @property ?ArrayObject $metadata
  * @property ?InteractWithMedia $model
  * @property ?string $model_type
  * @property ?int $model_id
+ * @property EloquentCollection<int, MediaConversion> $conversions
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read ?string $url
  */
 class Media extends Model
 {
+    /** @use HasFactory<MediaFactory> */
+    use HasFactory;
+
     use HasUuid;
-    use InteractsWithMediaFiles;
+    use InteractWithFiles;
 
     /**
      * @var array<int, string>
@@ -69,73 +77,356 @@ class Media extends Model
     protected $casts = [
         'type' => MediaType::class,
         'metadata' => AsArrayObject::class,
-        'generated_conversions' => GeneratedConversions::class,
     ];
 
     public static function booted()
     {
         static::deleting(function (Media $media) {
-            $media->generated_conversions
-                ?->keys()
-                ->each(function (string $conversion) use ($media) {
-                    $media->deleteGeneratedConversionFiles($conversion);
-                });
 
-            $media->deleteMediaFiles();
+            $media->conversions->each(fn ($conversion) => $conversion->delete());
+
+            $media->deleteFile();
         });
     }
 
-    public function model(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
+    /**
+     * @return Attribute<null|string, never>
+     */
     protected function url(): Attribute
     {
         return Attribute::get(fn () => $this->getUrl());
     }
 
-    public function makeGeneratedConversionKey(string $conversion): string
+    /**
+     * @return MorphTo<Model, Media>
+     */
+    public function model(): MorphTo
     {
-        return str_replace('.', '.generated_conversions.', $conversion);
+        return $this->morphTo();
     }
 
     /**
-     * Retreive a conversion or nested conversion
-     * Ex: $media->getGeneratedConversion('poster.480p')
+     * @return HasMany<MediaConversion>
      */
-    public function getGeneratedConversion(string $conversion, ?string $state = null): ?GeneratedConversion
+    public function conversions(): HasMany
     {
-        $generatedConversion = data_get(
-            $this->generated_conversions,
-            $this->makeGeneratedConversionKey($conversion)
-        );
+        return $this->hasMany(MediaConversion::class);
+    }
 
-        if ($state) {
-            return $generatedConversion?->state === $state ? $generatedConversion : null;
+    // Storing File ----------------------------------------------------------
+
+    /**
+     * @param  string|UploadedFile|HttpFile|resource  $file
+     * @param  null|(Closure(UploadedFile|HttpFile $file):(UploadedFile|HttpFile))  $before
+     */
+    public function storeFile(
+        mixed $file,
+        ?string $destination = null,
+        ?string $name = null,
+        ?string $disk = null,
+        ?Closure $before = null,
+    ): static {
+        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
+            return $this->storeFileFromHttpFile($file, $destination, $name, $disk, $before);
         }
 
-        return $generatedConversion;
+        if (
+            (is_string($file) && filter_var($file, FILTER_VALIDATE_URL)) ||
+            ! is_string($file)
+        ) {
+            return TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
+                $path = FileDownloader::download(
+                    file: $file,
+                    destination: $temporaryDirectory->path()
+                );
+
+                return $this->storeFileFromHttpFile(new HttpFile($path), $destination, $name, $disk, $before);
+            });
+        }
+
+        return $this->storeFileFromHttpFile(new HttpFile($file), $destination, $name, $disk, $before);
     }
 
-    public function hasGeneratedConversion(string $conversion, ?string $state = null): bool
-    {
-        return (bool) $this->getGeneratedConversion($conversion, $state);
+    /**
+     * @param  null|(Closure(UploadedFile|HttpFile $file):(UploadedFile|HttpFile))  $before
+     */
+    public function storeFileFromHttpFile(
+        UploadedFile|HttpFile $file,
+        ?string $destination = null,
+        ?string $name = null,
+        ?string $disk = null,
+        ?Closure $before = null,
+    ): static {
+
+        $destination ??= $this->makeFreshPath();
+        $name ??= File::name($file) ?? Str::random(6);
+        $disk ??= $this->disk ?? config()->string('media.disk', config()->string('filesystems.default', 'local'));
+
+        if ($before) {
+            $file = $before($file);
+        }
+
+        $path = $this->putFile(
+            disk: $disk,
+            destination: $destination,
+            file: $file,
+            name: $name,
+        );
+
+        if (! $path) {
+            throw new Exception("Storing Media File '{$file->getPath()}' to disk '{$disk}' at '{$destination}' failed.");
+        }
+
+        $this->save();
+
+        event(new MediaFileStoredEvent($this));
+
+        return $this;
     }
+
+    // \ Storing File ----------------------------------------------------------
+
+    // Managing Conversions ----------------------------------------------------------
+
+    /**
+     * @return MediaConversionDefinition[]
+     */
+    public function registerConversions(): array
+    {
+        return [];
+    }
+
+    /**
+     * Retreive conversions defined in both the Media and the Model MediaCollection
+     * Model's MediaCollection definitions override the Media's definitions
+     *
+     * @return array<string, MediaConversionDefinition>
+     */
+    public function getConversionsDefinitions(): array
+    {
+        $conversions = collect($this->registerConversions());
+
+        if (
+            $this->model &&
+            $collection = $this->model->getMediaCollection($this->collection_name)
+        ) {
+            $conversions->push(...array_values($collection->conversions));
+        }
+
+        /** @var array<string, MediaConversionDefinition> */
+        $value = $conversions->keyBy('name')->toArray();
+
+        return $value;
+    }
+
+    public function getConversionDefinition(string $name): ?MediaConversionDefinition
+    {
+        /** @var ?MediaConversionDefinition $value */
+        $value = data_get(
+            target: $this->getConversionsDefinitions(),
+            key: str_replace('.', '.conversions.', $name)
+        );
+
+        return $value;
+    }
+
+    public function dispatchConversion(string $conversion): ?PendingDispatch
+    {
+
+        $definition = $this->getConversionDefinition($conversion);
+
+        if (! $definition) {
+            return null;
+        }
+
+        return $definition->dispatch($this, $this->getParentConversion($conversion));
+
+    }
+
+    public function executeConversion(string $conversion): ?MediaConversion
+    {
+
+        $definition = $this->getConversionDefinition($conversion);
+
+        if (! $definition) {
+            return null;
+        }
+
+        return $definition->execute($this, $this->getParentConversion($conversion));
+
+    }
+
+    public function getConversion(string $name): ?MediaConversion
+    {
+        return $this->conversions->firstWhere('conversion_name', $name);
+    }
+
+    public function getParentConversion(string $name): ?MediaConversion
+    {
+        if (! str_contains($name, '.')) {
+            return null;
+        }
+
+        return $this->getConversion(str($name)->beforeLast('.'));
+    }
+
+    /**
+     * @return EloquentCollection<int, MediaConversion>
+     */
+    public function getChildrenConversions(string $name): EloquentCollection
+    {
+        return $this->conversions->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
+    }
+
+    /**
+     * @param  string|resource|UploadedFile|HttpFile  $file
+     */
+    public function addConversion(
+        $file,
+        string $conversionName,
+        ?MediaConversion $parent = null,
+        ?string $name = null,
+        ?string $destination = null,
+        ?string $disk = null,
+    ): MediaConversion {
+
+        if (
+            $parent &&
+            ! str_contains($conversionName, '.')
+        ) {
+            $conversionName = "{$parent->conversion_name}.{$conversionName}";
+        }
+
+        if ($conversion = $this->getConversion($conversionName)) {
+            $existingConversion = clone $conversion;
+        } else {
+            $existingConversion = null;
+            $conversion = new MediaConversion;
+        }
+
+        $conversion->fill([
+            'conversion_name' => $conversionName,
+            'media_id' => $this->id,
+            'state' => 'success',
+            'state_set_at' => now(),
+        ]);
+
+        $conversion = $conversion->storeFile(
+            file: $file,
+            destination: $destination ?? $this->makeFreshPath($conversionName),
+            name: $name,
+            disk: $disk ?? $this->disk
+        );
+
+        if ($existingConversion) {
+            $existingConversion->deleteFile();
+            $this->deleteChildrenConversion($conversionName);
+        } elseif ($this->relationLoaded('conversions')) {
+            $this->conversions->push($conversion);
+        }
+
+        $this->dispatchConversions(
+            parent: $conversion,
+        );
+
+        return $conversion;
+    }
+
+    /**
+     * @return $this
+     */
+    public function dispatchConversions(
+        ?MediaConversion $parent = null
+    ): static {
+        if ($parent) {
+            $definitions = $this->getConversionDefinition($parent->conversion_name)?->conversions ?? [];
+        } else {
+            $definitions = $this->getConversionsDefinitions();
+        }
+
+        foreach ($definitions as $definition) {
+            if (! $definition->immediate) {
+                continue;
+            }
+
+            if (! $definition->shouldExecute(
+                media: $this,
+                parent: $parent
+            )) {
+                continue;
+            }
+
+            if ($definition->queued) {
+                $definition->dispatch(
+                    media: $this,
+                    parent: $parent,
+                );
+            } else {
+                $definition->execute(
+                    media: $this,
+                    parent: $parent
+                );
+            }
+        }
+
+        return $this;
+
+    }
+
+    /**
+     * Delete Media Conversions and its derived conversions
+     */
+    public function deleteConversion(string $conversionName): static
+    {
+        $deleted = $this->conversions
+            ->filter(function ($conversion) use ($conversionName) {
+                if ($conversion->conversion_name === $conversionName) {
+                    return true;
+                }
+
+                return str($conversion->conversion_name)->startsWith("{$conversionName}.");
+            })
+            ->each(fn ($conversion) => $conversion->delete());
+
+        $this->setRelation(
+            'conversions',
+            $this->conversions->except($deleted->modelKeys())
+        );
+
+        return $this;
+    }
+
+    public function deleteChildrenConversion(string $conversionName): static
+    {
+        $deleted = $this->conversions
+            ->filter(function ($conversion) use ($conversionName) {
+                return str($conversion->conversion_name)->startsWith("{$conversionName}.");
+            })
+            ->each(fn ($conversion) => $conversion->delete());
+
+        $this->setRelation(
+            'conversions',
+            $this->conversions->except($deleted->modelKeys())
+        );
+
+        return $this;
+    }
+
+    // \ Managing Conversions ----------------------------------------------------------
 
     /**
      * Generate the default base path for storing files
      * uuid/
      *  files
-     *  /generated_conversions
+     *  /conversions
      *      /conversionName
      *      files
      */
-    public function makePath(
+    public function makeFreshPath(
         ?string $conversion = null,
         ?string $fileName = null
     ): string {
-        $prefix = config('media.generated_path_prefix', '');
+        $prefix = config()->string('media.generated_path_prefix', '');
 
         $root = Str::of($prefix)
             ->when($prefix, fn ($string) => $string->finish('/'))
@@ -144,8 +435,8 @@ class Media extends Model
 
         if ($conversion) {
             return $root
-                ->append('generated_conversions/')
-                ->append(str_replace('.', '/', $this->makeGeneratedConversionKey($conversion)))
+                ->append('conversions/')
+                ->append(str_replace('.', '/conversions/', $conversion))
                 ->finish('/')
                 ->append($fileName ?? '');
         }
@@ -153,425 +444,8 @@ class Media extends Model
         return $root->append($fileName ?? '');
     }
 
-    public function putGeneratedConversion(string $conversion, GeneratedConversion $generatedConversion): static
-    {
-        $genealogy = explode('.', $conversion);
-
-        if (count($genealogy) > 1) {
-            $child = Arr::last($genealogy);
-            $parents = implode('.', array_slice($genealogy, 0, -1));
-            $conversion = $this->getGeneratedConversion($parents);
-            $conversion->generated_conversions->put($child, $generatedConversion);
-        } else {
-            $this->generated_conversions->put($conversion, $generatedConversion);
-        }
-
-        return $this;
-    }
-
-    public function forgetGeneratedConversion(string $conversion): static
-    {
-        $genealogy = explode('.', $conversion);
-
-        if (count($genealogy) > 1) {
-            $child = Arr::last($genealogy);
-            $parents = implode('.', array_slice($genealogy, 0, -1));
-            $conversion = $this->getGeneratedConversion($parents);
-            $conversion->generated_conversions->forget($child);
-        } else {
-            $this->generated_conversions->forget($conversion);
-        }
-
-        return $this;
-    }
-
-    public function extractFileInformation(UploadedFile|HttpFile $file): static
-    {
-        $this->mime_type = File::mimeType($file);
-        $this->extension = File::extension($file);
-        $this->size = $file->getSize();
-        $this->type = File::type($file->getPathname());
-
-        $dimension = File::dimension($file->getPathname());
-
-        $this->height = $dimension?->getHeight();
-        $this->width = $dimension?->getWidth();
-        $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
-        $this->duration = File::duration($file->getPathname());
-
-        return $this;
-    }
-
-    protected function performMediaTransformations(UploadedFile|HttpFile $file): UploadedFile|HttpFile
-    {
-        if (
-            $this->relationLoaded('model') ||
-            ($this->model_id && $this->model_type)
-        ) {
-            $file = $this->model->registerMediaTransformations($this, $file);
-            $this->extractFileInformation($file); // refresh file informations
-        }
-
-        return $file;
-    }
-
-    public function storeFileFromHttpFile(
-        UploadedFile|HttpFile $file,
-        ?string $collection_name = null,
-        ?string $basePath = null,
-        ?string $name = null,
-        ?string $disk = null,
-    ): static {
-        $this->collection_name = $collection_name ?? $this->collection_name ?? config('media.default_collection_name');
-        $this->disk = $disk ?? $this->disk ?? config('media.disk');
-
-        $this->extractFileInformation($file);
-
-        $file = $this->performMediaTransformations($file);
-
-        $basePath = Str::finish($basePath ?? $this->makePath(), '/');
-
-        $this->name = Str::limit(
-            File::sanitizeFilename($name ?? File::name($file)),
-            255 - strlen($this->extension ?? '') - strlen($basePath) - 1, // 1 is for the point between the name and the extension
-            ''
-        );
-
-        $this->file_name = "{$this->name}.{$this->extension}";
-        $this->path = $basePath.$this->file_name;
-
-        $path = $this->putFile($file, fileName: $this->file_name);
-        event(new MediaFileStoredEvent($this, $path));
-
-        $this->save();
-
-        return $this;
-    }
-
-    public function storeFileFromUrl(
-        string $url,
-        ?string $collection_name = null,
-        ?string $basePath = null,
-        ?string $name = null,
-        ?string $disk = null,
-    ): static {
-
-        $temporaryDirectory = (new TemporaryDirectory)
-            ->location(storage_path('media-tmp'))
-            ->create();
-
-        $path = FileDownloader::getTemporaryFile($url, $temporaryDirectory);
-
-        $this->storeFileFromHttpFile(new HttpFile($path), $collection_name, $basePath, $name, $disk);
-
-        $temporaryDirectory->delete();
-
-        return $this;
-    }
-
     /**
-     * @param  resource  $ressource
-     */
-    public function storeFileFromRessource(
-        $ressource,
-        ?string $collection_name = null,
-        ?string $basePath = null,
-        ?string $name = null,
-        ?string $disk = null
-    ): static {
-
-        $temporaryDirectory = (new TemporaryDirectory)
-            ->location(storage_path('media-tmp'))
-            ->create();
-
-        $path = tempnam($temporaryDirectory->path(), 'media-');
-
-        $storage = Storage::build([
-            'driver' => 'local',
-            'root' => $temporaryDirectory->path(),
-        ]);
-
-        $storage->writeStream($path, $ressource);
-
-        $this->storeFileFromHttpFile(new HttpFile($path), $collection_name, $basePath, $name, $disk);
-
-        $temporaryDirectory->delete();
-
-        return $this;
-    }
-
-    /**
-     * @param  string|UploadedFile|HttpFile|resource  $file
-     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles  any other file to store in the same directory
-     */
-    public function storeFile(
-        mixed $file,
-        ?string $collection_name = null,
-        ?string $basePath = null,
-        ?string $name = null,
-        ?string $disk = null,
-        array $otherFiles = []
-    ): static {
-        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
-            $this->storeFileFromHttpFile($file, $collection_name, $basePath, $name, $disk);
-        } elseif (filter_var($file, FILTER_VALIDATE_URL)) {
-            $this->storeFileFromUrl($file, $collection_name, $basePath, $name, $disk);
-        } elseif (is_resource($file)) {
-            $this->storeFileFromRessource($file, $collection_name, $basePath, $name, $disk);
-        } else {
-            $this->storeFileFromHttpFile(new HttpFile($file), $collection_name, $basePath, $name, $disk);
-        }
-
-        foreach ($otherFiles as $otherFile) {
-            $path = $this->putFile($otherFile);
-            event(new MediaFileStoredEvent($this, $path));
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param  (string|UploadedFile|HttpFile)[]  $otherFiles  any other file to store in the same directory
-     */
-    public function storeConversion(
-        string|UploadedFile|HttpFile $file,
-        string $conversion,
-        ?string $name = null,
-        ?string $basePath = null,
-        string $state = 'success',
-        array $otherFiles = []
-    ): GeneratedConversion {
-
-        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
-            $generatedConversion = $this->storeConversionFromHttpFile($file, $conversion, $name, $basePath, $state);
-        } elseif (filter_var($file, FILTER_VALIDATE_URL)) {
-            $generatedConversion = $this->storeConversionFromUrl($file, $conversion, $name, $basePath, $state);
-        } else {
-            $generatedConversion = $this->storeConversionFromHttpFile(new HttpFile($file), $conversion, $name, $basePath, $state);
-        }
-
-        foreach ($otherFiles as $otherFile) {
-            $path = $this->putFile($otherFile);
-            event(new MediaFileStoredEvent($this, $path));
-        }
-
-        return $generatedConversion;
-    }
-
-    public function storeConversionFromUrl(
-        string $url,
-        string $conversion,
-        ?string $name = null,
-        ?string $basePath = null,
-        string $state = 'success',
-    ): GeneratedConversion {
-        $temporaryDirectory = (new TemporaryDirectory)
-            ->location(storage_path('media-tmp'))
-            ->create();
-
-        $path = FileDownloader::getTemporaryFile($url, $temporaryDirectory);
-
-        $generatedConversion = $this->storeConversionFromHttpFile(new HttpFile($path), $conversion, $name, $basePath, $state);
-
-        $temporaryDirectory->delete();
-
-        return $generatedConversion;
-    }
-
-    public function storeConversionFromHttpFile(
-        UploadedFile|HttpFile $file,
-        string $conversion,
-        ?string $name = null,
-        ?string $basePath = null,
-        string $state = 'success',
-    ): GeneratedConversion {
-        $name = File::sanitizeFilename($name ?? File::name($file->getPathname()));
-
-        $extension = File::extension($file);
-        $file_name = "{$name}.{$extension}";
-        $mime_type = File::mimeType($file);
-        $type = File::type($file->getPathname());
-        $dimension = File::dimension($file->getPathname());
-
-        $existingConversion = $this->getGeneratedConversion($conversion);
-
-        if ($existingConversion) {
-            $this->deleteGeneratedConversionFiles($conversion);
-        }
-
-        $generatedConversion = new GeneratedConversion(
-            name: $name,
-            extension: $extension,
-            file_name: $file_name,
-            path: Str::of($basePath ?? $this->makePath($conversion))->finish('/')->append($file_name),
-            mime_type: $mime_type,
-            type: $type,
-            state: $state,
-            disk: $this->disk,
-            height: $dimension?->getHeight(),
-            width: $dimension?->getWidth(),
-            aspect_ratio: $dimension?->getRatio(forceStandards: false)->getValue(),
-            size: $file->getSize(),
-            duration: File::duration($file->getPathname()),
-            created_at: $existingConversion?->created_at
-        );
-
-        $this->putGeneratedConversion($conversion, $generatedConversion);
-
-        $path = $generatedConversion->putFile($file, fileName: $generatedConversion->file_name);
-        event(new MediaFileStoredEvent($this, $path));
-
-        $this->save();
-
-        return $generatedConversion;
-    }
-
-    /**
-     * @param  null|Closure(GeneratedConversion $item):bool  $when
-     */
-    public function moveGeneratedConversion(
-        string $conversion,
-        ?string $disk = null,
-        ?string $path = null,
-        ?Closure $when = null
-    ): ?GeneratedConversion {
-        $generatedConversion = $this->getGeneratedConversion($conversion);
-
-        if (! $generatedConversion) {
-            return null;
-        }
-
-        if ($when && ! $when($generatedConversion)) {
-            return $generatedConversion;
-        }
-
-        if (! $generatedConversion->disk || ! $generatedConversion->path) {
-            return $generatedConversion;
-        }
-
-        $newDisk = $disk ?? $generatedConversion->disk;
-        $newPath = $path ?? $generatedConversion->path;
-
-        if (
-            $newDisk === $generatedConversion->disk &&
-            $newPath === $generatedConversion->path
-        ) {
-            return $generatedConversion;
-        }
-
-        $generatedConversion->copyFileTo(
-            disk: $newDisk,
-            path: $newPath
-        );
-
-        $generatedConversion->deleteFile();
-
-        $generatedConversion->disk = $newDisk;
-        $generatedConversion->path = $newPath;
-
-        $this->putGeneratedConversion(
-            $conversion,
-            $generatedConversion
-        );
-
-        $this->save();
-
-        return $generatedConversion;
-    }
-
-    public function moveFile(
-        ?string $disk = null,
-        ?string $path = null,
-    ): static {
-
-        if (! $this->disk || ! $this->path) {
-            return $this;
-        }
-
-        $newDisk = $disk ?? $this->disk;
-        $newPath = $path ?? $this->path;
-
-        if (
-            $newDisk === $this->disk &&
-            $newPath === $this->path
-        ) {
-            return $this;
-        }
-
-        $this->copyFileTo(
-            disk: $newDisk,
-            path: $newPath
-        );
-
-        $this->deleteFile();
-
-        $this->disk = $newDisk;
-        $this->path = $newPath;
-
-        $this->save();
-
-        return $this;
-    }
-
-    /**
-     * Recursively move generated and nested conversions files to a new disk
-     *
-     * @param  null|Closure(GeneratedConversion $item):bool  $when
-     */
-    protected function moveGeneratedConversionToDisk(
-        string $disk,
-        string $conversion,
-        ?Closure $when = null
-    ): ?GeneratedConversion {
-        $generatedConversion = $this->moveGeneratedConversion(
-            conversion: $conversion,
-            disk: $disk,
-            when: $when
-        );
-
-        if (! $generatedConversion) {
-            return null;
-        }
-
-        foreach ($generatedConversion->generated_conversions->keys() as $childConversionName) {
-            $this->moveGeneratedConversionToDisk(
-                disk: $disk,
-                conversion: "{$conversion}.{$childConversionName}",
-                when: $when,
-            );
-        }
-
-        return $generatedConversion;
-    }
-
-    /**
-     * @param  null|Closure(GeneratedConversion|static $item):bool  $when
-     */
-    public function moveToDisk(
-        string $disk,
-        ?Closure $when = null
-    ): static {
-
-        if ($when && ! $when($this)) {
-            return $this;
-        }
-
-        if ($this->generated_conversions) {
-            foreach ($this->generated_conversions->keys() as $conversionName) {
-                $this->moveGeneratedConversionToDisk(
-                    disk: $disk,
-                    conversion: $conversionName,
-                    when: $when
-                );
-            }
-        }
-
-        return $this->moveFile(
-            disk: $disk
-        );
-    }
-
-    /**
+     * @param  array<array-key, float|int|string>  $keys
      * @param  null|(Closure(null|int $previous): int)  $sequence
      * @return EloquentCollection<int, static>
      */
@@ -600,73 +474,13 @@ class Media extends Model
         return $models;
     }
 
-    public function deleteGeneratedConversion(string $conversion): ?GeneratedConversion
-    {
-        $generatedConversion = $this->getGeneratedConversion($conversion);
-
-        if (! $generatedConversion) {
-            return null;
-        }
-
-        $this
-            ->deleteGeneratedConversionFiles($conversion)
-            ->forgetGeneratedConversion($conversion)
-            ->save();
-
-        return $generatedConversion;
-    }
-
-    public function deleteGeneratedConversions(): static
-    {
-        $this->generated_conversions
-            ?->keys()
-            ->each(function (string $conversion) {
-                $this->deleteGeneratedConversionFiles($conversion);
-            });
-
-        $this->generated_conversions = collect();
-        $this->save();
-
-        return $this;
-    }
-
-    /**
-     * You can override this function to customize how files are deleted
-     */
-    public function deleteGeneratedConversionFiles(string $conversion): static
-    {
-        $generatedConversion = $this->getGeneratedConversion($conversion);
-
-        if (! $generatedConversion) {
-            return $this;
-        }
-
-        $generatedConversion->generated_conversions
-            ->keys()
-            ->each(function (string $childConversion) use ($conversion) {
-                $this->deleteGeneratedConversionFiles("{$conversion}.{$childConversion}");
-            });
-
-        $generatedConversion->deleteFile();
-
-        return $this;
-    }
-
-    /**
-     * You can override this function to customize how files are deleted
-     */
-    protected function deleteMediaFiles(): static
-    {
-        $this->deleteFile();
-
-        return $this;
-    }
-
     // Attributes Getters ----------------------------------------------------------------------
 
     /**
      * Retreive the path of a conversion or nested conversion
      * Ex: $media->getPath('poster.480p')
+     *
+     * @param  null|bool|string|array<int, string>  $fallback
      */
     public function getPath(
         ?string $conversion = null,
@@ -675,7 +489,7 @@ class Media extends Model
         $path = null;
 
         if ($conversion) {
-            $path = $this->getGeneratedConversion($conversion)?->path;
+            $path = $this->getConversion($conversion)?->path;
         } elseif ($this->path) {
             $path = $this->path;
         }
@@ -703,6 +517,7 @@ class Media extends Model
      * Ex: $media->getUrl('poster.480p')
      *
      * @param  null|bool|string|array<int, string>  $fallback
+     * @param  null|array<array-key, mixed>  $parameters
      */
     public function getUrl(
         ?string $conversion = null,
@@ -712,7 +527,7 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getGeneratedConversion($conversion)?->getUrl();
+            $url = $this->getConversion($conversion)?->getUrl();
         } elseif ($this->path) {
             /** @var null|string $url */
             $url = $this->getDisk()?->url($this->path);
@@ -750,6 +565,8 @@ class Media extends Model
      * Ex: $media->getTemporaryUrl('poster.480p', now()->addHour())
      *
      * @param  null|bool|string|array<int, string>  $fallback
+     * @param  array<array-key, mixed>  $options
+     * @param  null|array<array-key, mixed>  $parameters
      */
     public function getTemporaryUrl(
         \DateTimeInterface $expiration,
@@ -762,7 +579,7 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getGeneratedConversion($conversion)?->getTemporaryUrl($expiration, $options);
+            $url = $this->getConversion($conversion)?->getTemporaryUrl($expiration, $options);
         } elseif ($this->path) {
             /** @var null|string $url */
             $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
@@ -801,14 +618,17 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|int|array<int, string>  $fallback
+     */
     public function getWidth(
         ?string $conversion = null,
-        null|bool|string|array|int $fallback = null,
+        null|bool|string|int|array $fallback = null,
     ): ?int {
         $width = null;
 
         if ($conversion) {
-            $width = $this->getGeneratedConversion($conversion)?->width;
+            $width = $this->getConversion($conversion)?->width;
         } else {
             $width = $this->width;
         }
@@ -833,14 +653,17 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|int|array<int, string>  $fallback
+     */
     public function getHeight(
         ?string $conversion = null,
-        null|bool|string|array|int $fallback = null,
+        null|bool|string|int|array $fallback = null,
     ): ?int {
         $height = null;
 
         if ($conversion) {
-            $height = $this->getGeneratedConversion($conversion)?->height;
+            $height = $this->getConversion($conversion)?->height;
         } else {
             $height = $this->height;
         }
@@ -865,6 +688,9 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|array<int, string>  $fallback
+     */
     public function getName(
         ?string $conversion = null,
         null|bool|string|array $fallback = null,
@@ -872,7 +698,7 @@ class Media extends Model
         $name = null;
 
         if ($conversion) {
-            $name = $this->getGeneratedConversion($conversion)?->name;
+            $name = $this->getConversion($conversion)?->name;
         } else {
             $name = $this->name;
         }
@@ -895,6 +721,9 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|array<int, string>  $fallback
+     */
     public function getFileName(
         ?string $conversion = null,
         null|bool|string|array $fallback = null,
@@ -902,7 +731,7 @@ class Media extends Model
         $fileName = null;
 
         if ($conversion) {
-            $fileName = $this->getGeneratedConversion($conversion)?->file_name;
+            $fileName = $this->getConversion($conversion)?->file_name;
         } else {
             $fileName = $this->file_name;
         }
@@ -925,14 +754,17 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|int|array<int, string>  $fallback
+     */
     public function getSize(
         ?string $conversion = null,
-        null|bool|string|array|int $fallback = null,
+        null|bool|string|int|array $fallback = null,
     ): ?int {
         $size = null;
 
         if ($conversion) {
-            $size = $this->getGeneratedConversion($conversion)?->size;
+            $size = $this->getConversion($conversion)?->size;
         } else {
             $size = $this->size;
         }
@@ -957,14 +789,17 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|float|array<int, string>  $fallback
+     */
     public function getAspectRatio(
         ?string $conversion = null,
-        null|bool|string|array|float $fallback = null,
+        null|bool|string|float|array $fallback = null,
     ): ?float {
         $aspectRatio = null;
 
         if ($conversion) {
-            $aspectRatio = $this->getGeneratedConversion($conversion)?->aspect_ratio;
+            $aspectRatio = $this->getConversion($conversion)?->aspect_ratio;
         } else {
             $aspectRatio = $this->aspect_ratio;
         }
@@ -989,6 +824,9 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * @param  null|bool|string|array<int, string>  $fallback
+     */
     public function getMimeType(
         ?string $conversion = null,
         null|bool|string|array $fallback = null,
@@ -996,7 +834,7 @@ class Media extends Model
         $mimeType = null;
 
         if ($conversion) {
-            $mimeType = $this->getGeneratedConversion($conversion)?->mime_type;
+            $mimeType = $this->getConversion($conversion)?->mime_type;
         } else {
             $mimeType = $this->mime_type;
         }

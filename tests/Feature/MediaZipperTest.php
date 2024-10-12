@@ -15,7 +15,6 @@ it('zip media and store it in a file', function () {
     ])->each(function (Media $media) {
         $media->storeFile(
             file: UploadedFile::fake()->image('foo.jpg'),
-            collection_name: 'avatar',
             name: 'avatar',
             disk: 'media'
         );

@@ -7,9 +7,11 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 
+use function Laravel\Prompts\confirm;
+
 class GenerateMediaConversionsCommand extends Command
 {
-    public $signature = 'media:generate-conversions {ids?*} {--force} {--pretend} {--conversions=*} {--models=*}';
+    public $signature = 'media:generate-conversions {ids?*} {--force} {--pretend} {--conversions=*} {--collections=*} {--models=*}';
 
     public $description = 'Generate all media conversions';
 
@@ -18,16 +20,22 @@ class GenerateMediaConversionsCommand extends Command
         $ids = (array) $this->argument('ids');
         $force = (bool) $this->option('force');
         $pretend = (bool) $this->option('pretend');
+        /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
         $models = (array) $this->option('models');
+        $collections = (array) $this->option('collections');
 
+        /**
+         * @var class-string<Media> $model
+         */
         $model = config('media.model');
 
         /** @var Collection<int, Media> */
         $media = $model::query()
-            ->with(['model'])
+            ->with(['model', 'conversions'])
             ->when(! empty($ids), fn (Builder $query) => $query->whereIn('id', $ids))
             ->when(! empty($models), fn (Builder $query) => $query->whereIn('model_type', $models))
+            ->when(! empty($collections), fn (Builder $query) => $query->whereIn('collection_name', $collections))
             ->get();
 
         $mediaByModel = $media->countBy('model_type');
@@ -42,22 +50,21 @@ class GenerateMediaConversionsCommand extends Command
             })
         );
 
-        if ($pretend) {
+        if ($pretend || ! confirm('Continue?')) {
             return self::SUCCESS;
         }
 
         $this->withProgressBar($media, function (Media $media) use ($conversions, $force) {
-            $model = $media->model;
-            $modelConversions = $model->getMediaConversions($media);
 
-            $conversions = empty($conversions) ?
-                $modelConversions :
-                array_intersect($modelConversions->toArray(), $conversions);
+            $conversions = empty($conversions) ? array_keys($media->getConversionsDefinitions()) : $conversions;
 
-            foreach ($conversions as $conversion) {
-                if ($force || ! $media->hasGeneratedConversion($conversion)) {
-                    $model->dispatchConversion($media, $conversion);
+            foreach ($conversions as $name) {
+                $conversion = $media->getConversion((string) $name);
+
+                if ($force || ! $conversion) {
+                    $media->dispatchConversion($name);
                 }
+
             }
         });
 

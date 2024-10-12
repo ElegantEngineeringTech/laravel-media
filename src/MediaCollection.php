@@ -3,14 +3,18 @@
 namespace Elegantly\Media;
 
 use Closure;
-use Illuminate\Support\Collection;
+use Elegantly\Media\Definitions\MediaConversionDefinition;
+use Illuminate\Http\File;
+use Illuminate\Http\UploadedFile;
 
-/**
- * @property Collection<int, MediaConversion> $conversions
- * @property null|string|(Closure(): string) $fallback
- */
 class MediaCollection
 {
+    /**
+     * @param  null|(string[])  $acceptedMimeTypes
+     * @param  null|string|(Closure(): null|string)  $fallback
+     * @param  null|(Closure(UploadedFile|File $file): (UploadedFile|File))  $transform
+     * @param  MediaConversionDefinition[]  $conversions
+     */
     public function __construct(
         public string $name,
         public ?array $acceptedMimeTypes = null,
@@ -18,7 +22,22 @@ class MediaCollection
         public bool $public = false,
         public ?string $disk = null,
         public null|string|Closure $fallback = null,
+        public ?Closure $transform = null,
+        public array $conversions = [],
     ) {
-        //
+        /** @var array<string, MediaConversionDefinition> $conversions */
+        $conversions = collect($conversions)->keyBy('name')->toArray();
+        $this->conversions = $conversions;
+    }
+
+    public function getConversionDefinition(string $name): ?MediaConversionDefinition
+    {
+        /** @var ?MediaConversionDefinition */
+        $value = data_get(
+            target: $this->conversions,
+            key: str_replace('.', '.conversions.', $name)
+        );
+
+        return $value;
     }
 }

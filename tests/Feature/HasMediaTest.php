@@ -1,138 +1,18 @@
 <?php
 
-use Elegantly\Media\Casts\GeneratedConversion;
-use Elegantly\Media\Database\Factories\MediaFactory;
-use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Tests\Models\Test;
 use Elegantly\Media\Tests\Models\TestSoftDelete;
-use Elegantly\Media\Tests\Models\TestWithNestedConversions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 it('gets the correct media collection', function () {
     $model = new Test;
 
-    expect($model->getMediaCollections()->toArray())->toHaveKeys(['files', 'avatar', 'fallback']);
-});
-
-it('keys media conversion by conversionName', function () {
-    $model = new TestWithNestedConversions;
-
-    /** @var Media $media */
-    $media = MediaFactory::new()->make([
-        'type' => MediaType::Image,
-    ]);
-
-    expect($model->getMediaConversions($media)->toArray())->toHaveKeys(['optimized', '360']);
-});
-
-it('gets the correct media conversion', function () {
-    $model = new TestWithNestedConversions;
-
-    /** @var Media $media */
-    $media = MediaFactory::new()->make([
-        'type' => MediaType::Image,
-    ]);
-
-    expect($model->getMediaConversion($media, 'optimized')?->conversionName)->toBe('optimized');
-    expect($model->getMediaConversion($media, '360')?->conversionName)->toBe('360');
-});
-
-it('gets the correct nested media conversion', function () {
-    $model = new TestWithNestedConversions;
-
-    /** @var Media $media */
-    $media = MediaFactory::new()->make([
-        'type' => MediaType::Image,
-        /**
-         * In order to access the nested '360' conversion, the parent one must be already generated
-         */
-        'generated_conversions' => [
-            'optimized' => new GeneratedConversion(
-                name: 'optimized',
-                file_name: 'optimized.jpg',
-            ),
-        ],
-    ]);
-
-    expect($media->getGeneratedConversion('optimized'))->not->toBe(null);
-
-    expect($model->getMediaConversion($media, 'optimized.webp')?->conversionName)->toBe('webp');
-});
-
-it('creates a media, store files and generate conversions', function () {
-    Storage::fake('media');
-
-    $model = new Test;
-    $model->save();
-
-    $file = UploadedFile::fake()->image('foo.jpg');
-
-    $media = $model->addMedia(
-        file: $file,
-        collection_name: 'files',
-        disk: 'media'
-    );
-
-    $media->refresh();
-
-    expect($model->getMediaConversions($media)->count())->toBe(1);
-
-    expect($media->collection_name)->toBe('files');
-
-    Storage::disk('media')->assertExists($media->path);
-
-    expect($media->generated_conversions->count())->toBe(1);
-
-    $generatedConversion = $media->getGeneratedConversion('optimized');
-
-    expect($generatedConversion)->not->toBe(null);
-
-    Storage::disk('media')->assertExists($generatedConversion->path);
-});
-
-it('generates nested conversions', function () {
-    Storage::fake('media');
-
-    $model = new TestWithNestedConversions;
-    $model->save();
-
-    $file = UploadedFile::fake()->image('foo.jpg');
-
-    $media = $model->addMedia(
-        file: $file,
-        disk: 'media'
-    );
-
-    $media->refresh();
-    expect($media->collection_name)->toBe(config('media.default_collection_name'));
-
-    $mediaConversions = $model->getMediaConversions($media);
-
-    expect($media->generated_conversions->toArray())
-        ->toHaveLength($mediaConversions->count())
-        ->toHaveKeys($mediaConversions->keys()->toArray());
-
-    // Parent conversion
-    $generatedConversion = $media->getGeneratedConversion('optimized');
-
-    expect($generatedConversion)->toBeInstanceOf(GeneratedConversion::class);
-    expect($generatedConversion->name)->toBe('optimized');
-
-    Storage::disk('media')->assertExists($generatedConversion->path);
-
-    expect($generatedConversion->generated_conversions->toArray())
-        ->toHaveLength(1)
-        ->toHaveKeys(['webp']);
-
-    // Child conversion
-    $childGeneratedConversion = $media->getGeneratedConversion('optimized.webp');
-    expect($childGeneratedConversion)->toBeInstanceOf(GeneratedConversion::class);
-    expect($childGeneratedConversion->extension)->toBe('webp');
-    expect($childGeneratedConversion->name)->toBe('optimized');
-
-    Storage::disk('media')->assertExists($childGeneratedConversion->path);
+    $collection = $model->getMediaCollection('single');
+    expect($collection)->toBeInstanceOf(MediaCollection::class);
+    expect($collection->name)->toBe('single');
 });
 
 it('gets the fallback value when no media extist', function () {
@@ -141,76 +21,130 @@ it('gets the fallback value when no media extist', function () {
     expect($model->getFirstMediaUrl('fallback'))->toBe('fallback-value');
 });
 
-it('gets the media url when a media exists in a collection', function () {
+it('retreives the media url', function () {
     Storage::fake('media');
-
     $model = new Test;
     $model->save();
 
-    $file = UploadedFile::fake()->image('foo.jpg');
+    $model->addMedia(
+        file: UploadedFile::fake()->image('foo.jpg'),
+        disk: 'media',
+        collectionName: 'files',
+    );
+
+    expect($model->getFirstMediaUrl('files'))->not->toBe(null);
+
+});
+
+it('adds a new media to the default collection', function () {
+    Storage::fake('media');
+    $model = new Test;
+    $model->save();
+
+    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
 
     $media = $model->addMedia(
         file: $file,
-        collection_name: 'fallback',
         disk: 'media'
     );
 
-    expect($model->getFirstMedia()->id)->toBe($media->id);
-    expect($model->getFirstMediaUrl())->toBe($media->getUrl());
+    expect($media->model_id)->toBe($model->id);
+    expect($media->model_type)->toBe(get_class($model));
+    expect($media->exists)->toBe(true);
+    expect($media->name)->toBe('foo');
+    expect($media->extension)->toBe('jpg');
+    expect($media->file_name)->toBe('foo.jpg');
+
+    expect($media->collection_name)->toBe(config('media.default_collection_name'));
+    expect($media->collection_group)->toBe(null);
+
+    Storage::disk('media')->assertExists($media->path);
+
+    expect($model->media)->toHaveLength(1);
+
+    $modelMedia = $model->getFirstMedia();
+
+    expect($modelMedia)->toBeInstanceOf(Media::class);
 });
 
-it('adds the new added media to the model relation', function () {
+it('adds a new media to a collection and group', function () {
     Storage::fake('media');
-
     $model = new Test;
     $model->save();
 
-    $model->load('media');
+    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
 
-    expect($model->media)->toHaveLength(0);
-
-    $model->addMedia(
-        file: UploadedFile::fake()->image('foo.jpg'),
-        collection_name: 'files',
+    $media = $model->addMedia(
+        file: $file,
+        collectionName: 'files',
+        collectionGroup: 'group',
         disk: 'media'
+    );
+
+    Storage::disk('media')->assertExists($media->path);
+
+    expect($media->model_id)->toBe($model->id);
+    expect($media->model_type)->toBe(get_class($model));
+    expect($media->exists)->toBe(true);
+    expect($media->collection_name)->toBe('files');
+    expect($media->collection_group)->toBe('group');
+
+    expect($model->media)->toHaveLength(1);
+
+    $modelMedia = $model->getFirstMedia();
+
+    expect($modelMedia)->toBeInstanceOf(Media::class);
+});
+
+it('generates conversions and nested conversions when adding media', function () {
+    Storage::fake('media');
+    $model = new Test;
+    $model->save();
+
+    $media = $model->addMedia(
+        file: $this->getTestFile('videos/horizontal.mp4'),
+        collectionName: 'conversions',
+        disk: 'media'
+    );
+
+    expect(
+        $media->conversions->pluck('conversion_name')->toArray()
+    )->toBe([
+        'poster',
+        'poster.360',
+        // 'small' video conversion is queued
+    ]);
+
+});
+
+it('deletes old media when adding to single collection', function () {
+    Storage::fake('media');
+    $model = new Test;
+    $model->save();
+
+    $firstMedia = $model->addMedia(
+        file: UploadedFile::fake()->image('foo.jpg'),
+        disk: 'media',
+        collectionName: 'single',
+    );
+
+    Storage::disk('media')->assertExists($firstMedia->path);
+
+    expect($model->media)->toHaveLength(1);
+
+    $secondMedia = $model->addMedia(
+        file: UploadedFile::fake()->image('foo.jpg'),
+        disk: 'media',
+        collectionName: 'single',
     );
 
     expect($model->media)->toHaveLength(1);
 
-    $model->addMedia(
-        file: UploadedFile::fake()->image('bar.jpg'),
-        collection_name: 'fallback',
-        disk: 'media'
-    );
+    Storage::disk('media')->assertExists($secondMedia->path);
 
-    expect($model->media)->toHaveLength(2);
-});
+    Storage::disk('media')->assertMissing($firstMedia->path);
+    expect(Media::query()->find($firstMedia->id))->toBe(null);
 
-it('removes media from the model when clearing media collection', function () {
-    Storage::fake('media');
-
-    $model = new Test;
-    $model->save();
-
-    $model->addMedia(
-        file: UploadedFile::fake()->image('foo.jpg'),
-        collection_name: 'files',
-        disk: 'media'
-    );
-
-    $model->addMedia(
-        file: UploadedFile::fake()->image('bar.jpg'),
-        collection_name: 'fallback',
-        disk: 'media'
-    );
-
-    expect($model->media)->toHaveLength(2);
-    expect($model->getMedia('files'))->toHaveLength(1);
-
-    $model->clearMediaCollection('files');
-
-    expect($model->media)->toHaveLength(1);
-    expect($model->getMedia('files'))->toHaveLength(0);
 });
 
 it('deletes media and its files with the model when delete_media_with_model is true', function () {
@@ -221,11 +155,8 @@ it('deletes media and its files with the model when delete_media_with_model is t
     $model = new Test;
     $model->save();
 
-    $file = UploadedFile::fake()->image('foo.jpg');
-
     $media = $model->addMedia(
-        file: $file,
-        collection_name: 'fallback',
+        file: UploadedFile::fake()->image('foo.jpg'),
         disk: 'media'
     );
 
@@ -250,7 +181,6 @@ it('does not delete media and its files with the model when delete_media_with_mo
 
     $media = $model->addMedia(
         file: $file,
-        collection_name: 'fallback',
         disk: 'media'
     );
 
@@ -276,7 +206,6 @@ it('deletes media and its files with the trashed model when delete_media_with_tr
 
     $media = $model->addMedia(
         file: $file,
-        collection_name: 'fallback',
         disk: 'media'
     );
 
@@ -302,7 +231,6 @@ it('does not delete media and its files with the trashed model when delete_media
 
     $media = $model->addMedia(
         file: $file,
-        collection_name: 'fallback',
         disk: 'media'
     );
 
@@ -328,7 +256,6 @@ it('deletes media and its files with the force deleted model when delete_media_w
 
     $media = $model->addMedia(
         file: $file,
-        collection_name: 'fallback',
         disk: 'media'
     );
 

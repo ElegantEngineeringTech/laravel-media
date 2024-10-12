@@ -11,8 +11,9 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Deleting a lot of media can take some time
- * In might even fail
+ * This job will take care of deleting Media associated with models
+ * Deleting a media can take some time or even fail.
+ * To prevent failure when a Model is deleted, the media are individually deleted by this job.
  */
 class DeleteModelMediaJob implements ShouldBeUnique, ShouldQueue
 {
@@ -22,26 +23,29 @@ class DeleteModelMediaJob implements ShouldBeUnique, ShouldQueue
     {
         $this->media = $media->withoutRelations();
 
-        $this->onConnection(config('media.queue_connection'));
-        $this->onQueue(config('media.queue'));
+        /** @var ?string $connection */
+        $connection = config('media.queue_connection');
+        /** @var ?string $queue */
+        $queue = config('media.queue');
+
+        $this->onConnection($connection);
+        $this->onQueue($queue);
     }
 
-    public function uniqueId()
+    public function uniqueId(): string
     {
         return (string) $this->media->id;
     }
 
-    public function handle()
+    public function handle(): void
     {
         $this->media->delete();
     }
 
     /**
-     * Get the tags that should be assigned to the job.
-     *
-     * @return array
+     * @return array<array-key, int|string>
      */
-    public function tags()
+    public function tags(): array
     {
         return [
             'media',

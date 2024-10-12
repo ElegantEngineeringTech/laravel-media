@@ -3,6 +3,7 @@
 namespace Elegantly\Media;
 
 use Elegantly\Media\Models\Media;
+use Exception;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Support\Collection;
@@ -17,6 +18,7 @@ class MediaZipper implements Responsable
 {
     /**
      * @param  Collection<int, TMedia>  $media
+     * @param  array<array-key, mixed>  $zipStreamOptions
      */
     public function __construct(
         public Collection $media = new Collection,
@@ -26,9 +28,16 @@ class MediaZipper implements Responsable
         $this->zipStreamOptions['outputName'] = $fileName;
     }
 
+    /**
+     * @param  array<array-key, mixed>  $options  writeStream options
+     */
     public function toFile(Filesystem $storage, string $path, array $options = []): string|false
     {
         $temporaryStream = fopen('php://memory', 'w+');
+
+        if ($temporaryStream === false) {
+            throw new Exception('PHP Stream creation failed.');
+        }
 
         $zip = $this->getZipStream([
             'outputStream' => $temporaryStream,
@@ -45,8 +54,12 @@ class MediaZipper implements Responsable
         return $success ? $path : false;
     }
 
+    /**
+     * @param  array<array-key, mixed>  $options  zipStreamOptions options
+     */
     public function getZipStream(array $options = []): ZipStream
     {
+        // @phpstan-ignore-next-line
         $zip = new ZipStream(...array_merge(
             $this->zipStreamOptions,
             $options
@@ -54,6 +67,10 @@ class MediaZipper implements Responsable
 
         foreach ($this->media as $index => $item) {
             $stream = $item->readStream();
+
+            if ($stream === null) {
+                throw new Exception("[Media:{$item->id}] Can't read stream at {$item->path} and disk {$item->disk}.");
+            }
 
             $zip->addFileFromStream(
                 fileName: "{$index}_{$item->file_name}",
@@ -71,7 +88,10 @@ class MediaZipper implements Responsable
 
     public function getSize(): int
     {
-        return (int) $this->media->sum('size');
+        /** @var int $value */
+        $value = $this->media->sum('size');
+
+        return (int) $value;
     }
 
     public function toResponse($request): StreamedResponse

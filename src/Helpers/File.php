@@ -37,7 +37,7 @@ class File
             return $file->getMimeType();
         }
 
-        return SupportFile::mimeType($file);
+        return SupportFile::mimeType($file) ?: null;
     }
 
     public static function extension(string|HttpFile|UploadedFile $file): ?string
