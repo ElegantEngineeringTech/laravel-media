@@ -10,6 +10,10 @@ return [
      */
     'model' => Media::class,
 
+    /**
+     * The path used to store temporary file copy for conversions
+     * This will be used with storage_path() function
+     */
     'temporary_storage_path' => 'app/tmp/media',
 
     /**

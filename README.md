@@ -49,7 +49,7 @@ Here is how our `Channel` class will be defined:
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Traits\HasMedia;
+use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversion;
 use Elegantly\Media\Enums\MediaType;
@@ -60,7 +60,8 @@ use \App\Jobs\Media\OptimizedImageConversionJob;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Illuminate\Contracts\Support\Arrayable;
-use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
+use Elegantly\Media\Definitions\MediaConversionImage;
+use Elegantly\Media\Definitions\MediaConversionPoster;
 
 class Channel extends Model implements InteractWithMedia
 {
@@ -74,68 +75,37 @@ class Channel extends Model implements InteractWithMedia
                 acceptedMimeTypes: [
                     'image/jpeg', 'image/png', 'image/gif', 'image/webp',
                 ],
+                transform: function($file){
+                    Image::load($file->getRealPath())
+                        ->fit(Fit::Crop, 500, 500)
+                        ->optimize()
+                        ->save();
+                },
+                conversions: [
+                    new MediaConversionImage(
+                        name: '360',
+                        width: 360
+                    ),
+                ],
             )
             new MediaCollection(
                 name: 'videos',
                 acceptedMimeTypes: [
                     'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
                 ],
+                conversions: [
+                    new MediaConversionPoster(
+                        name: 'poster',
+                        conversions: [
+                            new MediaConversionImage(
+                                name: '360',
+                                width: 360
+                            ),
+                        ],
+                    ),
+                ],
             )
        ];
-    }
-
-    public function registerMediaTransformations($media, UploadedFile|File $file): UploadedFile|File
-    {
-        if($media->collection_name === "avatar"){
-            Image::load($file->getRealPath())
-                ->fit(Fit::Crop, 500, 500)
-                ->optimize()
-                ->save();
-        }
-
-        return $file;
-    }
-
-    public function registerMediaConversions($media): Arrayable|iterable|null;
-    {
-
-        if($media->collection_name === 'avatar'){
-            return [
-                new MediaConversion(
-                    conversionName: '360',
-                    job: new OptimizedImageConversionJob(
-                        media: $media,
-                        width: 360,
-                        fileName: "{$media->name}-360.jpg"
-                    ),
-                )
-            ]
-        }elseif($media->collection_name === 'videos'){
-            return [
-                new MediaConversion(
-                    conversionName: 'poster',
-                    sync: true,// The conversion will not be queued, you will have access to it immediatly
-                    job: new VideoPosterConversionJob(
-                        media: $media,
-                        seconds: 1,
-                        fileName: "{$media->name}-poster.jpg"
-                    ),
-                    conversions: function(GeneratedConversion $generatedConversion) use ($media){
-                        return ResponsiveImagesConversionsPreset::make(
-                            media: $media,
-                            generatedConversion: $generatedConversion
-                            widths: [360, 720]
-                        )
-                    }
-                ),
-                ...ResponsiveVideosConversionsPreset::make(
-                    media: $media,
-                    widths: [360, 720, 1080],
-                )
-            ]
-        }
-
-        return null;
     }
 }
 ```
@@ -155,7 +125,7 @@ class ChannelAvatarController extends Controller
     {
         $channel->addMedia(
             file: $file->file('avatar'),
-            collection_name: 'avatar',
+            collectionName: 'avatar',
             name: "{$channel->name}-avatar",
         )
     }
@@ -182,7 +152,7 @@ class ImageUploader extends Component
 
         $this->channel->addMedia(
             file: $file->getRealPath(),
-            collection_name: 'avatar',
+            collectionName: 'avatar',
             name: "{$channel->name}-avatar",
         )
     }
@@ -222,6 +192,12 @@ return [
      * Define your own model here by extending \Elegantly\Media\Models\Media::class
      */
     'model' => Media::class,
+
+    /**
+     * The path used to store temporary file copy for conversions
+     * This will be used with storage_path() function
+     */
+    'temporary_storage_path' => 'app/tmp/media',
 
     /**
      * The default disk used for storing files
@@ -301,7 +277,7 @@ First, you need to add the `HasMedia` trait and the `InteractWithMedia` interfac
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Traits\HasMedia;
+use Elegantly\Media\Concerns\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Elegantly\Media\Contracts\InteractWithMedia;
 
@@ -317,7 +293,7 @@ You can then define your media collections in the `registerMediaCollections` met
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Traits\HasMedia;
+use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\MediaCollection;
 use Illuminate\Database\Eloquent\Model;
 use Elegantly\Media\Contracts\InteractWithMedia;
@@ -351,16 +327,14 @@ class Channel extends Model implements InteractWithMedia
 
 This package provides common jobs for your conversions to simplify your work:
 
--   `VideoPosterConversionJob`: This job extracts a poster using `pbmedia/laravel-ffmpeg`.
--   `OptimizedVideoConversionJob`: This job optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
--   `OptimizedImageConversionJob`: This job optimizes, resizes, or converts any image using `spatie/image`.
--   `ResponsiveImagesConversionsPreset`: This preset creates a set of optimized images of different sizes.
--   `ResponsiveVideosConversionsPreset`: This preset creates a set of optimized videos of different sizes.
+-   `MediaConversionImage`: This job optimizes, resizes, or converts any image using `spatie/image`.
+-   `MediaConversionVideo`: This job optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
+-   `MediaConversionPoster`: This job extracts a poster using `pbmedia/laravel-ffmpeg`.
 
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Traits\HasMedia;
+use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversion;
 use Elegantly\Media\Enums\MediaType;
@@ -377,111 +351,54 @@ class Channel extends Model implements InteractWithMedia
 {
     use HasMedia;
 
-    // ...
-
-    public function registerMediaConversions($media): Arrayable|iterable|null;
+    public function registerMediaCollections(): Arrayable|iterable|null;
     {
-
-        if($media->collection_name === 'avatar'){
-            return [
-                new MediaConversion(
-                    conversionName: '360',
-                    job: new OptimizedImageConversionJob(
-                        media: $media,
+       return [
+            new MediaCollection(
+                name: 'avatar',
+                acceptedMimeTypes: [
+                    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                ],
+                conversions: [
+                    // using preset conversion definition
+                    new MediaConversionImage(
+                        name: '360',
                         width: 360,
-                        fileName: "{$media->name}-360.jpg"
                     ),
-                )
-            ]
-        }elseif($media->collection_name === 'videos'){
-            return [
-                new MediaConversion(
-                    conversionName: 'poster',
-                    sync: true, // The conversion will not be queued, you will have access to it immediatly
-                    job: new VideoPosterConversionJob(
-                        media: $media,
-                        seconds: 1,
-                        fileName: "{$media->name}-poster.jpg"
+                    // using custom conversion definition
+                    new MediaConversionDefinition(
+                        name: 'webp',
+                        when: fn($media, $parent) => $media->type === MediaType::Image,
+                        handle: function($media, $parent, $file, $filesystem, $temporaryDirectory){
+
+                            $target = $filesystem->path("{$media->name}.webp");
+
+                            Image::load($filesystem->path($file))
+                                ->optimize($this->optimizerChain)
+                                ->save($target);
+
+                            return $media->addConversion(
+                                file: $target,
+                                conversionName: $this->name,
+                                parent: $parent,
+                            );
+
+                        }
                     ),
-                    conversions: function(GeneratedConversion $generatedConversion) use ($media){
-                        return ResponsiveImagesConversionsPreset::make(
-                            media: $media,
-                            generatedConversion: $generatedConversion
-                            widths: [360, 720]
-                        )
-                    }
-                ),
-                ...ResponsiveVideosConversionsPreset::make(
-                    media: $media,
-                    widths: [360, 720, 1080],
-                )
-            ]
-        }
-
-        return null;
-    }
-}
-```
-
-### Defining Your Own MediaConversion
-
-You can create your own conversion by creating a new class in your app (e.g., `App\Support\MediaConversions`) and extending `MediaConversionJob`.
-
-Media conversions are executed through Laravel Jobs. You can perform any task in the job, provided that:
-
--   Your job extends `Elegantly\Media\Jobs\MediaConversion`.
--   Your job defines a `run` method.
--   Your job calls `$this->media->storeConversion(...)`.
-
-Let's consider a common media conversion task: optimizing an image. Here's how you could implement it in your app:
-
-> **Note:** The following job is already provided by this package, but it serves as an excellent introduction to the concept.
-
-```php
-namespace App\Support\MediaConversions;
-
-use Elegantly\Media\Models\Media;
-use Illuminate\Support\Facades\File;
-use Spatie\Image\Enums\Fit;
-use Spatie\Image\Image;
-use Spatie\ImageOptimizer\OptimizerChain;
-use Elegantly\Media\Jobs\MediaConversionJob;
-
-class OptimizedImageConversionJob extends MediaConversionJob
-{
-    public string $fileName;
-
-    public function __construct(
-        public Media $media,
-        ?string $queue = null,
-        public ?int $width = null,
-        public ?int $height = null,
-        public Fit $fit = Fit::Contain,
-        public ?OptimizerChain $optimizerChain = null,
-        ?string $fileName = null,
-    ) {
-        parent::__construct($media, $queue);
-
-        $this->fileName = $fileName ?? $this->media->file_name;
-    }
-
-    public function run(): void
-    {
-        $temporaryDisk = $this->getTemporaryDisk();
-        $path = $this->makeTemporaryFileCopy();
-
-        $newPath = $temporaryDisk->path($this->fileName);
-
-        Image::load($path)
-            ->fit($this->fit, $this->width, $this->height)
-            ->optimize($this->optimizerChain)
-            ->save($newPath);
-
-        $this->media->storeConversion(
-            file: $newPath,
-            conversion: $this->conversionName,
-            name: File::name($this->fileName)
-        );
+                ]
+            )
+            new MediaCollection(
+                name: 'videos',
+                acceptedMimeTypes: [
+                    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
+                ],
+                conversions: [
+                    new MediaConversionPoster(
+                        name: 'poster'
+                    ),
+                ]
+            )
+       ];
     }
 }
 ```
@@ -523,7 +440,7 @@ The library is typed with generics, so you can use your own Media model seamless
 namespace App\Models;
 
 use App\Models\Media;
-use Elegantly\Media\Traits\HasMedia;
+use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Contracts\InteractWithMedia;
 
 /**
