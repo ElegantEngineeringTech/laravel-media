@@ -58,7 +58,15 @@ return new class extends Migration
     ): array {
 
         return collect($generatedConversions)
-            ->flatMap(function (array $generatedConversion, string $conversionName) use ($parent) {
+            ->flatMap(function ($generatedConversion, $conversionName) use ($parent) {
+
+                if(!is_array($generatedConversion)){
+                    return [];
+                }
+
+                if(empty($generatedConversion)){
+                    return [];
+                }
 
                 $fullName = $parent ? "{$parent}.{$conversionName}" : $conversionName;
 
