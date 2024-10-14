@@ -222,6 +222,7 @@ trait HasMedia
 
         $media = $this->getMedia($collectionName, $collectionGroup)
             ->except($except)
+            ->loadMissing(['conversions'])
             ->each(fn ($media) => $media->delete());
 
         $this->setRelation(
