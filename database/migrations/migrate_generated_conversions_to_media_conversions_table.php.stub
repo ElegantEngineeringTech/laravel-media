@@ -96,7 +96,7 @@ return new class extends Migration
                 return [$root];
 
             })
-            ->toArray();
+            ->all();
 
     }
 };
