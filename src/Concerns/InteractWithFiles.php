@@ -79,7 +79,13 @@ trait InteractWithFiles
             return true;
         }
 
-        return (bool) $this->getDisk()?->delete($this->path);
+        $filesystem = $this->getDisk();
+
+        if ($filesystem?->exists($this->path)) {
+            return (bool) $filesystem->delete($this->path);
+        }
+
+        return true;
     }
 
     public function putFile(

@@ -4,6 +4,7 @@ namespace Elegantly\Media\Tests;
 
 use Elegantly\Media\MediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Orchestra\Testbench\TestCase as Orchestra;
 use ProtoneMedia\LaravelFFMpeg\Support\ServiceProvider;
@@ -45,6 +46,8 @@ class TestCase extends Orchestra
             $table->timestamps();
             $table->softDeletes();
         });
+
+        Model::shouldBeStrict(true);
     }
 
     public function getTestFile(string $path): string
