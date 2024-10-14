@@ -101,6 +101,9 @@ trait HasMedia
         return $this->getMedia($collectionName, $collectionGroup)->first();
     }
 
+    /**
+     * @param  array<array-key, mixed>  $parameters
+     */
     public function getFirstMediaUrl(
         ?string $collectionName = null,
         ?string $collectionGroup = null,

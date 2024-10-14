@@ -54,6 +54,9 @@ interface InteractWithMedia
         ?string $collectionGroup = null
     ): ?Media;
 
+    /**
+     * @param  array<array-key, mixed>  $parameters
+     */
     public function getFirstMediaUrl(
         ?string $collectionName = null,
         ?string $collectionGroup = null,
