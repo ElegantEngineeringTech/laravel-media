@@ -275,7 +275,36 @@ class Media extends Model
      */
     public function getChildrenConversions(string $name): EloquentCollection
     {
-        return $this->conversions->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
+        return $this
+            ->conversions
+            ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
+    }
+
+    public function replaceConversion(
+        MediaConversion $conversion,
+    ): MediaConversion {
+
+        $existingConversion = $this->getConversion($conversion->conversion_name);
+
+        if (
+            $conversion->exists ||
+            $conversion->is($existingConversion)
+        ) {
+            return $conversion;
+        }
+
+        $this->conversions()->save($conversion);
+        $this->conversions->push($conversion);
+
+        if ($existingConversion) {
+            $existingConversion->delete();
+            $this->setRelation(
+                'conversions',
+                $this->conversions->except([$existingConversion->id])
+            );
+        }
+
+        return $conversion;
     }
 
     /**
@@ -320,7 +349,7 @@ class Media extends Model
 
         if ($existingConversion) {
             $existingConversion->deleteFile();
-            $this->deleteChildrenConversion($conversionName);
+            $this->deleteChildrenConversions($conversionName);
         } else {
             $this->conversions->push($conversion);
         }
@@ -396,12 +425,10 @@ class Media extends Model
         return $this;
     }
 
-    public function deleteChildrenConversion(string $conversionName): static
+    public function deleteChildrenConversions(string $conversionName): static
     {
-        $deleted = $this->conversions
-            ->filter(function ($conversion) use ($conversionName) {
-                return str($conversion->conversion_name)->startsWith("{$conversionName}.");
-            })
+        $deleted = $this
+            ->getChildrenConversions($conversionName)
             ->each(fn ($conversion) => $conversion->delete());
 
         $this->setRelation(
