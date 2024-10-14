@@ -55,7 +55,11 @@ trait HasMedia
      */
     public function media(): MorphMany
     {
-        return $this->morphMany(config('media.model'), 'model')->chaperone();
+        return $this
+            ->morphMany(config('media.model'), 'model')
+            ->chaperone()
+            ->orderByRaw('-order_column DESC')
+            ->orderBy('id', 'asc');
     }
 
     /**
