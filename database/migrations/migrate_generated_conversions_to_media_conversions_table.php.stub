@@ -36,7 +36,7 @@ return new class extends Migration
 
             });
 
-        Schema::create('media', function (Blueprint $table) {
+        Schema::table('media', function (Blueprint $table) {
             $table->dropColumn('generated_conversions');
         });
 
@@ -44,7 +44,7 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::create('media', function (Blueprint $table) {
+        Schema::table('media', function (Blueprint $table) {
             $table->json('generated_conversions')->nullable();
         });
     }
