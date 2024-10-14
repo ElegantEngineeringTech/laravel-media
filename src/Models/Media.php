@@ -261,6 +261,11 @@ class Media extends Model
         return $this->conversions->firstWhere('conversion_name', $name);
     }
 
+    public function hasConversion(string $name): bool
+    {
+        return (bool) $this->getConversion($name);
+    }
+
     public function getParentConversion(string $name): ?MediaConversion
     {
         if (! str_contains($name, '.')) {
