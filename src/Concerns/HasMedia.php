@@ -103,11 +103,16 @@ trait HasMedia
 
     public function getFirstMediaUrl(
         ?string $collectionName = null,
-        ?string $collectionGroup = null
+        ?string $collectionGroup = null,
+        ?string $conversion = null,
+        ?array $parameters = null,
     ): ?string {
         $media = $this->getFirstMedia($collectionName, $collectionGroup);
 
-        if ($url = $media?->getUrl()) {
+        if ($url = $media?->getUrl(
+            conversion: $conversion,
+            parameters: $parameters
+        )) {
             return $url;
         }
 
