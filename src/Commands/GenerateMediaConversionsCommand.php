@@ -5,7 +5,7 @@ namespace Elegantly\Media\Commands;
 use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
+use Laravel\Prompts\Progress;
 
 use function Laravel\Prompts\confirm;
 
@@ -22,7 +22,9 @@ class GenerateMediaConversionsCommand extends Command
         $pretend = (bool) $this->option('pretend');
         /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
+        /** @var string[] $models */
         $models = (array) $this->option('models');
+        /** @var string[] $collections */
         $collections = (array) $this->option('collections');
 
         /**
@@ -30,42 +32,49 @@ class GenerateMediaConversionsCommand extends Command
          */
         $model = config('media.model');
 
-        /** @var Collection<int, Media> */
-        $media = $model::query()
+        $query = $model::query()
             ->with(['model', 'conversions'])
             ->when(! empty($ids), fn (Builder $query) => $query->whereIn('id', $ids))
             ->when(! empty($models), fn (Builder $query) => $query->whereIn('model_type', $models))
-            ->when(! empty($collections), fn (Builder $query) => $query->whereIn('collection_name', $collections))
-            ->get();
+            ->when(! empty($collections), fn (Builder $query) => $query->whereIn('collection_name', $collections));
 
-        $mediaByModel = $media->countBy('model_type');
+        $count = $query->count();
 
-        $this->table(
-            ['Model', 'Count'],
-            $mediaByModel->map(function (int $count, ?string $model_type) {
-                return [
-                    $model_type,
-                    $count,
-                ];
-            })
-        );
-
-        if ($pretend || ! confirm('Continue?')) {
+        if ($pretend || ! confirm("{$count} Media found. Continue?")) {
             return self::SUCCESS;
         }
 
-        $this->withProgressBar($media, function (Media $media) use ($conversions, $force) {
+        $progress = new Progress('Dispatching Media conversions', $count);
 
-            $conversions = empty($conversions) ? array_keys($media->getConversionsDefinitions()) : $conversions;
+        $query->chunkById(5_000, function ($items) use ($progress, $force, $conversions) {
 
-            foreach ($conversions as $name) {
-                $conversion = $media->getConversion((string) $name);
+            foreach ($items as $media) {
 
-                if ($force || ! $conversion) {
-                    $media->dispatchConversion($name);
-                }
+                $media->dispatchConversions(
+                    queued: true,
+                    filter: function ($definition) use ($media, $force, $conversions) {
 
+                        if (
+                            ! empty($conversions) &&
+                            ! in_array($definition->name, $conversions)
+                        ) {
+                            return false;
+                        }
+
+                        if (
+                            ! $force &&
+                            $media->hasConversion($definition->name)
+                        ) {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                );
+
+                $progress->advance();
             }
+
         });
 
         return self::SUCCESS;

@@ -75,12 +75,22 @@ class Test extends Model
                                 width: 360,
                                 queued: false,
                             ),
+                            new MediaConversionImage(
+                                name: 'delayed',
+                                immediate: false,
+                                queued: false,
+                            ),
                         ]
                     ),
                     new MediaConversionVideo(
                         name: 'small',
                         queued: true,
                         width: 100,
+                    ),
+                    new MediaConversionVideo(
+                        name: 'delayed',
+                        immediate: false,
+                        queued: false,
                     ),
                 ]
             ),

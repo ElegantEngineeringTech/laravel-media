@@ -185,7 +185,9 @@ trait HasMedia
             );
         }
 
-        $media->dispatchConversions();
+        $media->dispatchConversions(
+            filter: fn ($definition) => $definition->immediate
+        );
 
         return $media;
     }

@@ -36,15 +36,7 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
-        if (
-            $this->media->model &&
-            $this->media->model->getMediaCollection($this->media->collection_name)
-        ) {
-            $this->media->model->executeMediaConversion($this->media, $this->conversion);
-        } else {
-            $this->media->executeConversion($this->conversion);
-        }
-
+        $this->media->executeConversion($this->conversion);
     }
 
     /**

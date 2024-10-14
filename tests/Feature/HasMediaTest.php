@@ -96,7 +96,7 @@ it('adds a new media to a collection and group', function () {
     expect($modelMedia)->toBeInstanceOf(Media::class);
 });
 
-it('generates conversions and nested conversions when adding media', function () {
+it('generates and loads non queued conversions when adding media', function () {
     Storage::fake('media');
     $model = new Test;
     $model->save();
@@ -107,13 +107,43 @@ it('generates conversions and nested conversions when adding media', function ()
         disk: 'media'
     );
 
-    expect(
-        $media->conversions->pluck('conversion_name')->toArray()
-    )->toBe([
-        'poster',
-        'poster.360',
-        // 'small' video conversion is queued
-    ]);
+    expect($media->getConversion('poster'))->not->toBe(null);
+    expect($media->getConversion('poster.360'))->not->toBe(null);
+});
+
+it('generates immediate conversions when adding media', function () {
+    Storage::fake('media');
+    $model = new Test;
+    $model->save();
+
+    $media = $model->addMedia(
+        file: $this->getTestFile('videos/horizontal.mp4'),
+        collectionName: 'conversions',
+        disk: 'media'
+    );
+
+    $media->refresh(); // ensure queued conversions are loaded
+
+    expect($media->getConversion('poster'))->not->toBe(null);
+    expect($media->getConversion('poster.360'))->not->toBe(null);
+    expect($media->getConversion('small'))->not->toBe(null);
+});
+
+it('does not generate not immediate conversions when adding media', function () {
+    Storage::fake('media');
+    $model = new Test;
+    $model->save();
+
+    $media = $model->addMedia(
+        file: $this->getTestFile('videos/horizontal.mp4'),
+        collectionName: 'conversions',
+        disk: 'media'
+    );
+
+    $media->refresh(); // ensure queued conversions are loaded
+
+    expect($media->getConversion('delayed'))->toBe(null);
+    expect($media->getConversion('poster.delayed'))->toBe(null);
 
 });
 

@@ -192,9 +192,10 @@ it('retrieves conversions definitions from the associated model', function () {
 
     $definitions = $media->getConversionsDefinitions();
 
-    expect($definitions)->toHaveLength(2);
+    expect($definitions)->toHaveLength(3);
     expect($definitions['poster'])->toBeInstanceOf(MediaConversionDefinition::class);
     expect($definitions['small'])->toBeInstanceOf(MediaConversionDefinition::class);
+    expect($definitions['delayed'])->toBeInstanceOf(MediaConversionDefinition::class);
 
 });
 

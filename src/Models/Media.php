@@ -361,16 +361,21 @@ class Media extends Model
 
         $this->dispatchConversions(
             parent: $conversion,
+            filter: fn ($definition) => $definition->immediate
         );
 
         return $conversion;
     }
 
     /**
+     * @param  null|(Closure(MediaConversionDefinition $definition):bool)  $filter
+     * @param  ?bool  $queued  force queueing the conversions
      * @return $this
      */
     public function dispatchConversions(
-        ?MediaConversion $parent = null
+        ?MediaConversion $parent = null,
+        ?Closure $filter = null,
+        ?bool $queued = null,
     ): static {
         if ($parent) {
             $definitions = $this->getChildrenConversionsDefinitions($parent->conversion_name);
@@ -379,7 +384,8 @@ class Media extends Model
         }
 
         foreach ($definitions as $definition) {
-            if (! $definition->immediate) {
+
+            if ($filter && ! $filter($definition)) {
                 continue;
             }
 
@@ -390,7 +396,7 @@ class Media extends Model
                 continue;
             }
 
-            if ($definition->queued) {
+            if ($definition->queued || $queued === true) {
                 $definition->dispatch(
                     media: $this,
                     parent: $parent,
