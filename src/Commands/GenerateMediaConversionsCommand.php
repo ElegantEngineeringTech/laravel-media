@@ -49,7 +49,7 @@ class GenerateMediaConversionsCommand extends Command
         $query->chunkById(5_000, function ($items) use ($progress, $force, $conversions) {
 
             foreach ($items as $media) {
-
+                /** @var Media $media */
                 $media->dispatchConversions(
                     queued: true,
                     filter: function ($definition) use ($media, $force, $conversions) {
