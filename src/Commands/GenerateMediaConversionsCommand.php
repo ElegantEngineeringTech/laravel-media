@@ -54,6 +54,10 @@ class GenerateMediaConversionsCommand extends Command
                     queued: true,
                     filter: function ($definition) use ($media, $force, $conversions) {
 
+                        if (! $definition->immediate) {
+                            return false;
+                        }
+
                         if (
                             ! empty($conversions) &&
                             ! in_array($definition->name, $conversions)
