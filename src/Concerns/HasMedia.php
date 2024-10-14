@@ -84,6 +84,13 @@ trait HasMedia
             ->values();
     }
 
+    public function hasMedia(
+        ?string $collectionName = null,
+        ?string $collectionGroup = null
+    ): bool {
+        return $this->getMedia($collectionName, $collectionGroup)->isNotEmpty();
+    }
+
     /**
      * @return TMedia
      */

@@ -41,6 +41,11 @@ interface InteractWithMedia
         ?string $collectionGroup = null
     ): Collection;
 
+    public function hasMedia(
+        ?string $collectionName = null,
+        ?string $collectionGroup = null
+    ): bool;
+
     /**
      * @return ?TMedia
      */
