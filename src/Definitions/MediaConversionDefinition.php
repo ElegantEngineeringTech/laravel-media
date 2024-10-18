@@ -17,7 +17,7 @@ class MediaConversionDefinition
     /**
      * @param  bool  $immediate  Determine if the conversion should be dispatched immediatly after `addMedia`
      * @param  MediaConversionDefinition[]  $conversions
-     * @param  Closure(Media $media, ?MediaConversion $parent, string $file, Filesystem $filesystem, SpatieTemporaryDirectory $temporaryDirectory): ?MediaConversion  $handle
+     * @param  Closure(Media $media, ?MediaConversion $parent, ?string $file, Filesystem $filesystem, SpatieTemporaryDirectory $temporaryDirectory): ?MediaConversion  $handle
      * @param  null|bool|Closure(Media $media, ?MediaConversion $parent): bool  $when
      */
     public function __construct(
@@ -37,7 +37,7 @@ class MediaConversionDefinition
     public function handle(
         Media $media,
         ?MediaConversion $parent,
-        string $file,
+        ?string $file,
         Filesystem $filesystem,
         SpatieTemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
@@ -80,18 +80,10 @@ class MediaConversionDefinition
 
             $source = $parent ?? $media;
 
-            if (! $source->path) {
-                return null;
-            }
-
-            $copy = $source->copyFileTo(
+            $copy = $source->path ? $source->copyFileTo(
                 disk: $storage,
                 path: $source->path
-            );
-
-            if (! $copy) {
-                return null;
-            }
+            ) : null;
 
             return $this->handle($media, $parent, $copy, $storage, $temporaryDirectory);
 

@@ -57,10 +57,13 @@ class MediaConversionPoster extends MediaConversionDefinition
     public function handle(
         Media $media,
         ?MediaConversion $parent,
-        string $file,
+        ?string $file,
         Filesystem $filesystem,
         SpatieTemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
+        if (! $file) {
+            return null;
+        }
 
         $fileName = $this->fileName ?? "{$media->name}.jpg";
 

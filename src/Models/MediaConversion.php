@@ -23,8 +23,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 /**
- * @template TMedia of Media
- *
  * @property int $id
  * @property string $uuid
  * @property string $conversion_name
@@ -85,7 +83,7 @@ class MediaConversion extends Model
     }
 
     /**
-     * @return BelongsTo<TMedia, MediaConversion>
+     * @return BelongsTo<Media, MediaConversion>
      */
     public function media(): BelongsTo
     {
