@@ -60,7 +60,9 @@ class File
 
     public static function duration(string $path): ?float
     {
-        if (static::type($path) === MediaType::Video) {
+        if (
+            in_array(static::type($path), [MediaType::Video, MediaType::Audio])
+        ) {
             $filesystem = Storage::build([
                 'driver' => 'local',
                 'root' => SupportFile::dirname($path),
