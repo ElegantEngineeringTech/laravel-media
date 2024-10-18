@@ -23,6 +23,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 /**
+ * @template TMedia of Media
+ *
  * @property int $id
  * @property string $uuid
  * @property string $conversion_name
@@ -71,6 +73,8 @@ class MediaConversion extends Model
         'type' => MediaType::class,
         'metadata' => AsArrayObject::class,
         'state_set_at' => 'datetime',
+        'duration' => 'float',
+        'aspect_ratio' => 'float',
     ];
 
     public static function booted()
@@ -81,11 +85,14 @@ class MediaConversion extends Model
     }
 
     /**
-     * @return BelongsTo<Media, MediaConversion>
+     * @return BelongsTo<TMedia, MediaConversion>
      */
     public function media(): BelongsTo
     {
-        return $this->belongsTo(Media::class);
+        /** @var class-string<Media> */
+        $class = config('media.model', Media::class);
+
+        return $this->belongsTo($class);
     }
 
     /**

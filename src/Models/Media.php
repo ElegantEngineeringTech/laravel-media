@@ -77,6 +77,8 @@ class Media extends Model
     protected $casts = [
         'type' => MediaType::class,
         'metadata' => AsArrayObject::class,
+        'duration' => 'float',
+        'aspect_ratio' => 'float',
     ];
 
     public static function booted()

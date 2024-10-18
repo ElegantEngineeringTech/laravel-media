@@ -195,6 +195,8 @@ trait InteractWithFiles
             return null;
         }
 
-        return CarbonInterval::milliseconds($this->duration)->forHumans($syntax, $short, $parts, $options);
+        return CarbonInterval::milliseconds($this->duration)
+            ->cascade()
+            ->forHumans($syntax, $short, $parts, $options);
     }
 }

@@ -111,7 +111,7 @@ it('stores an svg file', function () {
     expect($media->mime_type)->toBe('image/svg+xml');
     expect($media->width)->toBe(279);
     expect($media->height)->toBe(279);
-    expect($media->aspect_ratio)->toBe(1);
+    expect($media->aspect_ratio)->toBe(1.0);
     expect($media->duration)->toBe(null);
     expect($media->size)->toBe(1853);
 

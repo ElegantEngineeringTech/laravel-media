@@ -61,12 +61,14 @@ class File
     public static function duration(string $path): ?float
     {
         if (static::type($path) === MediaType::Video) {
-            $disk = Storage::build([
+            $filesystem = Storage::build([
                 'driver' => 'local',
                 'root' => SupportFile::dirname($path),
             ]);
 
-            return FFMpeg::fromDisk($disk)->open(SupportFile::basename($path))->getDurationInMiliseconds();
+            return FFMpeg::fromFilesystem($filesystem)
+                ->open(SupportFile::basename($path))
+                ->getDurationInMiliseconds();
         }
 
         return null;
