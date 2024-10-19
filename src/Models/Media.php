@@ -249,10 +249,27 @@ class Media extends Model
         return null;
     }
 
+    public function getOrExecuteConversion(string $name): ?MediaConversion
+    {
+        if ($conversion = $this->getConversion($name)) {
+            return $conversion;
+        }
+
+        return $this->executeConversion($name);
+    }
+
     public function executeConversion(string $conversion): ?MediaConversion
     {
         if ($definition = $this->getConversionDefinition($conversion)) {
-            return $definition->execute($this, $this->getParentConversion($conversion));
+
+            if (str_contains($conversion, '.')) {
+                $parent = $this->getOrExecuteConversion(str($conversion)->beforeLast('.'));
+            } else {
+                $parent = null;
+            }
+
+            return $definition->execute($this, $parent);
+
         }
 
         return null;

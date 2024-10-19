@@ -94,6 +94,27 @@ class Test extends Model
                     ),
                 ]
             ),
+            new MediaCollection(
+                name: 'conversions-delayed',
+                single: false,
+                public: false,
+                conversions: [
+                    new MediaConversionPoster(
+                        name: 'poster',
+                        queued: false,
+                        immediate: false,
+                        conversions: [
+                            new MediaConversionImage(
+                                name: '360',
+                                width: 360,
+                                queued: false,
+                                immediate: true,
+                            ),
+                        ]
+                    ),
+
+                ]
+            ),
         ];
     }
 }

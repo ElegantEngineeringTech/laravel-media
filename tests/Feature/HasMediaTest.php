@@ -147,6 +147,27 @@ it('does not generate not immediate conversions when adding media', function () 
 
 });
 
+it('generates non existing parents conversions when executing nested conversion', function () {
+    Storage::fake('media');
+    $model = new Test;
+    $model->save();
+
+    $media = $model->addMedia(
+        file: $this->getTestFile('videos/horizontal.mp4'),
+        collectionName: 'conversions-delayed',
+        disk: 'media'
+    );
+
+    expect($media->conversions)->toHaveLength(0);
+
+    $media->executeConversion('poster.360');
+
+    expect($media->conversions)->toHaveLength(2);
+
+    expect($media->getConversion('poster'))->not->toBe(null);
+    expect($media->getConversion('poster.360'))->not->toBe(null);
+});
+
 it('deletes old media when adding to single collection', function () {
     Storage::fake('media');
     $model = new Test;
