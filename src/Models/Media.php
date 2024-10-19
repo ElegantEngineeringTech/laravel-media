@@ -287,6 +287,9 @@ class Media extends Model
             ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
     }
 
+    /**
+     * Save a conversion and dispatch children conversions
+     */
     public function replaceConversion(
         MediaConversion $conversion,
     ): MediaConversion {
@@ -320,6 +323,8 @@ class Media extends Model
     }
 
     /**
+     * Store a file as a conversion and dispatch children conversions
+     *
      * @param  string|resource|UploadedFile|HttpFile  $file
      */
     public function addConversion(
