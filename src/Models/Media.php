@@ -311,6 +311,11 @@ class Media extends Model
             );
         }
 
+        $this->dispatchConversions(
+            parent: $conversion,
+            filter: fn ($definition) => $definition->immediate
+        );
+
         return $conversion;
     }
 
@@ -398,7 +403,7 @@ class Media extends Model
                 continue;
             }
 
-            if ($definition->queued || $queued === true) {
+            if ($queued ?? $definition->queued) {
                 $definition->dispatch(
                     media: $this,
                     parent: $parent,

@@ -46,8 +46,8 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
     {
         return [
             'media',
-            $this->media->id,
             $this->conversion,
+            get_class($this->media).':'.$this->media->id,
             "{$this->media->model_type}:{$this->media->model_id}",
         ];
     }
