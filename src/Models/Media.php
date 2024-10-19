@@ -100,7 +100,7 @@ class Media extends Model
     }
 
     /**
-     * @return MorphTo<Model, Media>
+     * @return MorphTo<Model, $this>
      */
     public function model(): MorphTo
     {
@@ -108,7 +108,7 @@ class Media extends Model
     }
 
     /**
-     * @return HasMany<MediaConversion>
+     * @return HasMany<MediaConversion, $this>
      */
     public function conversions(): HasMany
     {

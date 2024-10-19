@@ -83,7 +83,7 @@ class MediaConversion extends Model
     }
 
     /**
-     * @return BelongsTo<Media, MediaConversion>
+     * @return BelongsTo<Media, $this>
      */
     public function media(): BelongsTo
     {
