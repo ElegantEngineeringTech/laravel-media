@@ -11,13 +11,14 @@ use function Laravel\Prompts\confirm;
 
 class GenerateMediaConversionsCommand extends Command
 {
-    public $signature = 'media:generate-conversions {ids?*} {--force} {--pretend} {--conversions=*} {--collections=*} {--models=*}';
+    public $signature = 'media:generate-conversions {ids?*} {--force} {--immediate} {--pretend} {--conversions=*} {--collections=*} {--models=*}';
 
     public $description = 'Generate all media conversions';
 
     public function handle(): int
     {
         $ids = (array) $this->argument('ids');
+        $immediate = (bool) $this->option('immediate');
         $force = (bool) $this->option('force');
         $pretend = (bool) $this->option('pretend');
         /** @var string[] $conversions */
@@ -46,15 +47,17 @@ class GenerateMediaConversionsCommand extends Command
 
         $progress = new Progress('Dispatching Media conversions', $count);
 
-        $query->chunkById(5_000, function ($items) use ($progress, $force, $conversions) {
+        $query->chunkById(5_000, function ($items) use ($progress, $force, $immediate, $conversions) {
 
             foreach ($items as $media) {
                 /** @var Media $media */
                 $media->dispatchConversions(
                     queued: true,
-                    filter: function ($definition) use ($media, $force, $conversions) {
+                    filter: function ($definition) use ($media, $force, $immediate, $conversions) {
 
-                        if (! $definition->immediate) {
+                        if (
+                            $immediate === false && ! $definition->immediate
+                        ) {
                             return false;
                         }
 
