@@ -243,7 +243,11 @@ class Media extends Model
     public function dispatchConversion(string $conversion): ?PendingDispatch
     {
         if ($definition = $this->getConversionDefinition($conversion)) {
-            return $definition->dispatch($this, $this->getParentConversion($conversion));
+            $parent = $this->getParentConversion($conversion);
+
+            if ($definition->shouldExecute($this, $parent)) {
+                return $definition->dispatch($this, $parent);
+            }
         }
 
         return null;

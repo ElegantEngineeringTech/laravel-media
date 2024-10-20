@@ -51,33 +51,40 @@ class GenerateMediaConversionsCommand extends Command
 
             foreach ($items as $media) {
                 /** @var Media $media */
-                $media->dispatchConversions(
-                    queued: true,
-                    filter: function ($definition) use ($media, $force, $immediate, $conversions) {
-
+                if (! empty($conversions)) {
+                    foreach ($conversions as $conversion) {
                         if (
-                            $immediate === false && ! $definition->immediate
+                            $force === false &&
+                            $media->hasConversion($conversion)
                         ) {
-                            return false;
+                            continue;
                         }
 
-                        if (
-                            ! empty($conversions) &&
-                            ! in_array($definition->name, $conversions)
-                        ) {
-                            return false;
-                        }
-
-                        if (
-                            ! $force &&
-                            $media->hasConversion($definition->name)
-                        ) {
-                            return false;
-                        }
-
-                        return true;
+                        $media->dispatchConversion($conversion);
                     }
-                );
+                } else {
+                    $media->dispatchConversions(
+                        queued: true,
+                        filter: function ($definition) use ($media, $force, $immediate) {
+
+                            if (
+                                $immediate === false &&
+                                ! $definition->immediate
+                            ) {
+                                return false;
+                            }
+
+                            if (
+                                $force === false &&
+                                $media->hasConversion($definition->name)
+                            ) {
+                                return false;
+                            }
+
+                            return true;
+                        }
+                    );
+                }
 
                 $progress->advance();
             }
