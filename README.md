@@ -25,7 +25,7 @@ The following example will provide you with a better understanding of the packag
 
 We will create a YouTube-like service, with a model named `Channel`. This `Channel` will have two types of media: `avatar` and `videos`. We will define these media types in the `registerMediaCollections` method.
 
-We want to store the avatars in a square format, with dimensions not exceeding 500px, and in the WebP format. We will accomplish this in the `registerMediaTransformations` method.
+We want to store the avatars in a square format, with dimensions not exceeding 500px, and in the WebP format. We will accomplish this in the `transform` parameter.
 
 For each media type, we will need a set of conversions, as illustrated in the following tree:
 
@@ -42,7 +42,7 @@ For each media type, we will need a set of conversions, as illustrated in the fo
   /hls
 ```
 
-We will define these conversions in the `registerMediaConversions` method.
+We will define these conversions in the `conversions` parameter.
 
 Here is how our `Channel` class will be defined:
 
@@ -124,7 +124,7 @@ class ChannelAvatarController extends Controller
     function function store(Request $request, Channel $channel)
     {
         $channel->addMedia(
-            file: $file->file('avatar'),
+            file: $request->file('avatar'),
             collectionName: 'avatar',
             name: "{$channel->name}-avatar",
         )
@@ -260,7 +260,7 @@ php artisan vendor:publish --tag="laravel-media-views"
 
 There are two essential concepts to understand, both of which are associated with the Model and its media:
 
--   **Media Collection**: This defines a group of media with its specific settings (the group can only contain one media item). For example, avatar, thumbnail, and upload are all media collections.
+-   **Media Collection**: This defines a group of media with its specific settings (the group can only contain one or more media). For example, avatar, thumbnail, and upload are all media collections.
 
 -   **Media Conversion**: This defines a file conversion of a particular media item. For instance, a 720p version of a larger 1440p video, a WebP or PNG conversion of an image, are all examples of media conversions. Notably, a media conversion can also have its own media conversions.
 
@@ -325,11 +325,12 @@ class Channel extends Model implements InteractWithMedia
 
 #### Registering Media Conversions
 
-This package provides common jobs for your conversions to simplify your work:
+This package provides common converions to simplify your work:
 
--   `MediaConversionImage`: This job optimizes, resizes, or converts any image using `spatie/image`.
--   `MediaConversionVideo`: This job optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionPoster`: This job extracts a poster using `pbmedia/laravel-ffmpeg`.
+-   `MediaConversionImage`: This conversion optimizes, resizes, or converts any image using `spatie/image`.
+-   `MediaConversionVideo`: This conversion optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
+-   `MediaConversionAudio`: This conversion optimizes, resizes, converts or extract any audio using `pbmedia/laravel-ffmpeg`.
+-   `MediaConversionPoster`: This conversion extracts a poster using `pbmedia/laravel-ffmpeg`.
 
 ```php
 namespace App\Models;
@@ -393,6 +394,9 @@ class Channel extends Model implements InteractWithMedia
                     'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
                 ],
                 conversions: [
+                    new MediaConversionAudio(
+                        name: 'audio'
+                    ),
                     new MediaConversionPoster(
                         name: 'poster'
                     ),
