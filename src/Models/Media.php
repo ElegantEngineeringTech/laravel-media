@@ -12,6 +12,7 @@ use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\Jobs\MediaConversionJob;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Exception;
@@ -240,30 +241,41 @@ class Media extends Model
         return $this->getConversionDefinition($name)?->conversions ?? [];
     }
 
-    public function dispatchConversion(string $conversion): ?PendingDispatch
-    {
-        if ($definition = $this->getConversionDefinition($conversion)) {
-            $parent = $this->getParentConversion($conversion);
+    public function dispatchConversion(
+        string $conversion,
+        bool $force = true,
+    ): ?PendingDispatch {
+        if (
+            $force === false &&
+            $this->hasConversion($conversion)
+        ) {
+            return null;
+        }
 
-            if ($definition->shouldExecute($this, $parent)) {
-                return $definition->dispatch($this, $parent);
-            }
+        if ($definition = $this->getConversionDefinition($conversion)) {
+
+            return dispatch(new MediaConversionJob(
+                media: $this,
+                conversion: $conversion
+            ));
+
         }
 
         return null;
     }
 
-    public function getOrExecuteConversion(string $name): ?MediaConversion
-    {
-        if ($conversion = $this->getConversion($name)) {
-            return $conversion;
+    public function executeConversion(
+        string $conversion,
+        bool $force = true,
+    ): ?MediaConversion {
+
+        if (
+            $force === false &&
+            $this->hasConversion($conversion)
+        ) {
+            return null;
         }
 
-        return $this->executeConversion($name);
-    }
-
-    public function executeConversion(string $conversion): ?MediaConversion
-    {
         if ($definition = $this->getConversionDefinition($conversion)) {
 
             if (str_contains($conversion, '.')) {
@@ -277,6 +289,15 @@ class Media extends Model
         }
 
         return null;
+    }
+
+    public function getOrExecuteConversion(string $name): ?MediaConversion
+    {
+        if ($conversion = $this->getConversion($name)) {
+            return $conversion;
+        }
+
+        return $this->executeConversion($name);
     }
 
     public function getConversion(string $name): ?MediaConversion

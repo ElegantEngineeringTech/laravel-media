@@ -53,14 +53,10 @@ class GenerateMediaConversionsCommand extends Command
                 /** @var Media $media */
                 if (! empty($conversions)) {
                     foreach ($conversions as $conversion) {
-                        if (
-                            $force === false &&
-                            $media->hasConversion($conversion)
-                        ) {
-                            continue;
-                        }
-
-                        $media->dispatchConversion($conversion);
+                        $media->dispatchConversion(
+                            conversion: $conversion,
+                            force: $force
+                        );
                     }
                 } else {
                     $media->dispatchConversions(
