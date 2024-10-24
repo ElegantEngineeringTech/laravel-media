@@ -3,9 +3,11 @@
 namespace Elegantly\Media\Concerns;
 
 use Carbon\CarbonInterval;
+use Closure;
 use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
@@ -172,6 +174,64 @@ trait InteractWithFiles
 
         return null;
 
+    }
+
+    /**
+     * Transform the media file inside a temporary directory while keeping the same Model
+     * Usefull to optimize or convert the media file afterwards
+     *
+     * @param  Closure(HttpFile $copy): HttpFile  $transform
+     * @return $this
+     */
+    public function transformFile(Closure $transform): static
+    {
+
+        TemporaryDirectory::callback(function ($temporaryDirectory) use ($transform) {
+
+            /** Used to delete the old file */
+            $clone = clone $this;
+
+            if (
+                ! $this->path ||
+                ! $this->disk ||
+                ! $this->name
+            ) {
+                return $this;
+            }
+
+            $storage = Storage::build([
+                'driver' => 'local',
+                'root' => $temporaryDirectory->path(),
+            ]);
+
+            $copy = $this->copyFileTo(
+                disk: $storage,
+                path: $this->path
+            );
+
+            if (! $copy) {
+                return;
+            }
+
+            $file = $transform(new HttpFile($storage->path($copy)));
+
+            $result = $this->putFile(
+                disk: $this->disk,
+                destination: dirname($this->path),
+                file: $file,
+                name: $this->name
+            );
+
+            if (
+                $result &&
+                $clone->path !== $this->path
+            ) {
+                $clone->deleteFile();
+            }
+
+        });
+
+        return $this;
     }
 
     public function humanReadableSize(
