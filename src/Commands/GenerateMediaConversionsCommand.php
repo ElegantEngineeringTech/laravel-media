@@ -2,6 +2,7 @@
 
 namespace Elegantly\Media\Commands;
 
+use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -28,6 +29,18 @@ class GenerateMediaConversionsCommand extends Command
         /** @var string[] $collections */
         $collections = (array) $this->option('collections');
 
+        $filter = function (MediaConversionDefinition $definition) use ($immediate) {
+
+            if (
+                $immediate === false &&
+                ! $definition->immediate
+            ) {
+                return false;
+            }
+
+            return true;
+        };
+
         /**
          * @var class-string<Media> $model
          */
@@ -47,7 +60,7 @@ class GenerateMediaConversionsCommand extends Command
 
         $progress = new Progress('Dispatching Media conversions', $count);
 
-        $query->chunkById(5_000, function ($items) use ($progress, $force, $immediate, $conversions) {
+        $query->chunkById(5_000, function ($items) use ($progress, $force, $conversions, $filter) {
 
             foreach ($items as $media) {
                 /** @var Media $media */
@@ -59,26 +72,26 @@ class GenerateMediaConversionsCommand extends Command
                         );
                     }
                 } else {
-                    $media->dispatchConversions(
+
+                    /**
+                     * Generate missing children conversions
+                     */
+                    $media->conversions->each(function ($conversion) use ($media, $force, $filter) {
+                        $media->generateConversions(
+                            parent: $conversion,
+                            queued: true,
+                            force: $force,
+                            filter: $filter,
+                        );
+                    });
+
+                    /**
+                     * Generate missing root conversions
+                     */
+                    $media->generateConversions(
                         queued: true,
-                        filter: function ($definition) use ($media, $force, $immediate) {
-
-                            if (
-                                $immediate === false &&
-                                ! $definition->immediate
-                            ) {
-                                return false;
-                            }
-
-                            if (
-                                $force === false &&
-                                $media->hasConversion($definition->name)
-                            ) {
-                                return false;
-                            }
-
-                            return true;
-                        }
+                        force: $force,
+                        filter: $filter,
                     );
                 }
 

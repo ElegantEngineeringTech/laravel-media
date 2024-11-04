@@ -241,6 +241,10 @@ class Media extends Model
         return $this->getConversionDefinition($name)?->conversions ?? [];
     }
 
+    /**
+     * Dispatch any conversion while generating missing parents.
+     * Will check for 'shouldExecute' definition method.
+     */
     public function dispatchConversion(
         string $conversion,
         bool $force = true,
@@ -264,6 +268,10 @@ class Media extends Model
         return null;
     }
 
+    /**
+     * Execute any conversion while generating missing parents.
+     * Will check for 'shouldExecute' definition method.
+     */
     public function executeConversion(
         string $conversion,
         bool $force = true,
@@ -282,6 +290,10 @@ class Media extends Model
                 $parent = $this->getOrExecuteConversion(str($conversion)->beforeLast('.'));
             } else {
                 $parent = null;
+            }
+
+            if (! $definition->shouldExecute($this, $parent)) {
+                return null;
             }
 
             return $definition->execute($this, $parent);
@@ -356,9 +368,10 @@ class Media extends Model
             );
         }
 
-        $this->dispatchConversions(
+        $this->generateConversions(
             parent: $conversion,
-            filter: fn ($definition) => $definition->immediate
+            filter: fn ($definition) => $definition->immediate,
+            force: true,
         );
 
         return $conversion;
@@ -413,23 +426,27 @@ class Media extends Model
             $this->conversions->push($conversion);
         }
 
-        $this->dispatchConversions(
+        $this->generateConversions(
             parent: $conversion,
-            filter: fn ($definition) => $definition->immediate
+            filter: fn ($definition) => $definition->immediate,
+            force: true,
         );
 
         return $conversion;
     }
 
     /**
+     * Execute or dispatch first level conversions based on their definition
+     *
      * @param  null|(Closure(MediaConversionDefinition $definition):bool)  $filter
      * @param  ?bool  $queued  force queueing the conversions
      * @return $this
      */
-    public function dispatchConversions(
+    public function generateConversions(
         ?MediaConversion $parent = null,
         ?Closure $filter = null,
         ?bool $queued = null,
+        bool $force = false,
     ): static {
         if ($parent) {
             $definitions = $this->getChildrenConversionsDefinitions($parent->conversion_name);
@@ -443,28 +460,23 @@ class Media extends Model
                 continue;
             }
 
-            if (! $definition->shouldExecute(
-                media: $this,
-                parent: $parent
-            )) {
-                continue;
-            }
+            $conversion = $parent ? "{$parent->conversion_name}.{$definition->name}" : $definition->name;
 
             if ($queued ?? $definition->queued) {
-                $definition->dispatch(
-                    media: $this,
-                    parent: $parent,
+                $this->dispatchConversion(
+                    conversion: $conversion,
+                    force: $force,
                 );
+
             } else {
-                $definition->execute(
-                    media: $this,
-                    parent: $parent
+                $this->executeConversion(
+                    conversion: $conversion,
+                    force: $force
                 );
             }
         }
 
         return $this;
-
     }
 
     /**
