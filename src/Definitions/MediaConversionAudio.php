@@ -78,7 +78,9 @@ class MediaConversionAudio extends MediaConversionDefinition
         /**
          * Videos do not always have an audio stream
          */
-        if (! $this->hasFileAudioStream($file)) {
+        if (! $this->hasFileAudioStream(
+            $filesystem->path($file)
+        )) {
             return null;
         }
 
