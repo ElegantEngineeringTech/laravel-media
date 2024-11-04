@@ -288,6 +288,12 @@ class Media extends Model
 
             if (str_contains($conversion, '.')) {
                 $parent = $this->getOrExecuteConversion(str($conversion)->beforeLast('.'));
+                /**
+                 * Parent conversion can't be done, so children can't be executed either.
+                 */
+                if (! $parent) {
+                    return null;
+                }
             } else {
                 $parent = null;
             }
