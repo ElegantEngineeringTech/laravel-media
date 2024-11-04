@@ -9,6 +9,7 @@ use Elegantly\Media\Models\MediaConversion;
 use FFMpeg\Format\Audio\Mp3;
 use FFMpeg\Format\FormatInterface;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use ProtoneMedia\LaravelFFMpeg\FFMpeg\FFProbe;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
@@ -51,6 +52,18 @@ class MediaConversionAudio extends MediaConversionDefinition
         return in_array($source->type, [MediaType::Video, MediaType::Audio]);
     }
 
+    public function hasFileAudioStream(string $path): bool
+    {
+        $ffprobe = FFProbe::create([
+            'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
+            'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
+        ]);
+
+        $streams = $ffprobe->streams($path);
+
+        return (bool) $streams->audios()->count();
+    }
+
     public function handle(
         Media $media,
         ?MediaConversion $parent,
@@ -59,6 +72,13 @@ class MediaConversionAudio extends MediaConversionDefinition
         SpatieTemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
         if (! $file) {
+            return null;
+        }
+
+        /**
+         * Videos do not always have an audio stream
+         */
+        if (! $this->hasFileAudioStream($file)) {
             return null;
         }
 
