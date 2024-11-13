@@ -4,14 +4,12 @@ namespace Elegantly\Media\Helpers;
 
 use Elegantly\Media\Enums\MediaType;
 use FFMpeg\Coordinate\Dimension;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
-use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class File
 {
@@ -103,13 +101,5 @@ class File
         $extension = $file->guessExtension();
 
         return "{$name}.{$extension}";
-    }
-
-    public static function makeTemporaryDisk(TemporaryDirectory $directory): Filesystem
-    {
-        return Storage::build([
-            'driver' => 'local',
-            'root' => $directory->path(),
-        ]);
     }
 }

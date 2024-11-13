@@ -9,7 +9,6 @@ use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Foundation\Bus\PendingDispatch;
-use Illuminate\Support\Facades\Storage;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionDefinition
@@ -73,10 +72,7 @@ class MediaConversionDefinition
     {
         return TemporaryDirectory::callback(function ($temporaryDirectory) use ($media, $parent) {
 
-            $storage = Storage::build([
-                'driver' => 'local',
-                'root' => $temporaryDirectory->path(),
-            ]);
+            $storage = TemporaryDirectory::storage($temporaryDirectory);
 
             $source = $parent ?? $media;
 

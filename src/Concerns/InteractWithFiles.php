@@ -180,16 +180,13 @@ trait InteractWithFiles
      * Transform the media file inside a temporary directory while keeping the same Model
      * Usefull to optimize or convert the media file afterwards
      *
-     * @param  Closure(HttpFile $copy): HttpFile  $transform
+     * @param  Closure(HttpFile $copy, \Spatie\TemporaryDirectory\TemporaryDirectory $temporaryDirectory): HttpFile  $transform
      * @return $this
      */
     public function transformFile(Closure $transform): static
     {
 
         TemporaryDirectory::callback(function ($temporaryDirectory) use ($transform) {
-
-            /** Used to delete the old file */
-            $clone = clone $this;
 
             if (
                 ! $this->path ||
@@ -199,10 +196,10 @@ trait InteractWithFiles
                 return $this;
             }
 
-            $storage = Storage::build([
-                'driver' => 'local',
-                'root' => $temporaryDirectory->path(),
-            ]);
+            /** Used to delete the old file at the end */
+            $clone = clone $this;
+
+            $storage = TemporaryDirectory::storage($temporaryDirectory);
 
             $copy = $this->copyFileTo(
                 disk: $storage,
@@ -213,7 +210,10 @@ trait InteractWithFiles
                 return;
             }
 
-            $file = $transform(new HttpFile($storage->path($copy)));
+            $file = $transform(
+                new HttpFile($storage->path($copy)),
+                $temporaryDirectory
+            );
 
             $result = $this->putFile(
                 disk: $this->disk,
