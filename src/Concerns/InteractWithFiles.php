@@ -9,6 +9,7 @@ use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -28,6 +29,8 @@ use Illuminate\Support\Str;
  * @property ?float $aspect_ratio
  * @property ?float $duration
  * @property ?MediaType $type
+ *
+ * @mixin Model
  */
 trait InteractWithFiles
 {
@@ -90,6 +93,9 @@ trait InteractWithFiles
         return true;
     }
 
+    /**
+     * @return ?string The new file path on success, null on failure
+     */
     public function putFile(
         string $disk,
         string $destination,
@@ -129,6 +135,9 @@ trait InteractWithFiles
         return $path;
     }
 
+    /**
+     * @return ?string The new file path on success, null on failure
+     */
     public function copyFileTo(
         string|Filesystem $disk,
         string $path,
@@ -149,6 +158,9 @@ trait InteractWithFiles
         return $result ? $path : null;
     }
 
+    /**
+     * @return ?string The new file path on success, null on failure
+     */
     public function moveFileTo(
         string $disk,
         string $path,
@@ -173,7 +185,6 @@ trait InteractWithFiles
         }
 
         return null;
-
     }
 
     /**
@@ -228,6 +239,8 @@ trait InteractWithFiles
             ) {
                 $clone->deleteFile();
             }
+
+            $this->save();
 
         });
 
