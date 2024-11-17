@@ -35,11 +35,8 @@ For each media type, we will need a set of conversions, as illustrated in the fo
 /video
   /poster
     /poster-360
-    /poster-720
   /360
   /720
-  /1080
-  /hls
 ```
 
 We will define these conversions in the `conversions` parameter.
@@ -102,6 +99,14 @@ class Channel extends Model implements InteractWithMedia
                                 width: 360
                             ),
                         ],
+                    ),
+                    new MediaConversionVideo(
+                        name: '360',
+                        width: 360
+                    ),
+                    new MediaConversionVideo(
+                        name: '720',
+                        width: 720
                     ),
                 ],
             )
