@@ -1,4 +1,4 @@
-# Flexible Media Library for Laravel
+# Extremely powerful media library for Laravel 🖼️
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3Arun-tests+branch%3Amain)
