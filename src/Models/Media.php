@@ -397,19 +397,24 @@ class Media extends Model
         ?string $disk = null,
     ): MediaConversion {
 
-        if (
-            $parent &&
-            ! str_contains($conversionName, '.')
-        ) {
+        /**
+         * Prefix name with parent if not already done
+         */
+        if ($parent && ! str_contains($conversionName, '.')) {
             $conversionName = "{$parent->conversion_name}.{$conversionName}";
         }
 
-        if ($conversion = $this->getConversion($conversionName)) {
-            $existingConversion = clone $conversion;
-        } else {
-            $existingConversion = null;
-            $conversion = new MediaConversion;
-        }
+        /**
+         * If the conversion already exists, we are going to overwrite it
+         */
+        $existingConversion = $this->getConversion($conversionName);
+
+        /**
+         * To delete old conversion files, we will use a untouched replicate
+         */
+        $existingConversionReplicate = $existingConversion?->replicate();
+
+        $conversion = $existingConversion ?? new MediaConversion;
 
         $conversion->fill([
             'conversion_name' => $conversionName,
@@ -418,15 +423,23 @@ class Media extends Model
             'state_set_at' => now(),
         ]);
 
-        $conversion = $conversion->storeFile(
+        $conversion->storeFile(
             file: $file,
             destination: $destination ?? $this->makeFreshPath($conversionName),
             name: $name,
             disk: $disk ?? $this->disk
         );
 
-        if ($existingConversion) {
-            $existingConversion->deleteFile();
+        if ($existingConversionReplicate) {
+            if (
+                $existingConversionReplicate->path !== $conversion->path ||
+                $existingConversionReplicate->disk !== $conversion->disk
+            ) {
+                $existingConversionReplicate->deleteFile();
+            }
+            /**
+             * Because the conversion has been regenerated, its children are not up to date anymore
+             */
             $this->deleteChildrenConversions($conversionName);
         } else {
             $this->conversions->push($conversion);
