@@ -5,17 +5,19 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
 
-This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions (nested conversions are supported). It is designed to work seamlessly with any filesystem solutions (local or cloud) such as Bunny.net, AWS S3/MediaConvert, Transloadit, among others.
+This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions (nested conversions are supported).
 
-The inspiration for this package is derived from the exceptional `spatie/laravel-media-library` package (be sure to check out Spatie's packages, they are top-notch). However, it is not a fork, as the internal architecture is different, providing you with more capabilities. Migration from `spatie/laravel-media-library` is feasible but may be challenging if you wish to retain your conversion files.
+It is designed to work seamlessly with:
 
-## Motivation
+-   Any filesystem solutions (local or cloud), such as S3, R2, Bunny.net, DO...
+-   Any file conversion solutions (local or cloud), such as ffmpeg, Transloadit, Coconut, and others.
 
-The Spatie team has developed a remarkable package, `spatie/laravel-media-library`, which is well-suited for most common scenarios. However, I found myself constrained by their architecture for my own project. To address this, I required the following features:
+The package provides advanced features such as:
 
--   File transformations
--   Advanced media conversions
--   Nested media conversions
+-   File transformations at upload time
+-   Advanced media conversions using your own code
+-   Nested media conversions without any limit
+-   The ability to move files from one disk to another
 
 Consequently, I developed this package with the highest degree of flexibility possible. I have been utilizing it in production for nearly a year, handling terabytes of files monthly.
 
