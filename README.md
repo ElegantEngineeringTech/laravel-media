@@ -5,166 +5,50 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
 
-This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions (nested conversions are supported).
+This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions.
 
-It is designed to work seamlessly with:
+It provides advanced features such as:
 
--   Any filesystem solutions (local or cloud), such as S3, R2, Bunny.net, DO...
--   Any file conversion solutions (local or cloud), such as ffmpeg, Transloadit, Coconut, and others.
+-   🌐 Supports any filesystem solutions (local or cloud), such as S3, R2, Bunny.net, DO...
+-   ⚡ Supports any file conversion solutions (local or cloud), such as ffmpeg, Transloadit, Cloudflare, Coconut, and others.
+-   🔄 Advanced nested media conversions
+-   🚀 Rich metadata automatically extracted
+-   🛠️ Highly flexible and customizable
 
-The package provides advanced features such as:
+I developed this package with the highest degree of flexibility possible and I have been using it in production for nearly a year, handling terabytes of files monthly.
 
--   File transformations at upload time
--   Advanced media conversions using your own code
--   Nested media conversions without any limit
--   The ability to move files from one disk to another
+## Table of Contents
 
-Consequently, I developed this package with the highest degree of flexibility possible. I have been utilizing it in production for nearly a year, handling terabytes of files monthly.
+1. [Requirements](#requirements)
 
-## Full Example
+1. [Installation](#installation)
 
-The following example will provide you with a better understanding of the package's capabilities.
+1. [Basic Usage](#basic-usage)
 
-We will create a YouTube-like service, with a model named `Channel`. This `Channel` will have two types of media: `avatar` and `videos`. We will define these media types in the `registerMediaCollections` method.
+    - [Define Media Collection](#defining-media-collections)
+    - [Define Media Conversions](#defining-media-conversions)
+    - [Adding Media](#adding-media)
+    - [Retreiving Media](#adding-media)
+    - [Media properties](#media-properties)
+    - [Accessing Media Conversions](#accessing-media-conversions)
+    - [Blade components](#blade-components)
 
-We want to store the avatars in a square format, with dimensions not exceeding 500px, and in the WebP format. We will accomplish this in the `transform` parameter.
+1. [Advanced Usage](#advanced-usage)
 
-For each media type, we will need a set of conversions, as illustrated in the following tree:
+    - [Async vs Sync conversions](#async-vs-sync-conversions)
+    - [Delayed conversions](#delayed-conversions)
+    - [Custom conversions](#custom-conversions)
+    - [Manually generate conversions](#manually-generate-conversions)
 
-```php
-/avatar
-  /avatar-360
-/video
-  /poster
-    /poster-360
-  /360
-  /720
-```
+1. [Customization](#customization)
+    - [Custom Media Model](#custom-media-model)
 
-We will define these conversions in the `conversions` parameter.
+## Requirements
 
-Here is how our `Channel` class will be defined:
-
-```php
-namespace App\Models;
-
-use Elegantly\Media\Concerns\HasMedia;
-use Elegantly\Media\MediaCollection;
-use Elegantly\Media\MediaConversion;
-use Elegantly\Media\Enums\MediaType;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Spatie\Image\Enums\Fit;
-use \App\Jobs\Media\OptimizedImageConversionJob;
-use Elegantly\Media\Models\Media;
-use Elegantly\Media\Contracts\InteractWithMedia;
-use Illuminate\Contracts\Support\Arrayable;
-use Elegantly\Media\Definitions\MediaConversionImage;
-use Elegantly\Media\Definitions\MediaConversionPoster;
-
-class Channel extends Model implements InteractWithMedia
-{
-    use HasMedia;
-
-    public function registerMediaCollections(): Arrayable|iterable|null;
-    {
-       return [
-            new MediaCollection(
-                name: 'avatar',
-                acceptedMimeTypes: [
-                    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-                ],
-                transform: function($file){
-                    Image::load($file->getRealPath())
-                        ->fit(Fit::Crop, 500, 500)
-                        ->optimize()
-                        ->save();
-                },
-                conversions: [
-                    new MediaConversionImage(
-                        name: '360',
-                        width: 360
-                    ),
-                ],
-            )
-            new MediaCollection(
-                name: 'videos',
-                acceptedMimeTypes: [
-                    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
-                ],
-                conversions: [
-                    new MediaConversionPoster(
-                        name: 'poster',
-                        conversions: [
-                            new MediaConversionImage(
-                                name: '360',
-                                width: 360
-                            ),
-                        ],
-                    ),
-                    new MediaConversionVideo(
-                        name: '360',
-                        width: 360
-                    ),
-                    new MediaConversionVideo(
-                        name: '720',
-                        width: 720
-                    ),
-                ],
-            )
-       ];
-    }
-}
-```
-
-From now, we will be able to store files in the easiest way possible:
-
-### Storing a file from a Controller
-
-```php
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-
-class ChannelAvatarController extends Controller
-{
-    function function store(Request $request, Channel $channel)
-    {
-        $channel->addMedia(
-            file: $request->file('avatar'),
-            collectionName: 'avatar',
-            name: "{$channel->name}-avatar",
-        )
-    }
-}
-```
-
-### Storing a file from a Livewire component
-
-```php
-namespace App\Livewire;
-
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Livewire\WithFileUploads;
-use Livewire\Component;
-
-class ImageUploader extends Component
-{
-    use WithFileUploads;
-
-    function function save()
-    {
-        /** @var TemporaryUploadedFile */
-        $file = $this->avatar;
-
-        $this->channel->addMedia(
-            file: $file->getRealPath(),
-            collectionName: 'avatar',
-            name: "{$channel->name}-avatar",
-        )
-    }
-}
-```
+-   PHP 8.1+
+-   Laravel 11.0+
+-   `spatie/image` for image conversions
+-   `ffmpeg` & `pbmedia/laravel-ffmpeg` for video/audio processing
 
 ## Installation
 
@@ -263,74 +147,49 @@ Optionally, you can publish the views using
 php artisan vendor:publish --tag="laravel-media-views"
 ```
 
-## Introduction to the Concepts
+## Basic Usage
 
-There are two essential concepts to understand, both of which are associated with the Model and its media:
+### Defining Media Collections
 
--   **Media Collection**: This defines a group of media with its specific settings (the group can only contain one or more media). For example, avatar, thumbnail, and upload are all media collections.
+Media Collections define how media are stored, transformed, and processed for a specific model. They provide granular control over file handling, accepted types, and transformations.
 
--   **Media Conversion**: This defines a file conversion of a particular media item. For instance, a 720p version of a larger 1440p video, a WebP or PNG conversion of an image, are all examples of media conversions. Notably, a media conversion can also have its own media conversions.
+To associate a media collection with a Model, start by adding the `InteractWithMedia` interface and the `HasMedia` trait.
 
-## Usage
-
-### Preparing Your Models
-
-This package is designed to associate media with a model, but it can also be used without any model association.
-
-#### Registering Media Collections
-
-First, you need to add the `HasMedia` trait and the `InteractWithMedia` interface to your Model:
+Next, define your collections in the `registerMediaCollections` method, as shown below:
 
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Concerns\HasMedia;
 use Illuminate\Database\Eloquent\Model;
-use Elegantly\Media\Contracts\InteractWithMedia;
-
-class Channel extends Model implements InteractWithMedia
-{
-    use HasMedia;
-
-}
-```
-
-You can then define your media collections in the `registerMediaCollections` method:
-
-```php
-namespace App\Models;
-
 use Elegantly\Media\Concerns\HasMedia;
+use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\MediaCollection;
-use Illuminate\Database\Eloquent\Model;
-use Elegantly\Media\Contracts\InteractWithMedia;
-use Illuminate\Contracts\Support\Arrayable;
 
 class Channel extends Model implements InteractWithMedia
 {
     use HasMedia;
 
-    public function registerMediaCollections(): Arrayable|iterable|null;
+    public function registerMediaCollections(): array;
     {
-       return [
+        return [
             new MediaCollection(
                 name: 'avatar',
-                acceptedMimeTypes: [
-                    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-                ],
+                single: true, // If true, only the latest file will be kept
+                disk: 's3', // (optional) Specify where the file will be stored
+                acceptedMimeTypes: [ // (optional) Specify accepted file types
+                    'image/jpeg',
+                    'image/png',
+                    'image/webp'
+                ]
             )
-            new MediaCollection(
-                name: 'videos',
-                acceptedMimeTypes: [
-                    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
-                ],
-            )
-       ];
+        ];
     }
 }
 ```
 
-#### Registering Media Conversions
+### Defining Media Conversions
+
+Media conversions create different variants of your media files. For example, a 720p version of a 1440p video or a WebP or PNG version of an image are common types of media conversions. Interestingly, a media conversion can also have its own additional conversions.
 
 This package provides common converions to simplify your work:
 
@@ -342,43 +201,271 @@ This package provides common converions to simplify your work:
 ```php
 namespace App\Models;
 
-use Elegantly\Media\Concerns\HasMedia;
-use Elegantly\Media\MediaCollection;
-use Elegantly\Media\MediaConversion;
-use Elegantly\Media\Enums\MediaType;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Spatie\Image\Enums\Fit;
-use \App\Jobs\Media\OptimizedImageConversionJob;
-use Elegantly\Media\Models\Media;
+use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Contracts\InteractWithMedia;
-use Illuminate\Contracts\Support\Arrayable;
-use Elegantly\Media\Support\ResponsiveImagesConversionsPreset;
+use Elegantly\Media\MediaCollection;
+use Elegantly\Media\Definitions\MediaConversionImage;
 
 class Channel extends Model implements InteractWithMedia
 {
     use HasMedia;
 
-    public function registerMediaCollections(): Arrayable|iterable|null;
+    public function registerMediaCollections(): array;
     {
-       return [
+        return [
             new MediaCollection(
-                name: 'avatar',
-                acceptedMimeTypes: [
-                    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-                ],
+                name: 'videos',
                 conversions: [
-                    // using preset conversion definition
-                    new MediaConversionImage(
-                        name: '360',
-                        width: 360,
+                    new MediaConversionPoster(
+                        name: 'poster',
+                        conversions: [
+                            new MediaConversionImage(
+                                name: '360p',
+                                width: 360
+                            ),
+                        ],
                     ),
-                    // using custom conversion definition
+                    new MediaConversionVideo(
+                        name: '720p',
+                        width: 720
+                    ),
+                ]
+            )
+        ];
+    }
+}
+```
+
+### Adding Media
+
+Add media to your model from various sources:
+
+#### From a Controller
+
+```php
+public function store(Request $request, Channel $channel)
+{
+    $channel->addMedia(
+        file: $request->file('avatar'),
+        collectionName: 'avatar',
+        name: "{$channel->name}-avatar"
+    );
+}
+```
+
+#### From a Livewire Component
+
+```php
+use Livewire\WithFileUploads;
+
+class ImageUploader extends Component
+{
+    use WithFileUploads;
+
+    public function save()
+    {
+        $this->channel->addMedia(
+            file: $this->avatar->getRealPath(),
+            collectionName: 'avatar',
+            name: "{$this->channel->name}-avatar"
+        );
+    }
+}
+```
+
+### Retreiving Media
+
+Retrieve media from your model:
+
+```php
+// Get all media from a specific collection
+$avatars = $channel->getMedia('avatar');
+
+// Get the first media from a collection
+$avatar = $channel->getFirstMedia('avatar');
+
+// Check if media exists
+$hasAvatar = $channel->hasMedia('avatar');
+```
+
+### Media properties
+
+Each media item provides rich metadata automatically:
+
+```php
+$media = $channel->getFirstMedia('avatar');
+
+// File properties
+$media->name; // file_name without the extension
+$media->file_name;
+$media->extension;
+$media->mime_type;
+$media->size; // in bytes
+$media->humanReadableSize();
+
+// Image/Video specific properties
+$media->width;       // in pixels
+$media->height;      // in pixels
+$media->aspect_ratio;
+$media->duration;    // for video/audio
+```
+
+You can use dot notation to access either the root properties or a specific conversion:
+
+```php
+// Get the original media URL
+$originalUrl = $media->getUrl();
+
+// Get a specific conversion URL
+$thumbnailUrl = $media->getUrl(
+    conversion: '360p',
+    fallback: true // Falls back to original if conversion doesn't exist
+);
+
+// Use the same logic with other properties such as
+$media->getPath();
+$media->getWith();
+// ...
+```
+
+### Access Media Conversions
+
+To directly access conversions, use:
+
+```php
+// Check if a conversion exists
+$hasThumbnail = $media->hasConversion('avatar.100p');
+
+// Get a specific conversion
+$thumbnailConversion = $media->getConversion('avatar.100p');
+
+// Get the 'avatar' conversion
+$media->getParentConversion('avatar.360p');
+
+// Only get children conversions of avatar
+$media->getChildrenConversions('avatar');
+```
+
+### Blade components
+
+The package also provides blade components.
+
+```html
+<!-- fallback to the root media url if the conversion doesn't exist -->
+<!-- allows you to specify query parameters -->
+<x-media::img
+    :media="$user->getFirstMedia('avatar')"
+    conversion="avatar"
+    fallback
+    parameters="['foo'=>'bar']"
+    alt="User avatar"
+/>
+```
+
+```html
+<!-- fallback to the root media url if the conversion doesn't exist -->
+<!-- allows you to specify query parameters -->
+<x-media::video
+    :media="$user->getFirstMedia('videos')"
+    conversion="720"
+    fallback
+    muted
+    playsinline
+    autoplay
+    loop
+/>
+```
+
+## Advanced Usage
+
+### Async vs. Sync Conversions
+
+When adding new media, its conversions can be either dispatched asynchronously or generated synchronously.
+
+You can configure the strategy in the conversion definition using the `queued` and `queue` parameters:
+
+```php
+new MediaCollection(
+    name: 'avatar',
+    conversions: [
+        new MediaConversionImage(
+            name: '360',
+            width: 360,
+            queued: true,  // (default) Dispatch as a background job
+            queue: 'slow' // (optional) Specify a custom queue
+        )
+    ]
+)
+```
+
+Synchronous conversions can be particularly useful in specific use cases, such as generating a poster immediately upon upload.
+
+### Delayed Conversions
+
+There are scenarios where you might want to define conversions that should not be generated immediately. For instance, if a conversion is resource-intensive or not always required, you can defer its generation to a later time.
+
+To achieve this, configure the conversion with the `immediate` parameter set to `false`. This allows you to generate the conversion manually when needed:
+
+```php
+new MediaCollection(
+    name: 'avatar',
+    conversions: [
+        new MediaConversionImage(
+            name: '360',
+            width: 360,
+            immediate: false, // Conversion will not be generated at upload time
+        )
+    ]
+)
+```
+
+To generate the conversion later, you can use the following methods:
+
+```php
+// Generate the conversion synchronously
+$media->executeConversion(
+    conversion: '360',
+    force: false // Skips execution if the conversion already exists
+);
+
+// Dispatch the conversion as a background job
+$media->dispatchConversion(
+    conversion: '360',
+    force: false // Skips execution if the conversion already exists
+);
+```
+
+### Custom Conversions
+
+Conversions can be anything—a variant of a file, a transcription of a video, a completely new file, or even just a string.
+
+You can use built-in presets or define your own custom conversion. To create a custom conversion, use the `MediaConversionDefinition` class:
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Elegantly\Media\Concerns\HasMedia;
+use Elegantly\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\MediaCollection;
+use Elegantly\Media\Definitions\MediaConversionDefinition;
+
+class Channel extends Model implements InteractWithMedia
+{
+    use HasMedia;
+
+    public function registerMediaCollections(): array
+    {
+        return [
+            new MediaCollection(
+                name: 'videos',
+                conversions: [
+                    // Using a custom conversion definition
                     new MediaConversionDefinition(
                         name: 'webp',
                         when: fn($media, $parent) => $media->type === MediaType::Image,
-                        handle: function($media, $parent, $file, $filesystem, $temporaryDirectory){
-
+                        handle: function($media, $parent, $file, $filesystem, $temporaryDirectory) {
                             $target = $filesystem->path("{$media->name}.webp");
 
                             Image::load($filesystem->path($file))
@@ -390,31 +477,74 @@ class Channel extends Model implements InteractWithMedia
                                 conversionName: $this->name,
                                 parent: $parent,
                             );
-
                         }
                     ),
                 ]
-            )
-            new MediaCollection(
-                name: 'videos',
-                acceptedMimeTypes: [
-                    'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime',
-                ],
-                conversions: [
-                    new MediaConversionAudio(
-                        name: 'audio'
-                    ),
-                    new MediaConversionPoster(
-                        name: 'poster'
-                    ),
-                ]
-            )
-       ];
+            ),
+        ];
     }
 }
 ```
 
-## Using Your Own Media Model
+The `handle` method of `MediaConversionDefinition` is where the logic for the conversion is implemented. It provides the following parameters:
+
+-   **`$media`**: The Media model.
+-   **`$parent`**: The MediaConversion model, if the conversion is nested.
+-   **`$file`**: A local copy of the file associated with either `$media` or `$parent`.
+-   **`$filesystem`**: An instance of the local filesystem where the file copy is stored.
+-   **`$temporaryDirectory`**: An instance of `TemporaryDirectory` where the file copy is temporarily stored.
+
+You don’t need to worry about cleaning up the files, as the `$temporaryDirectory` will be deleted automatically when the process completes.
+
+To finalize the conversion, ensure you save it by calling `$media->addConversion` or returning a `MediaConversion` instance at the end of the `handle` method.
+
+### Manually Generating Conversions
+
+You can manage your media conversions programmatically using the following methods:
+
+```php
+// Store a new file as a conversion
+$media->addConversion(
+    file: $file, // Can be an HTTP File, URL, or file path
+    conversionName: 'transcript',
+    parent: $mediaConversion // (Optional) Specify a parent conversion
+    // Additional parameters...
+);
+
+// Replace an existing conversion safely
+$media->replaceConversion(
+    conversion: $mediaConversion
+);
+
+// Safely delete a specific conversion and all its children
+$media->deleteConversion('360');
+
+// Safely delete only the child conversions of a parent conversion
+$media->deleteChildrenConversions('360');
+
+// Dispatch or execute a conversion
+$media->dispatchConversion('360'); // Runs asynchronously as a job
+$media->executeConversion('360'); // Executes synchronously
+$media->getOrExecuteConversion('360'); // Retrieves or generates the conversion
+
+// Retrieve conversion information
+$media->getConversion('360'); // Fetch a specific conversion
+$media->hasConversion('360'); // Check if a conversion exists
+$media->getParentConversion('360'); // Retrieve the parent of a conversion
+$media->getChildrenConversions('360'); // Retrieve child conversions
+```
+
+Additionally, you can use an Artisan command to generate conversions with various options:
+
+```bash
+php artisan media:generate-conversions
+```
+
+This provides a convenient way to process conversions in bulk or automate them within your workflows.
+
+## Customization
+
+### Custom Media Model
 
 You can define your own Media model to use with the library.
 
