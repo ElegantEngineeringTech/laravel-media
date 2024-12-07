@@ -122,15 +122,31 @@ trait InteractWithFiles
         $this->extension = $extension;
         $this->file_name = $fileName;
 
-        $dimension = File::dimension($file->getPathname());
-
-        $this->height = $dimension?->getHeight();
-        $this->width = $dimension?->getWidth();
-        $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
-        $this->duration = File::duration($file->getPathname());
         $this->mime_type = File::mimeType($file);
         $this->size = $file->getSize();
-        $this->type = File::type($file->getPathname());
+
+        try {
+            $dimension = File::dimension($file->getPathname());
+            $this->height = $dimension?->getHeight();
+            $this->width = $dimension?->getWidth();
+            $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
+        } catch (\Throwable $th) {
+            $this->height = null;
+            $this->width = null;
+            $this->aspect_ratio = null;
+        }
+
+        try {
+            $this->type = File::type($file->getPathname());
+        } catch (\Throwable $th) {
+            $this->type = MediaType::Other;
+        }
+
+        try {
+            $this->duration = File::duration($file->getPathname());
+        } catch (\Throwable $th) {
+            $this->duration = null;
+        }
 
         return $path;
     }
