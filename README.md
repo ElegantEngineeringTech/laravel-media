@@ -498,7 +498,7 @@ You don’t need to worry about cleaning up the files, as the `$temporaryDirecto
 
 To finalize the conversion, ensure you save it by calling `$media->addConversion` or returning a `MediaConversion` instance at the end of the `handle` method.
 
-### Manually Generating Conversions
+### Manually Generate Conversions
 
 You can manage your media conversions programmatically using the following methods:
 
