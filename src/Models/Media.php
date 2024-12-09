@@ -48,8 +48,8 @@ use Illuminate\Support\Str;
  * @property ?int $size
  * @property ?int $order_column
  * @property ?float $duration
- * @property ?ArrayObject $metadata
- * @property ?InteractWithMedia $model
+ * @property ?ArrayObject<array-key, mixed> $metadata
+ * @property ?InteractWithMedia<Media> $model
  * @property ?string $model_type
  * @property ?int $model_id
  * @property EloquentCollection<int, MediaConversion> $conversions
@@ -238,7 +238,7 @@ class Media extends Model
      */
     public function getChildrenConversionsDefinitions(string $name): array
     {
-        return $this->getConversionDefinition($name)?->conversions ?? [];
+        return $this->getConversionDefinition($name)->conversions ?? [];
     }
 
     /**

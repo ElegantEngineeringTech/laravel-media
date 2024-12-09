@@ -42,7 +42,7 @@ use Illuminate\Support\Str;
  * @property ?int $size
  * @property ?float $duration
  * @property ?string $contents Arbitrary stored value
- * @property ?ArrayObject $metadata
+ * @property ?ArrayObject<array-key, mixed> $metadata
  * @property int $media_id
  * @property Media $media
  * @property Carbon $created_at

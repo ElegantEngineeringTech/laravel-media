@@ -10,3 +10,7 @@ parameters:
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
+    checkModelAppends: false
+    noEnvCallsOutsideOfConfig: false
+    ignoreErrors:
+        - '#Trait Elegantly\\Media\\Concerns\\HasMedia is used zero times and is not analysed.#'
