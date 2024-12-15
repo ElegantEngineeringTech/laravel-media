@@ -488,10 +488,16 @@ class Media extends Model
                 );
 
             } else {
-                $this->executeConversion(
-                    conversion: $conversion,
-                    force: $force
-                );
+                // A failed conversion should not interrupted the process
+                try {
+                    $this->executeConversion(
+                        conversion: $conversion,
+                        force: $force
+                    );
+                } catch (\Throwable $th) {
+                    report($th);
+                }
+
             }
         }
 
