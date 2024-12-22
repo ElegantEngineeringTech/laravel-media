@@ -12,7 +12,7 @@ use function Laravel\Prompts\confirm;
 
 class GenerateMediaConversionsCommand extends Command
 {
-    public $signature = 'media:generate-conversions {ids?*} {--force} {--immediate} {--pretend} {--conversions=*} {--collections=*} {--models=*}';
+    public $signature = 'media:generate-conversions {ids?*} {--force} {--immediate} {--conversions=*} {--collections=*} {--models=*}';
 
     public $description = 'Generate all media conversions';
 
@@ -21,7 +21,6 @@ class GenerateMediaConversionsCommand extends Command
         $ids = (array) $this->argument('ids');
         $immediate = (bool) $this->option('immediate');
         $force = (bool) $this->option('force');
-        $pretend = (bool) $this->option('pretend');
         /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
         /** @var string[] $models */
@@ -54,7 +53,7 @@ class GenerateMediaConversionsCommand extends Command
 
         $count = $query->count();
 
-        if ($pretend || ! confirm("{$count} Media found. Continue?")) {
+        if (! confirm("{$count} Media found. Continue?")) {
             return self::SUCCESS;
         }
 
