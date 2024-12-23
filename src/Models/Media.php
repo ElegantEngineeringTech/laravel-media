@@ -9,6 +9,7 @@ use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
@@ -450,6 +451,8 @@ class Media extends Model
             filter: fn ($definition) => $definition->immediate,
             force: true,
         );
+
+        event(new MediaConversionAddedEvent($conversion));
 
         return $conversion;
     }

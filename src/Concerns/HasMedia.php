@@ -2,6 +2,7 @@
 
 namespace Elegantly\Media\Concerns;
 
+use Elegantly\Media\Events\MediaAddedEvent;
 use Elegantly\Media\Helpers\File as HelpersFile;
 use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\MediaCollection;
@@ -193,6 +194,8 @@ trait HasMedia
             filter: fn ($definition) => $definition->immediate,
             force: true,
         );
+
+        event(new MediaAddedEvent($media));
 
         return $media;
     }
