@@ -488,7 +488,7 @@ class Media extends Model
                 );
 
             } else {
-                // A failed conversion should not interrupted the process
+                // A failed conversion should not interrupt the process
                 try {
                     $this->executeConversion(
                         conversion: $conversion,
