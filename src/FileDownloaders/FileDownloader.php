@@ -3,7 +3,7 @@
 namespace Elegantly\Media\FileDownloaders;
 
 use Elegantly\Media\Helpers\File;
-use Exception;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 class FileDownloader
@@ -12,21 +12,13 @@ class FileDownloader
         string $url,
         string $destination,
     ): string {
-        $context = stream_context_create([
-            'http' => [
-                'header' => 'User-Agent: Elegantly laravel-media package',
-            ],
-        ]);
-
-        if (! $stream = @fopen($url, 'r', false, $context)) {
-            throw new Exception("Can't reach the url: {$url}");
-        }
 
         $path = tempnam($destination, 'media-');
 
-        file_put_contents($path, $stream);
-
-        fclose($stream);
+        Http::sink($path)
+            ->withUserAgent('Elegantly laravel-media package')
+            ->timeout(60 * 10)
+            ->get($url);
 
         if ($extension = File::extension($path)) {
             $pathWithExtension = "{$path}.{$extension}";
