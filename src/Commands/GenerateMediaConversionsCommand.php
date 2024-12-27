@@ -30,14 +30,11 @@ class GenerateMediaConversionsCommand extends Command
 
         $filter = function (MediaConversionDefinition $definition) use ($immediate) {
 
-            if (
-                $definition->immediate === false &&
-                $immediate === false
-            ) {
-                return false;
+            if ($immediate) {
+                return true;
             }
 
-            return true;
+            return $definition->immediate;
         };
 
         /**
