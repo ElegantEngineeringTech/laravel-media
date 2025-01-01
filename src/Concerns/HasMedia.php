@@ -163,11 +163,13 @@ trait HasMedia
             disk: $disk ?? $collection?->disk,
             before: function ($file) use ($collection) {
                 if ($acceptedMimeTypes = $collection?->acceptedMimeTypes) {
-                    if (! in_array(
-                        HelpersFile::mimeType($file),
-                        $acceptedMimeTypes
-                    )) {
-                        throw new Exception("Media file can't be stored: Invalid MIME type", 415);
+                    $mime = HelpersFile::mimeType($file);
+
+                    if (! in_array($mime, $acceptedMimeTypes)) {
+                        throw new Exception(
+                            "Media file can't be stored: Invalid MIME type: {$mime}. Accepted MIME types are: ".implode(', ', $acceptedMimeTypes),
+                            415
+                        );
                     }
                 }
 
