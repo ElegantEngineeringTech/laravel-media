@@ -20,6 +20,8 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
         public Media $media,
         public string $conversion,
     ) {
+        $this->media = $media->withoutRelations();
+
         /** @var ?string $connection */
         $connection = config('media.queue_connection');
         /** @var ?string $queue */
@@ -46,7 +48,7 @@ class MediaConversionJob implements ShouldBeUnique, ShouldQueue
     {
         return [
             'media',
-            $this->conversion,
+            "conversion:{$this->conversion}",
             get_class($this->media).':'.$this->media->id,
             "{$this->media->model_type}:{$this->media->model_id}",
         ];
