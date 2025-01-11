@@ -33,6 +33,7 @@ class MediaConversionImage extends MediaConversionDefinition
             name: $name,
             handle: fn () => null,
             when: $when,
+            onCompleted: $onCompleted,
             immediate: $immediate,
             queued: $queued,
             queue: $queue,
