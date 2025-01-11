@@ -335,16 +335,16 @@ To directly access conversions, use:
 
 ```php
 // Check if a conversion exists
-$hasThumbnail = $media->hasConversion('avatar.100p');
+$hasThumbnail = $media->hasConversion('100p');
 
 // Get a specific conversion
-$thumbnailConversion = $media->getConversion('avatar.100p');
+$thumbnailConversion = $media->getConversion('100p');
 
-// Get the 'avatar' conversion
-$media->getParentConversion('avatar.360p');
+// Get the 'poster' conversion
+$media->getParentConversion('poster.360p');
 
-// Only get children conversions of avatar
-$media->getChildrenConversions('avatar');
+// Only get children conversions of poster
+$media->getChildrenConversions('poster');
 ```
 
 ### Blade components
@@ -355,11 +355,11 @@ The package also provides blade components.
 <!-- fallback to the root media url if the conversion doesn't exist -->
 <!-- allows you to specify query parameters -->
 <x-media::img
-    :media="$user->getFirstMedia('avatar')"
-    conversion="avatar"
+    :media="$user->getFirstMedia('poster')"
+    conversion="360p"
     fallback
     parameters="['foo'=>'bar']"
-    alt="User avatar"
+    alt="Video poster"
 />
 ```
 
@@ -368,7 +368,7 @@ The package also provides blade components.
 <!-- allows you to specify query parameters -->
 <x-media::video
     :media="$user->getFirstMedia('videos')"
-    conversion="720"
+    conversion="720p"
     fallback
     muted
     playsinline
@@ -436,6 +436,48 @@ $media->dispatchConversion(
 );
 ```
 
+### `onAdded` MediaCollection Callback
+
+The `onAdded` callback allows you to define custom logic that will be executed whenever new media is added to your collection.
+
+To use it, simply set the `onAdded` parameter when defining a `MediaCollection`. For example:
+
+```php
+new MediaCollection(
+    name: 'avatar',
+    onAdded: function ($media) {
+        // Example: Notify the model when new media is added
+        // $media->model->notify(new MediaAddedNotification($media));
+    }
+);
+```
+
+With this, you can easily hook into the media addition process and trigger actions like sending notifications, logging, or other custom behavior.
+
+> [!TIP]
+> The same behavior can be achieved by listening to `Elegantly\Media\Events\MediaAddedEvent`.
+
+### `onCompleted` MediaConversionDefinition Callback
+
+The `onCompleted` callback allows you to define custom logic that will be executed whenever a new conversion is generated.
+
+To use it, simply set the `onCompleted` parameter when defining a `MediaConversionDefinition`. For example:
+
+```php
+new MediaConversionImage(
+    name: '360',
+    onCompleted: function ($conversion, $media, $parent) {
+        // Example: Refresh your UI
+        // broadcast(new MyEvent($media));
+    }
+);
+```
+
+This allows you to hook into the conversion process and execute additional logic, such as updating your UI or triggering other actions.
+
+> [!TIP]
+> The same behavior can be achieved by listening to `Elegantly\Media\Events\MediaConversionAddedEvent`.
+
 ### Custom Conversions
 
 Conversions can be anything—a variant of a file, a transcription of a video, a completely new file, or even just a string.
@@ -469,7 +511,7 @@ class Channel extends Model implements InteractWithMedia
                             $target = $filesystem->path("{$media->name}.webp");
 
                             Image::load($filesystem->path($file))
-                                ->optimize($this->optimizerChain)
+                                ->optimize()
                                 ->save($target);
 
                             return $media->addConversion(
@@ -512,6 +554,7 @@ $media->addConversion(
 );
 
 // Replace an existing conversion safely
+// If the same conversion already exists, it ensures the new file is stored before deleting the previous one.
 $media->replaceConversion(
     conversion: $mediaConversion
 );
@@ -520,18 +563,18 @@ $media->replaceConversion(
 $media->deleteConversion('360');
 
 // Safely delete only the child conversions of a parent conversion
-$media->deleteChildrenConversions('360');
+$media->deleteChildrenConversions('poster');
 
 // Dispatch or execute a conversion
 $media->dispatchConversion('360'); // Runs asynchronously as a job
-$media->executeConversion('360'); // Executes synchronously
-$media->getOrExecuteConversion('360'); // Retrieves or generates the conversion
+$media->executeConversion('poster.360'); // Executes synchronously
+$media->getOrExecuteConversion('poster.360'); // Retrieves or generates the conversion
 
 // Retrieve conversion information
 $media->getConversion('360'); // Fetch a specific conversion
 $media->hasConversion('360'); // Check if a conversion exists
-$media->getParentConversion('360'); // Retrieve the parent of a conversion
-$media->getChildrenConversions('360'); // Retrieve child conversions
+$media->getParentConversion('poster.360'); // Retrieve the parent (poster) of a conversion
+$media->getChildrenConversions('poster'); // Retrieve child conversions
 ```
 
 Additionally, you can use an Artisan command to generate conversions with various options:
