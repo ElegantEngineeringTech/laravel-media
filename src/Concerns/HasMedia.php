@@ -197,6 +197,10 @@ trait HasMedia
             force: true,
         );
 
+        if ($onAdded = $collection?->onAdded) {
+            $onAdded($media);
+        }
+
         event(new MediaAddedEvent($media));
 
         return $media;

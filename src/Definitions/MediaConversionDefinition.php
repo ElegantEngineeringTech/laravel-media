@@ -18,18 +18,20 @@ class MediaConversionDefinition
      * @param  MediaConversionDefinition[]  $conversions
      * @param  Closure(Media $media, ?MediaConversion $parent, ?string $file, Filesystem $filesystem, SpatieTemporaryDirectory $temporaryDirectory): ?MediaConversion  $handle
      * @param  null|bool|Closure(Media $media, ?MediaConversion $parent): bool  $when
+     * @param  null|(Closure(?MediaConversion $conversion, Media $media, ?MediaConversion $parent): void)  $onCompleted
      */
     public function __construct(
         public string $name,
         public Closure $handle,
         public null|bool|Closure $when = null,
+        public ?Closure $onCompleted = null,
         public bool $immediate = true,
         public bool $queued = true,
         public ?string $queue = null,
         public array $conversions = [],
     ) {
         /** @var array<string, MediaConversionDefinition> $conversions */
-        $conversions = collect($conversions)->keyBy('name')->toArray();
+        $conversions = collect($conversions)->keyBy('name')->all();
         $this->conversions = $conversions;
     }
 
@@ -70,7 +72,7 @@ class MediaConversionDefinition
 
     public function execute(Media $media, ?MediaConversion $parent): ?MediaConversion
     {
-        return TemporaryDirectory::callback(function ($temporaryDirectory) use ($media, $parent) {
+        $value = TemporaryDirectory::callback(function ($temporaryDirectory) use ($media, $parent) {
 
             $storage = TemporaryDirectory::storage($temporaryDirectory);
 
@@ -84,5 +86,11 @@ class MediaConversionDefinition
             return $this->handle($media, $parent, $copy, $storage, $temporaryDirectory);
 
         });
+
+        if ($onCompleted = $this->onCompleted) {
+            $onCompleted($value, $media, $parent);
+        }
+
+        return $value;
     }
 }
