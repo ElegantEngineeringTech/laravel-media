@@ -37,6 +37,8 @@ I developed this package with the highest degree of flexibility possible and I h
 
     - [Async vs Sync conversions](#async-vs-sync-conversions)
     - [Delayed conversions](#delayed-conversions)
+    - [`onAdded` MediaCollection Callback](#onadded-mediacollection-callback)
+    - [`onCompleted` MediaConversionDefinition Callback](#oncompleted-mediaconversiondefinition-callback)
     - [Custom conversions](#custom-conversions)
     - [Manually generate conversions](#manually-generate-conversions)
 
