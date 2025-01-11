@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Jobs\MediaConversionJob;
 use Elegantly\Media\Tests\Models\Test;
 use Illuminate\Support\Facades\Queue;

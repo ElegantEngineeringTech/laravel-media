@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Models\Media;
 
 it('retreives the size in a human readable format', function () {

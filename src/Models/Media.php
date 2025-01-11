@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Models;
 
 use Carbon\Carbon;
@@ -288,7 +290,9 @@ class Media extends Model
         if ($definition = $this->getConversionDefinition($conversion)) {
 
             if (str_contains($conversion, '.')) {
-                $parent = $this->getOrExecuteConversion(str($conversion)->beforeLast('.'));
+                $parent = $this->getOrExecuteConversion(
+                    str($conversion)->beforeLast('.')->value()
+                );
                 /**
                  * Parent conversion can't be done, so children can't be executed either.
                  */
@@ -335,7 +339,9 @@ class Media extends Model
             return null;
         }
 
-        return $this->getConversion(str($name)->beforeLast('.'));
+        return $this->getConversion(
+            str($name)->beforeLast('.')->value()
+        );
     }
 
     /**
@@ -571,10 +577,11 @@ class Media extends Model
                 ->append('conversions/')
                 ->append(str_replace('.', '/conversions/', $conversion))
                 ->finish('/')
-                ->append($fileName ?? '');
+                ->append($fileName ?? '')
+                ->value();
         }
 
-        return $root->append($fileName ?? '');
+        return $root->append($fileName ?? '')->value();
     }
 
     /**

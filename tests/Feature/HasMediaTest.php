@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Tests\Models\Test;

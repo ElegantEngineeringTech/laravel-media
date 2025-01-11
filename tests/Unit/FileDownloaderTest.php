@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Helpers;
 
 use Elegantly\Media\Enums\MediaType;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Contracts;
 
 use Elegantly\Media\MediaCollection;

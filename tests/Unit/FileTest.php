@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Helpers\File;
 use Illuminate\Http\UploadedFile;

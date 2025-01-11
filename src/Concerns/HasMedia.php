@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Concerns;
 
 use Elegantly\Media\Events\MediaAddedEvent;

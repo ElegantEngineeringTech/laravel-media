@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Traits;
 
 use Illuminate\Support\Str;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 it('transform an array of generated conversions into MediaConversion array', function () {
 
     $generated_conversions = [

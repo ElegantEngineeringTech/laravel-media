@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media;
 
 use Elegantly\Media\Commands\GenerateMediaConversionsCommand;

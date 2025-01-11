@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Tests;
 
 use Elegantly\Media\MediaServiceProvider;

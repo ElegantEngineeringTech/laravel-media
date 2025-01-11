@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Helpers\Video;
 
 it('get the correct dimention from a non rotated video', function () {

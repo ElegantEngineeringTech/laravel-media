@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Models\Media;

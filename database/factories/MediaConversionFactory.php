@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Elegantly\Media\Database\Factories;
 
 use Elegantly\Media\Enums\MediaType;

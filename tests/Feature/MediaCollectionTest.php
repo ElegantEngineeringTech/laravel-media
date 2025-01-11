@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\MediaCollection;
 

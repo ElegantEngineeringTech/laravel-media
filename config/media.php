@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\Models\Media;
 
