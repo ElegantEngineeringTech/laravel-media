@@ -114,7 +114,7 @@ class Media extends Model
      */
     public function conversions(): HasMany
     {
-        return $this->hasMany(MediaConversion::class);
+        return $this->hasMany(MediaConversion::class)->chaperone();
     }
 
     // Storing File ----------------------------------------------------------
