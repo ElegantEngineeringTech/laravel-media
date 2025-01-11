@@ -8,6 +8,7 @@ use Closure;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use FFMpeg\Coordinate\TimeCode;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\Image\Enums\Fit;
@@ -26,7 +27,7 @@ class MediaConversionPoster extends MediaConversionDefinition
         public ?string $queue = null,
         public array $conversions = [],
         public ?string $fileName = null,
-        public float $seconds = 0.0,
+        public TimeCode|float $seconds = 0.0,
         public ?int $width = null,
         public ?int $height = null,
         public Fit $fit = Fit::Contain,
@@ -69,7 +70,11 @@ class MediaConversionPoster extends MediaConversionDefinition
 
         FFMpeg::fromFilesystem($filesystem)
             ->open($file)
-            ->getFrameFromSeconds($this->seconds)
+            ->getFrameFromTimecode(
+                is_float($this->seconds)
+                ? TimeCode::fromSeconds($this->seconds)
+                : $this->seconds
+            )
             ->export()
             ->save($fileName);
 

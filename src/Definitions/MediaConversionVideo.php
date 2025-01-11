@@ -73,14 +73,13 @@ class MediaConversionVideo extends MediaConversionDefinition
 
         $ratio = new AspectRatio($source->aspect_ratio);
 
-        $width = $this->width;
-        $height = $this->height;
+        $modulus = match (true) {
+            $this->format instanceof X264 => 2, // dimensions must be divisible by 2
+            default => 1,
+        };
 
-        if ($width && ! $height) {
-            $height = $ratio->calculateHeight($width);
-        } elseif ($height && ! $width) {
-            $width = $ratio->calculateWidth($height);
-        }
+        $width = $this->width ?? ($this->height ? $ratio->calculateWidth($this->height, $modulus) : null);
+        $height = $this->height ?? ($this->width ? $ratio->calculateHeight($this->width, $modulus) : null);
 
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
             ->open($file)
