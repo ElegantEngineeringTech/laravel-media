@@ -15,13 +15,10 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionPoster extends MediaConversionDefinition
 {
-    /**
-     * @param  MediaConversionDefinition[]  $conversions
-     * @param  null|bool|Closure(Media $media, ?MediaConversion $parent): bool  $when
-     */
     public function __construct(
         public string $name,
         public null|bool|Closure $when = null,
+        public ?Closure $onCompleted = null,
         public bool $immediate = true,
         public bool $queued = false,
         public ?string $queue = null,

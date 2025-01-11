@@ -15,13 +15,10 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionAudio extends MediaConversionDefinition
 {
-    /**
-     * @param  MediaConversionDefinition[]  $conversions
-     * @param  null|bool|Closure(Media $media, ?MediaConversion $parent): bool  $when
-     */
     public function __construct(
         public string $name,
         public null|bool|Closure $when = null,
+        public ?Closure $onCompleted = null,
         public bool $immediate = true,
         public bool $queued = true,
         public ?string $queue = null,

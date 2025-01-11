@@ -14,7 +14,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class MediaConversionDefinition
 {
     /**
-     * @param  bool  $immediate  Determine if the conversion should be dispatched immediatly after `addMedia`
+     * @param  bool  $immediate  Determine if the conversion should be dispatched immediatly and synchronously after the media is added
      * @param  MediaConversionDefinition[]  $conversions
      * @param  Closure(Media $media, ?MediaConversion $parent, ?string $file, Filesystem $filesystem, SpatieTemporaryDirectory $temporaryDirectory): ?MediaConversion  $handle
      * @param  null|bool|Closure(Media $media, ?MediaConversion $parent): bool  $when
