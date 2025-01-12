@@ -8,8 +8,9 @@ use Closure;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
-use FFMpeg\Coordinate\AspectRatio;
+use FFMpeg\Coordinate\Dimension;
 use FFMpeg\Filters\Video\ResizeFilter;
+use FFMpeg\Filters\Video\VideoFilters;
 use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\Video\X264;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -69,30 +70,29 @@ class MediaConversionVideo extends MediaConversionDefinition
 
         $fileName = $this->fileName ?? "{$media->name}.mp4";
 
-        $source = $parent ?? $media;
-
-        $ratio = new AspectRatio($source->aspect_ratio);
-
-        $modulus = match (true) {
-            $this->format instanceof X264 => 2, // dimensions must be divisible by 2
-            default => 1,
-        };
-
-        $width = $this->width ?? ($this->height ? $ratio->calculateWidth($this->height, $modulus) : null);
-        $height = $this->height ?? ($this->width ? $ratio->calculateHeight($this->width, $modulus) : null);
-
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
             ->open($file)
             ->export()
             ->inFormat($this->format);
 
-        if ($width && $height) {
-            $ffmpeg->resize(
-                $width,
-                $height,
-                $this->fitMethod,
-                $this->forceStandards
-            );
+        if ($this->width && $this->height) {
+            $ffmpeg->addFilter(fn (VideoFilters $filters) => $filters->resize(
+                dimension: new Dimension($this->width, $this->height),
+                mode: $this->fitMethod,
+                forceStandards: $this->forceStandards,
+            ));
+        } elseif ($this->width) {
+            $ffmpeg->addFilter(fn (VideoFilters $filters) => $filters->resize(
+                dimension: new Dimension($this->width, 1),
+                mode: ResizeFilter::RESIZEMODE_SCALE_HEIGHT,
+                forceStandards: $this->forceStandards,
+            ));
+        } elseif ($this->height) {
+            $ffmpeg->addFilter(fn (VideoFilters $filters) => $filters->resize(
+                dimension: new Dimension(1, $this->height),
+                mode: ResizeFilter::RESIZEMODE_SCALE_WIDTH,
+                forceStandards: $this->forceStandards,
+            ));
         }
 
         $ffmpeg->save($fileName);
