@@ -18,6 +18,9 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionPoster extends MediaConversionDefinition
 {
+    /**
+     * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
+     */
     public function __construct(
         public string $name,
         public null|bool|Closure $when = null,
@@ -26,7 +29,7 @@ class MediaConversionPoster extends MediaConversionDefinition
         public bool $queued = false,
         public ?string $queue = null,
         public array $conversions = [],
-        public ?string $fileName = null,
+        public null|Closure|string $fileName = null,
         public TimeCode|float $seconds = 0.0,
         public ?int $width = null,
         public ?int $height = null,
@@ -55,6 +58,17 @@ class MediaConversionPoster extends MediaConversionDefinition
         return ($parent ?? $media)->type === MediaType::Video;
     }
 
+    public function getFileName(Media $media, ?MediaConversion $parent): string
+    {
+        if ($fileName = $this->fileName) {
+            return is_string($fileName) ? $fileName : $fileName($media, $parent);
+        }
+
+        $source = $parent ?? $media;
+
+        return "{$source->name}.jpg";
+    }
+
     public function handle(
         Media $media,
         ?MediaConversion $parent,
@@ -66,7 +80,7 @@ class MediaConversionPoster extends MediaConversionDefinition
             return null;
         }
 
-        $fileName = $this->fileName ?? "{$media->name}.jpg";
+        $fileName = $this->getFileName($media, $parent);
 
         FFMpeg::fromFilesystem($filesystem)
             ->open($file)

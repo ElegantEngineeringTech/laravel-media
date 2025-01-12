@@ -17,6 +17,9 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionAudio extends MediaConversionDefinition
 {
+    /**
+     * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
+     */
     public function __construct(
         public string $name,
         public null|bool|Closure $when = null,
@@ -25,7 +28,7 @@ class MediaConversionAudio extends MediaConversionDefinition
         public bool $queued = true,
         public ?string $queue = null,
         public array $conversions = [],
-        public ?string $fileName = null,
+        public null|Closure|string $fileName = null,
         public FormatInterface $format = new Mp3,
     ) {
 
@@ -64,6 +67,17 @@ class MediaConversionAudio extends MediaConversionDefinition
         return (bool) $streams->audios()->count();
     }
 
+    public function getFileName(Media $media, ?MediaConversion $parent): string
+    {
+        if ($fileName = $this->fileName) {
+            return is_string($fileName) ? $fileName : $fileName($media, $parent);
+        }
+
+        $source = $parent ?? $media;
+
+        return "{$source->name}.mp3";
+    }
+
     public function handle(
         Media $media,
         ?MediaConversion $parent,
@@ -78,13 +92,11 @@ class MediaConversionAudio extends MediaConversionDefinition
         /**
          * Videos do not always have an audio stream
          */
-        if (! $this->hasFileAudioStream(
-            $filesystem->path($file)
-        )) {
+        if (! $this->hasFileAudioStream($filesystem->path($file))) {
             return null;
         }
 
-        $fileName = $this->fileName ?? "{$media->name}.mp3";
+        $fileName = $this->getFileName($media, $parent);
 
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
             ->open($file)
