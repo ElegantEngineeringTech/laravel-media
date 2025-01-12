@@ -9,20 +9,21 @@ use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use ProtoneMedia\LaravelFFMpeg\Exporters\MediaExporter;
-use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+use Spatie\Image\Enums\ImageDriver;
+use Spatie\Image\Image;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaConversionFFmpeg extends MediaConversionDefinition
+class MediaConversionSpatieImage extends MediaConversionDefinition
 {
     /**
-     * @param  Closure(MediaExporter $ffmpeg):void  $manipulate
+     * @param  Closure(Image $image):void  $manipulate
      * @param  Closure(Media $media, ?MediaConversion $parent):string  $fileName
      */
     public function __construct(
         public string $name,
         public Closure $manipulate,
         public Closure $fileName,
+        public ImageDriver $driver,
         public null|bool|Closure $when = null,
         public ?Closure $onCompleted = null,
         public bool $immediate = true,
@@ -51,7 +52,7 @@ class MediaConversionFFmpeg extends MediaConversionDefinition
 
         $source = $parent ?? $media;
 
-        return in_array($source->type, [MediaType::Video, MediaType::Audio]);
+        return $source->type === MediaType::Image;
     }
 
     public function handle(
@@ -61,7 +62,6 @@ class MediaConversionFFmpeg extends MediaConversionDefinition
         Filesystem $filesystem,
         SpatieTemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
-
         if (! $file) {
             return null;
         }
@@ -71,13 +71,11 @@ class MediaConversionFFmpeg extends MediaConversionDefinition
         $fileName = $this->fileName;
         $newFile = $fileName($media, $parent);
 
-        $ffmpeg = FFMpeg::fromFilesystem($filesystem)
-            ->open($file)
-            ->export();
+        $image = Image::load($filesystem->path($file));
 
-        $manipulate($ffmpeg);
+        $manipulate($image);
 
-        $ffmpeg->save($newFile);
+        $image->save($filesystem->path($newFile));
 
         return $media->addConversion(
             file: $filesystem->path($newFile),
