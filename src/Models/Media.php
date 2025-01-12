@@ -261,10 +261,12 @@ class Media extends Model
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            return dispatch(new MediaConversionJob(
+            $job = new MediaConversionJob(
                 media: $this,
                 conversion: $conversion
-            ));
+            );
+
+            return dispatch($job)->onQueue($definition->queue ?? $job->queue);
 
         }
 

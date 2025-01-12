@@ -66,10 +66,12 @@ class MediaConversionDefinition
 
     public function dispatch(Media $media, ?MediaConversion $parent): PendingDispatch
     {
-        return dispatch(new MediaConversionJob(
+        $job = new MediaConversionJob(
             media: $media,
             conversion: $parent ? "{$parent->conversion_name}.{$this->name}" : $this->name
-        ));
+        );
+
+        return dispatch($job)->onQueue($this->queue ?? $job->queue);
     }
 
     public function execute(Media $media, ?MediaConversion $parent): ?MediaConversion
