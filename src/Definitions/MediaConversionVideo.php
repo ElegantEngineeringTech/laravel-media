@@ -19,6 +19,9 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionVideo extends MediaConversionDefinition
 {
+    /**
+     * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
+     */
     public function __construct(
         public string $name,
         public null|bool|Closure $when = null,
@@ -27,7 +30,7 @@ class MediaConversionVideo extends MediaConversionDefinition
         public bool $queued = true,
         public ?string $queue = null,
         public array $conversions = [],
-        public ?string $fileName = null,
+        public null|string|Closure $fileName = null,
         public ?int $width = null,
         public ?int $height = null,
         public FormatInterface $format = new X264,
@@ -56,6 +59,17 @@ class MediaConversionVideo extends MediaConversionDefinition
         return ($parent ?? $media)->type === MediaType::Video;
     }
 
+    public function getFileName(Media $media, ?MediaConversion $parent): string
+    {
+        if ($fileName = $this->fileName) {
+            return is_string($fileName) ? $fileName : $fileName($media, $parent);
+        }
+
+        $source = $parent ?? $media;
+
+        return "{$source->name}.mp4";
+    }
+
     public function handle(
         Media $media,
         ?MediaConversion $parent,
@@ -68,7 +82,7 @@ class MediaConversionVideo extends MediaConversionDefinition
             return null;
         }
 
-        $fileName = $this->fileName ?? "{$media->name}.mp4";
+        $fileName = $this->getFileName($media, $parent);
 
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
             ->open($file)

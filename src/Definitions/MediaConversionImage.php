@@ -16,6 +16,9 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionImage extends MediaConversionDefinition
 {
+    /**
+     * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
+     */
     public function __construct(
         public string $name,
         public null|bool|Closure $when = null,
@@ -24,7 +27,7 @@ class MediaConversionImage extends MediaConversionDefinition
         public bool $queued = true,
         public ?string $queue = null,
         public array $conversions = [],
-        public ?string $fileName = null,
+        public null|Closure|string $fileName = null,
         public ?int $width = null,
         public ?int $height = null,
         public Fit $fit = Fit::Contain,
@@ -52,6 +55,17 @@ class MediaConversionImage extends MediaConversionDefinition
         return ($parent ?? $media)->type === MediaType::Image;
     }
 
+    public function getFileName(Media $media, ?MediaConversion $parent): string
+    {
+        if ($fileName = $this->fileName) {
+            return is_string($fileName) ? $fileName : $fileName($media, $parent);
+        }
+
+        $source = $parent ?? $media;
+
+        return "{$source->name}.jpg";
+    }
+
     public function handle(
         Media $media,
         ?MediaConversion $parent,
@@ -63,7 +77,7 @@ class MediaConversionImage extends MediaConversionDefinition
             return null;
         }
 
-        $fileName = $this->fileName ?? "{$media->name}.jpg";
+        $fileName = $this->getFileName($media, $parent);
 
         Image::load($filesystem->path($file))
             ->fit($this->fit, $this->width, $this->height)
