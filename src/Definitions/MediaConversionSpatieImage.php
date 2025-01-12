@@ -16,7 +16,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class MediaConversionSpatieImage extends MediaConversionDefinition
 {
     /**
-     * @param  Closure(Image $image):void  $manipulate
+     * @param  Closure(Image $image, Media $media, ?MediaConversion $parent):void  $manipulate
      * @param  Closure(Media $media, ?MediaConversion $parent):string  $fileName
      */
     public function __construct(
@@ -73,7 +73,7 @@ class MediaConversionSpatieImage extends MediaConversionDefinition
 
         $image = Image::load($filesystem->path($file));
 
-        $manipulate($image);
+        $manipulate($image, $media, $parent);
 
         $image->save($filesystem->path($newFile));
 

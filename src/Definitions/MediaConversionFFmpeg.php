@@ -16,7 +16,7 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class MediaConversionFFmpeg extends MediaConversionDefinition
 {
     /**
-     * @param  Closure(MediaExporter $ffmpeg):void  $manipulate
+     * @param  Closure(MediaExporter $ffmpeg, Media $media, ?MediaConversion $parent):void  $manipulate
      * @param  Closure(Media $media, ?MediaConversion $parent):string  $fileName
      */
     public function __construct(
@@ -75,7 +75,7 @@ class MediaConversionFFmpeg extends MediaConversionDefinition
             ->open($file)
             ->export();
 
-        $manipulate($ffmpeg);
+        $manipulate($ffmpeg, $media, $parent);
 
         $ffmpeg->save($newFile);
 
