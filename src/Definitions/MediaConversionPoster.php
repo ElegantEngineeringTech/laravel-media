@@ -20,6 +20,7 @@ class MediaConversionPoster extends MediaConversionDefinition
 {
     /**
      * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
+     * @param  TimeCode|float|(Closure(Media $media, ?MediaConversion $parent):TimeCode)  $seconds
      */
     public function __construct(
         public string $name,
@@ -30,7 +31,7 @@ class MediaConversionPoster extends MediaConversionDefinition
         public ?string $queue = null,
         public array $conversions = [],
         public null|Closure|string $fileName = null,
-        public TimeCode|float $seconds = 0.0,
+        public Closure|TimeCode|float $seconds = 0.0,
         public ?int $width = null,
         public ?int $height = null,
         public Fit $fit = Fit::Contain,
@@ -69,6 +70,21 @@ class MediaConversionPoster extends MediaConversionDefinition
         return "{$source->name}.jpg";
     }
 
+    public function getTimeCode(Media $media, ?MediaConversion $parent): TimeCode
+    {
+        $seconds = $this->seconds;
+
+        if (is_float($seconds)) {
+            return TimeCode::fromSeconds($seconds);
+        }
+
+        if ($seconds instanceof TimeCode) {
+            return $seconds;
+        }
+
+        return $seconds($media, $parent);
+    }
+
     public function handle(
         Media $media,
         ?MediaConversion $parent,
@@ -84,11 +100,7 @@ class MediaConversionPoster extends MediaConversionDefinition
 
         FFMpeg::fromFilesystem($filesystem)
             ->open($file)
-            ->getFrameFromTimecode(
-                is_float($this->seconds)
-                ? TimeCode::fromSeconds($this->seconds)
-                : $this->seconds
-            )
+            ->getFrameFromTimecode($this->getTimeCode($media, $parent))
             ->export()
             ->save($fileName);
 
