@@ -19,18 +19,18 @@ use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 
 /**
+ * @property ?MediaType $type
  * @property ?string $disk
  * @property ?string $path
  * @property ?string $extension
  * @property ?string $name
  * @property ?string $file_name
  * @property ?string $mime_type
- * @property ?int $size
+ * @property ?int $size in octets
  * @property ?int $height
  * @property ?int $width
  * @property ?float $aspect_ratio
- * @property ?float $duration
- * @property ?MediaType $type
+ * @property ?float $duration in Ms
  *
  * @mixin Model
  */

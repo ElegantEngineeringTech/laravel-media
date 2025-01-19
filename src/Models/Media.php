@@ -37,20 +37,8 @@ use Illuminate\Support\Str;
  * @property string $uuid
  * @property string $collection_name
  * @property ?string $collection_group
- * @property ?MediaType $type
- * @property ?string $disk
- * @property ?string $path
- * @property ?string $name
- * @property ?string $file_name
- * @property ?string $mime_type
- * @property ?string $extension
- * @property ?int $width
- * @property ?int $height
- * @property ?float $aspect_ratio
  * @property ?string $average_color
- * @property ?int $size
  * @property ?int $order_column
- * @property ?float $duration
  * @property ?ArrayObject<array-key, mixed> $metadata
  * @property ?InteractWithMedia<Media> $model
  * @property ?string $model_type
