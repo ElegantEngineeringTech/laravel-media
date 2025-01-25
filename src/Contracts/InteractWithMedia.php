@@ -101,4 +101,13 @@ interface InteractWithMedia
         ?string $collectionName = null,
         ?string $collectionGroup = null,
     ): \Illuminate\Support\Collection;
+
+    /**
+     * @return Collection<int, TMedia>
+     */
+    public function deleteMediaConversion(
+        string $conversionName,
+        ?string $collectionName = null,
+        ?string $collectionGroup = null,
+    ): Collection;
 }

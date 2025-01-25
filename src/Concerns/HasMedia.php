@@ -262,4 +262,19 @@ trait HasMedia
             ->filter();
 
     }
+
+    /**
+     * @return Collection<int, TMedia>
+     */
+    public function deleteMediaConversion(
+        string $conversionName,
+        ?string $collectionName = null,
+        ?string $collectionGroup = null,
+    ): Collection {
+        return $this
+            ->getMedia($collectionName, $collectionGroup)
+            ->each(function ($media) use ($conversionName) {
+                return $media->deleteConversion($conversionName);
+            });
+    }
 }
