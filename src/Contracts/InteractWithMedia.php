@@ -6,12 +6,10 @@ namespace Elegantly\Media\Contracts;
 
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
-use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 
@@ -95,18 +93,12 @@ interface InteractWithMedia
     ): static;
 
     /**
-     * @param  int|TMedia  $media
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Foundation\Bus\PendingDispatch>
      */
     public function dispatchMediaConversion(
-        int|Media $media,
-        string $conversion
-    ): ?PendingDispatch;
-
-    /**
-     * @param  int|TMedia  $media
-     */
-    public function executeMediaConversion(
-        int|Media $media,
-        string $conversion
-    ): ?MediaConversion;
+        string $conversionName,
+        bool $force = true,
+        ?string $collectionName = null,
+        ?string $collectionGroup = null,
+    ): \Illuminate\Support\Collection;
 }
