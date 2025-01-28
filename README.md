@@ -43,13 +43,18 @@ I developed this package with the highest degree of flexibility possible and I h
     - [Manually generate conversions](#manually-generate-conversions)
 
 1. [Customization](#customization)
+
     - [Custom Media Model](#custom-media-model)
+
+1. [Troubleshooting](#troubleshooting)
+    - [Ghostscript and Imagick Issues](#ghostscript-and-imagick-issues)
 
 ## Requirements
 
 -   PHP 8.1+
 -   Laravel 11.0+
 -   `spatie/image` for image conversions
+-   `spatie/pdf-to-image` for PDF to image conversions
 -   `ffmpeg` & `pbmedia/laravel-ffmpeg` for video/audio processing
 
 ## Installation
@@ -640,6 +645,21 @@ class Post extends Model implements InteractWithMedia
     // ...
 }
 ```
+
+## Troubleshooting
+
+### Ghostscript and Imagick Issues
+
+This package relies on the `spatie/pdf-to-image` library, which uses Ghostscript via Imagick to convert PDFs into images.
+
+If you encounter errors while generating images from PDFs, such as:
+
+-   `attempt to perform an operation not allowed by the security policy 'PDF'`
+-   `Uncaught ImagickException: FailedToExecuteCommand 'gs'`
+
+these issues are likely related to the configuration of Ghostscript or Imagick on your system.
+
+For detailed guidance on resolving these errors, refer to the [spatie/pdf-to-image documentation on Ghostscript issues](https://github.com/spatie/pdf-to-image/blob/main/README.md#issues-regarding-ghostscript).
 
 ## Testing
 
