@@ -17,6 +17,10 @@ it('generates a Pdf preview', function () {
         disk: 'media'
     );
 
+    $media->executeConversion(
+        'preview'
+    );
+
     // because some conversions are queued
     $media->refresh();
 
