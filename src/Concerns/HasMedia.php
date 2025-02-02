@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Elegantly\Media\Concerns;
 
 use Elegantly\Media\Events\MediaAddedEvent;
+use Elegantly\Media\Exceptions\InvalidMimeTypeException;
 use Elegantly\Media\Helpers\File as HelpersFile;
 use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
-use Exception;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -166,9 +166,9 @@ trait HasMedia
                     $mime = HelpersFile::mimeType($file);
 
                     if (! in_array($mime, $acceptedMimeTypes)) {
-                        throw new Exception(
-                            "Media file can't be stored: Invalid MIME type: {$mime}. Accepted MIME types are: ".implode(', ', $acceptedMimeTypes),
-                            415
+                        throw InvalidMimeTypeException::notAccepted(
+                            $mime,
+                            $acceptedMimeTypes
                         );
                     }
                 }

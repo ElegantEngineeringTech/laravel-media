@@ -251,13 +251,20 @@ Add media to your model from various sources:
 #### From a Controller
 
 ```php
+use Elegantly\Media\Exceptions\InvalidMimeTypeException;
+
 public function store(Request $request, Channel $channel)
 {
-    $channel->addMedia(
-        file: $request->file('avatar'),
-        collectionName: 'avatar',
-        name: "{$channel->name}-avatar"
-    );
+    try {
+        $channel->addMedia(
+            file: $request->file('avatar'),
+            collectionName: 'avatar',
+            name: "{$channel->name}-avatar"
+        );
+    } catch (InvalidMimeTypeException $exception){
+        // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
+    }
+
 }
 ```
 
@@ -265,18 +272,27 @@ public function store(Request $request, Channel $channel)
 
 ```php
 use Livewire\WithFileUploads;
+use Elegantly\Media\Exceptions\InvalidMimeTypeException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class ImageUploader extends Component
 {
     use WithFileUploads;
 
+    /** @var ?TemporaryUploadedFile */
+    public $avatar = null;
+
     public function save()
     {
-        $this->channel->addMedia(
-            file: $this->avatar->getRealPath(),
-            collectionName: 'avatar',
-            name: "{$this->channel->name}-avatar"
-        );
+        try {
+            $this->channel->addMedia(
+                file: $this->avatar->getRealPath(),
+                collectionName: 'avatar',
+                name: "{$this->channel->name}-avatar"
+            );
+        } catch (InvalidMimeTypeException $exception){
+            // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
+        }
     }
 }
 ```
