@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\Models\Media;
+use Elegantly\Media\UrlFormatters\DefaultUrlFormatter;
 
 return [
     /**
@@ -47,6 +48,11 @@ return [
      * The default collection name
      */
     'default_collection_name' => 'default',
+
+    /**
+     * The default url formatter class, used with `$media->getUrl`
+     */
+    'default_url_formatter' => DefaultUrlFormatter::class,
 
     /**
      * Prefix for the generated path of files

@@ -41,6 +41,7 @@ I developed this package with the highest degree of flexibility possible and I h
     - [`onCompleted` MediaConversionDefinition Callback](#oncompleted-mediaconversiondefinition-callback)
     - [Custom conversions](#custom-conversions)
     - [Manually generate conversions](#manually-generate-conversions)
+    - [Format Media Url](#format-media-url)
 
 1. [Customization](#customization)
 
@@ -607,6 +608,42 @@ php artisan media:generate-conversions
 ```
 
 This provides a convenient way to process conversions in bulk or automate them within your workflows.
+
+### Format Media URLs
+
+Some cloud providers like Cloudflare, Bunny, or ImageKit allow you to create instant transformations of your images and videos using specially formatted URLs.
+
+This package gives you a simple way to format your URLs so you can take advantage of these services.
+
+When using the `$media->getUrl()` method, you can specify two parameters:
+
+-   `parameters`: An array of values
+-   `formatter`: The class name of the formatter you want to use
+
+By combining these parameters, you can retrieve formatted URLs like this:
+
+```php
+use \Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter;
+
+// Default formatter (query parameters)
+$default = $media->getUrl(
+    parameters: ['width' => 360],
+); // https://your-url.com?width=360
+
+// Cloudflare formatter (path-based format)
+$cloudflare = $media->getUrl(
+    parameters: ['width' => 360],
+    formatter: CloudflareImageUrlFormatter::class
+); // /cdn-cgi/media/width=360/https://your-url.com
+```
+
+This package comes with 3 formatters out of the box:
+
+-   `\Elegantly\Media\UrlFormatters\DefaultUrlFormatter`
+-   `\Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter`
+-   `\Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter`
+
+Feel free to implement your own formatter by extending `\Elegantly\Media\UrlFormatters\AbstractUrlFormatter`.
 
 ## Customization
 

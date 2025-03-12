@@ -18,6 +18,7 @@ use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Jobs\MediaConversionJob;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
+use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Exception;
 use Illuminate\Database\Eloquent\Casts\ArrayObject;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
@@ -643,16 +644,29 @@ class Media extends Model
     }
 
     /**
+     * @return class-string<AbstractUrlFormatter>
+     */
+    public function getDefaultUrlFormatter(): string
+    {
+        /** @var class-string<AbstractUrlFormatter> */
+        $formatter = config()->string('media.default_url_formatter');
+
+        return $formatter;
+    }
+
+    /**
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
      *
      * @param  null|bool|string|array<int, string>  $fallback
      * @param  null|array<array-key, mixed>  $parameters
+     * @param  null|class-string<AbstractUrlFormatter>  $formatter
      */
     public function getUrl(
         ?string $conversion = null,
         null|bool|string|array $fallback = null,
         ?array $parameters = null,
+        ?string $formatter = null
     ): ?string {
         $url = null;
 
@@ -664,12 +678,10 @@ class Media extends Model
         }
 
         if ($url) {
+            $formatter ??= $this->getDefaultUrlFormatter();
 
-            if (empty($parameters)) {
-                return $url;
-            }
+            return (new $formatter)->format($url, $parameters);
 
-            return $url.'?'.http_build_query($parameters);
         } elseif ($fallback === true) {
             return $this->getUrl(
                 parameters: $parameters,
@@ -697,6 +709,7 @@ class Media extends Model
      * @param  null|bool|string|array<int, string>  $fallback
      * @param  array<array-key, mixed>  $options
      * @param  null|array<array-key, mixed>  $parameters
+     * @param  null|class-string<AbstractUrlFormatter>  $formatter
      */
     public function getTemporaryUrl(
         \DateTimeInterface $expiration,
@@ -704,6 +717,7 @@ class Media extends Model
         array $options = [],
         null|bool|string|array $fallback = null,
         ?array $parameters = null,
+        ?string $formatter = null
     ): ?string {
 
         $url = null;
@@ -716,12 +730,9 @@ class Media extends Model
         }
 
         if ($url) {
+            $formatter ??= $this->getDefaultUrlFormatter();
 
-            if (! empty($parameters)) {
-                return $url.'?'.http_build_query($parameters);
-            }
-
-            return $url;
+            return (new $formatter)->format($url, $parameters);
         } elseif ($fallback === true) {
             return $this->getTemporaryUrl(
                 expiration: $expiration,
