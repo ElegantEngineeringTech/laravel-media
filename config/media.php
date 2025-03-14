@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\Models\Media;
+use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\UrlFormatters\DefaultUrlFormatter;
 
 return [
@@ -12,6 +13,12 @@ return [
      * Define your own model here by extending \Elegantly\Media\Models\Media::class
      */
     'model' => Media::class,
+
+    /**
+     * The MediaConversion model
+     * Define your own model here by extending \Elegantly\Media\Models\MediaConversion::class
+     */
+    'media_conversion_model' => MediaConversion::class,
 
     /**
      * The path used to store temporary file copy for conversions

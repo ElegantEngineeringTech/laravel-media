@@ -107,7 +107,10 @@ class Media extends Model
      */
     public function conversions(): HasMany
     {
-        return $this->hasMany(MediaConversion::class)->chaperone();
+        /** @var class-string<MediaConversion> */
+        $mediaConversionModel = config()->string('media.media_conversion_model');
+
+        return $this->hasMany($mediaConversionModel)->chaperone();
     }
 
     // Storing File ----------------------------------------------------------
@@ -414,7 +417,10 @@ class Media extends Model
          */
         $existingConversionReplicate = $existingConversion?->replicate();
 
-        $conversion = $existingConversion ?? new MediaConversion;
+        /** @var class-string<MediaConversion> */
+        $mediaConversionModel = config()->string('media.media_conversion_model');
+
+        $conversion = $existingConversion ?? new $mediaConversionModel;
 
         $conversion->fill([
             'conversion_name' => $conversionName,
