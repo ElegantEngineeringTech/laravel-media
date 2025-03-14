@@ -10,6 +10,7 @@ use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\TemporaryDirectory;
+use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\File as HttpFile;
@@ -36,6 +37,17 @@ use Illuminate\Support\Str;
  */
 trait InteractWithFiles
 {
+    /**
+     * @return class-string<AbstractUrlFormatter>
+     */
+    public function getDefaultUrlFormatter(): string
+    {
+        /** @var class-string<AbstractUrlFormatter> */
+        $formatter = config()->string('media.default_url_formatter');
+
+        return $formatter;
+    }
+
     public function getDisk(): ?Filesystem
     {
         if (! $this->disk) {
@@ -45,13 +57,27 @@ trait InteractWithFiles
         return Storage::disk($this->disk);
     }
 
-    public function getUrl(): ?string
-    {
+    /**
+     * @param  null|array<array-key, mixed>  $parameters
+     * @param  null|class-string<AbstractUrlFormatter>  $formatter
+     */
+    public function getUrl(
+        ?array $parameters = null,
+        ?string $formatter = null
+    ): ?string {
         if (! $this->path) {
             return null;
         }
 
-        return $this->getDisk()?->url($this->path);
+        $url = $this->getDisk()?->url($this->path);
+
+        if ($url) {
+            $formatter ??= $this->getDefaultUrlFormatter();
+
+            return (new $formatter)->format($url, $parameters);
+        }
+
+        return null;
     }
 
     /**

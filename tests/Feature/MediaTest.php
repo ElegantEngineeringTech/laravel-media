@@ -7,6 +7,8 @@ use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\Tests\Models\Test;
+use Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter;
+use Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter;
 use FFMpeg\Coordinate\Dimension;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -308,12 +310,35 @@ it('retrieve the url', function () {
     $media = MediaFactory::new()->make();
 
     expect($media->getUrl())->toBe('/storage/{uuid}/empty.jpg');
+
+});
+
+it('retrieve the formatted url', function () {
+    /** @var Media $media */
+    $media = MediaFactory::new()->make();
+
     expect($media->getUrl(
         parameters: [
             'width' => 200,
             'height' => 200,
         ]
     ))->toBe('/storage/{uuid}/empty.jpg?width=200&height=200');
+
+    expect($media->getUrl(
+        parameters: [
+            'width' => 200,
+            'height' => 200,
+        ],
+        formatter: CloudflareImageUrlFormatter::class
+    ))->toBe('/cdn-cgi/image/width=200,height=200//storage/{uuid}/empty.jpg');
+
+    expect($media->getUrl(
+        parameters: [
+            'width' => 200,
+            'height' => 200,
+        ],
+        formatter: CloudflareVideoUrlFormatter::class
+    ))->toBe('/cdn-cgi/media/width=200,height=200//storage/{uuid}/empty.jpg');
 
 });
 
@@ -330,6 +355,16 @@ it('retrieve the fallback url', function () {
         conversion: 'poster',
         fallback: true,
     ))->toBe('/storage/{uuid}/empty.jpg');
+
+    expect($media->getUrl(
+        conversion: 'none',
+        fallback: ['none-2', true],
+    ))->toBe('/storage/{uuid}/empty.jpg');
+
+    expect($media->getUrl(
+        conversion: 'none',
+        fallback: ['none-2'],
+    ))->toBe(null);
 
     expect($media->getUrl(
         conversion: 'poster',
@@ -360,6 +395,11 @@ it('retrieve the conversion url', function () {
             'height' => 200,
         ]
     ))->toBe('/storage/{uuid}/conversions/poster/poster.jpg?width=200&height=200');
+
+    expect($media->getUrl(
+        conversion: 'none',
+        fallback: ['poster'],
+    ))->toBe('/storage/{uuid}/conversions/poster/poster.jpg');
 
 });
 

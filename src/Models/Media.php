@@ -55,7 +55,9 @@ class Media extends Model
     use HasFactory;
 
     use HasUuid;
-    use InteractWithFiles;
+    use InteractWithFiles {
+        getUrl as traitGetUrl;
+    }
 
     /**
      * @var array<int, string>
@@ -644,21 +646,10 @@ class Media extends Model
     }
 
     /**
-     * @return class-string<AbstractUrlFormatter>
-     */
-    public function getDefaultUrlFormatter(): string
-    {
-        /** @var class-string<AbstractUrlFormatter> */
-        $formatter = config()->string('media.default_url_formatter');
-
-        return $formatter;
-    }
-
-    /**
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
      *
-     * @param  null|bool|string|array<int, string>  $fallback
+     * @param  null|bool|string|array<int, string|bool>  $fallback
      * @param  null|array<array-key, mixed>  $parameters
      * @param  null|class-string<AbstractUrlFormatter>  $formatter
      */
@@ -668,20 +659,24 @@ class Media extends Model
         ?array $parameters = null,
         ?string $formatter = null
     ): ?string {
+
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion)?->getUrl();
+            $url = $this->getConversion($conversion)?->getUrl(
+                parameters: $parameters,
+                formatter: $formatter,
+            );
         } elseif ($this->path) {
             /** @var null|string $url */
-            $url = $this->getDisk()?->url($this->path);
+            $url = $this->traitGetUrl(
+                parameters: $parameters,
+                formatter: $formatter
+            );
         }
 
         if ($url) {
-            $formatter ??= $this->getDefaultUrlFormatter();
-
-            return (new $formatter)->format($url, $parameters);
-
+            return $url;
         } elseif ($fallback === true) {
             return $this->getUrl(
                 parameters: $parameters,
@@ -692,11 +687,20 @@ class Media extends Model
                 parameters: $parameters
             ) ?? $fallback;
         } elseif (is_array($fallback)) {
-            return $this->getUrl(
-                conversion: array_shift($fallback),
-                fallback: $fallback,
-                parameters: $parameters
-            );
+            $fallbackValue = array_shift($fallback);
+
+            if ($fallbackValue === true) {
+                return $this->getUrl(
+                    parameters: $parameters
+                );
+            } elseif (is_string($fallbackValue)) {
+                return $this->getUrl(
+                    conversion: $fallbackValue,
+                    fallback: $fallback,
+                    parameters: $parameters
+                );
+            }
+
         }
 
         return null;
