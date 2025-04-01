@@ -32,11 +32,33 @@ class Video implements HasDimension
         /** @var int */
         $rotation = data_get($stream->get('side_data_list'), '0.rotation', 0);
 
-        if ((abs($rotation) / 90) % 2 === 1) {
-            $dimension = new Dimension($dimension->getHeight(), $dimension->getWidth());
+        if ($rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
+            return new Dimension($dimension->getHeight(), $dimension->getWidth());
         }
 
         return $dimension;
+    }
+
+    public static function rotation(string $path): ?int
+    {
+        $ffprobe = FFProbe::create([
+            'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
+            'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
+        ]);
+
+        $stream = $ffprobe
+            ->streams($path)
+            ->videos()
+            ->first();
+
+        if (! $stream) {
+            return null;
+        }
+
+        /** @var int */
+        $rotation = data_get($stream->get('side_data_list'), '0.rotation', 0);
+
+        return $rotation;
     }
 
     public static function ratio(string $path, bool $forceStandards = true): ?AspectRatio

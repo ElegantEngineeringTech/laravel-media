@@ -8,11 +8,12 @@ use Closure;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use FFMpeg\Coordinate\AspectRatio;
 use FFMpeg\Coordinate\Dimension;
 use FFMpeg\Filters\Video\ResizeFilter;
 use FFMpeg\Filters\Video\VideoFilters;
-use FFMpeg\Format\FormatInterface;
 use FFMpeg\Format\Video\X264;
+use FFMpeg\Format\VideoInterface;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
@@ -33,7 +34,7 @@ class MediaConversionVideo extends MediaConversionDefinition
         public null|string|Closure $fileName = null,
         public ?int $width = null,
         public ?int $height = null,
-        public FormatInterface $format = new X264,
+        public VideoInterface $format = new X264,
         public string $fitMethod = ResizeFilter::RESIZEMODE_INSET,
         public bool $forceStandards = false,
     ) {
@@ -82,29 +83,40 @@ class MediaConversionVideo extends MediaConversionDefinition
             return null;
         }
 
+        $source = $parent ?? $media;
+
         $fileName = $this->getFileName($media, $parent);
+        $aspectRatio = new AspectRatio($source->aspect_ratio);
+
+        $width = min($this->width, $source->width);
+        $height = min($this->height, $source->height);
 
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
             ->open($file)
             ->export()
             ->inFormat($this->format);
 
-        if ($this->width && $this->height) {
+        if ($width && $height) {
             $ffmpeg->addFilter(fn (VideoFilters $filters) => $filters->resize(
-                dimension: new Dimension($this->width, $this->height),
+                dimension: new Dimension($width, $height),
                 mode: $this->fitMethod,
                 forceStandards: $this->forceStandards,
             ));
-        } elseif ($this->width) {
+        } elseif ($width) {
+
+            $height = $aspectRatio->calculateHeight($width, $this->format->getModulus());
+
             $ffmpeg->addFilter(fn (VideoFilters $filters) => $filters->resize(
-                dimension: new Dimension($this->width, 1),
-                mode: ResizeFilter::RESIZEMODE_SCALE_HEIGHT,
+                dimension: new Dimension($width, $height),
+                mode: ResizeFilter::RESIZEMODE_FIT,
                 forceStandards: $this->forceStandards,
             ));
-        } elseif ($this->height) {
+        } elseif ($height) {
+            $width = $aspectRatio->calculateWidth($height, $this->format->getModulus());
+
             $ffmpeg->addFilter(fn (VideoFilters $filters) => $filters->resize(
-                dimension: new Dimension(1, $this->height),
-                mode: ResizeFilter::RESIZEMODE_SCALE_WIDTH,
+                dimension: new Dimension($width, $height),
+                mode: ResizeFilter::RESIZEMODE_FIT,
                 forceStandards: $this->forceStandards,
             ));
         }
