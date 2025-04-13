@@ -144,6 +144,7 @@ trait HasMedia
         ?string $collectionGroup = null,
         ?string $name = null,
         ?string $disk = null,
+        ?int $order = null
     ): Media {
         $collectionName ??= config('media.default_collection_name');
 
@@ -154,6 +155,7 @@ trait HasMedia
         $media->model()->associate($this);
         $media->collection_name = $collectionName;
         $media->collection_group = $collectionGroup;
+        $media->order_column = $order;
 
         $collection = $collectionName ? $this->getMediaCollection($collectionName) : null;
 
