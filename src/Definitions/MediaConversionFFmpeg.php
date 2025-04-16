@@ -10,13 +10,14 @@ use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use ProtoneMedia\LaravelFFMpeg\Exporters\MediaExporter;
+use ProtoneMedia\LaravelFFMpeg\MediaOpener;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionFFmpeg extends MediaConversionDefinition
 {
     /**
-     * @param  Closure(MediaExporter $ffmpeg, Media $media, ?MediaConversion $parent):void  $manipulate
+     * @param  Closure(MediaOpener $ffmpeg, Media $media, ?MediaConversion $parent):MediaExporter  $manipulate
      * @param  Closure(Media $media, ?MediaConversion $parent):string  $fileName
      */
     public function __construct(
@@ -72,10 +73,9 @@ class MediaConversionFFmpeg extends MediaConversionDefinition
         $newFile = $fileName($media, $parent);
 
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
-            ->open($file)
-            ->export();
+            ->open($file);
 
-        $manipulate($ffmpeg, $media, $parent);
+        $ffmpeg = $manipulate($ffmpeg, $media, $parent);
 
         $ffmpeg->save($newFile);
 

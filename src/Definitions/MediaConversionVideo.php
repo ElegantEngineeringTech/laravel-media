@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Definitions;
 
 use Closure;
+use Elegantly\Media\Definitions\Concerns\HasFilename;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -20,6 +21,8 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionVideo extends MediaConversionDefinition
 {
+    use HasFilename;
+
     /**
      * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
      */
@@ -53,19 +56,15 @@ class MediaConversionVideo extends MediaConversionDefinition
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {
-        if ($this->when !== null) {
-            return parent::shouldExecute($media, $parent);
+        if ($this->when === null) {
+            return ($parent ?? $media)->type === MediaType::Video;
         }
 
-        return ($parent ?? $media)->type === MediaType::Video;
+        return parent::shouldExecute($media, $parent);
     }
 
-    public function getFileName(Media $media, ?MediaConversion $parent): string
+    public function getDefaultFilename(Media $media, ?MediaConversion $parent): string
     {
-        if ($fileName = $this->fileName) {
-            return is_string($fileName) ? $fileName : $fileName($media, $parent);
-        }
-
         $source = $parent ?? $media;
 
         return "{$source->name}.mp4";
@@ -85,7 +84,7 @@ class MediaConversionVideo extends MediaConversionDefinition
 
         $source = $parent ?? $media;
 
-        $fileName = $this->getFileName($media, $parent);
+        $fileName = $this->getFilename($media, $parent);
         $aspectRatio = new AspectRatio($source->aspect_ratio);
 
         $width = min($this->width, $source->width);

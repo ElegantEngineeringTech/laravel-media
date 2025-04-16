@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Definitions;
 
 use Closure;
+use Elegantly\Media\Definitions\Concerns\HasFilename;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -18,6 +19,8 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaConversionPoster extends MediaConversionDefinition
 {
+    use HasFilename;
+
     /**
      * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
      * @param  TimeCode|float|(Closure(Media $media, ?MediaConversion $parent):TimeCode)  $seconds
@@ -59,11 +62,8 @@ class MediaConversionPoster extends MediaConversionDefinition
         return ($parent ?? $media)->type === MediaType::Video;
     }
 
-    public function getFileName(Media $media, ?MediaConversion $parent): string
+    public function getDefaultFilename(Media $media, ?MediaConversion $parent): string
     {
-        if ($fileName = $this->fileName) {
-            return is_string($fileName) ? $fileName : $fileName($media, $parent);
-        }
 
         $source = $parent ?? $media;
 
@@ -96,7 +96,7 @@ class MediaConversionPoster extends MediaConversionDefinition
             return null;
         }
 
-        $fileName = $this->getFileName($media, $parent);
+        $fileName = $this->getFilename($media, $parent);
 
         FFMpeg::fromFilesystem($filesystem)
             ->open($file)

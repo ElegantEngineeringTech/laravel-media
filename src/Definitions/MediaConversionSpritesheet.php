@@ -7,21 +7,22 @@ namespace Elegantly\Media\Definitions;
 use Closure;
 use Elegantly\Media\Definitions\Concerns\HasFilename;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
-use FFMpeg\Format\Audio\Mp3;
-use FFMpeg\Format\FormatInterface;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use ProtoneMedia\LaravelFFMpeg\FFMpeg\FFProbe;
+use ProtoneMedia\LaravelFFMpeg\Filters\TileFactory;
 use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaConversionAudio extends MediaConversionDefinition
+class MediaConversionSpritesheet extends MediaConversionDefinition
 {
     use HasFilename;
 
     /**
-     * @param  null|string|(Closure(Media $media, ?MediaConversion $parent):string)  $fileName
+     * @param  float  $interval  in seconds
+     * @param  MediaConversionDefinition[]  $conversions
+     * @param  null|bool|Closure(Media $media, ?MediaConversion $parent): bool  $when
      */
     public function __construct(
         public string $name,
@@ -31,8 +32,9 @@ class MediaConversionAudio extends MediaConversionDefinition
         public bool $queued = true,
         public ?string $queue = null,
         public array $conversions = [],
-        public null|Closure|string $fileName = null,
-        public FormatInterface $format = new Mp3,
+        public null|string|Closure $fileName = null,
+        public float $interval = 3.0,
+        public int $width = 180,
     ) {
 
         parent::__construct(
@@ -55,26 +57,14 @@ class MediaConversionAudio extends MediaConversionDefinition
 
         $source = $parent ?? $media;
 
-        return in_array($source->type, [MediaType::Video, MediaType::Audio]);
-    }
-
-    public function hasFileAudioStream(string $path): bool
-    {
-        $ffprobe = FFProbe::create([
-            'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
-            'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
-        ]);
-
-        $streams = $ffprobe->streams($path);
-
-        return (bool) $streams->audios()->count();
+        return $source->type === MediaType::Video;
     }
 
     public function getDefaultFilename(Media $media, ?MediaConversion $parent): string
     {
         $source = $parent ?? $media;
 
-        return "{$source->name}.mp3";
+        return "{$source->name}.jpg";
     }
 
     public function handle(
@@ -88,24 +78,27 @@ class MediaConversionAudio extends MediaConversionDefinition
             return null;
         }
 
-        /**
-         * Videos do not always have an audio stream
-         */
-        if (! $this->hasFileAudioStream($filesystem->path($file))) {
-            return null;
-        }
-
-        $fileName = $this->getFilename($media, $parent);
+        $newFile = $this->getFilename($media, $parent);
 
         $ffmpeg = FFMpeg::fromFilesystem($filesystem)
-            ->open($file)
-            ->export()
-            ->inFormat($this->format);
+            ->open($file);
 
-        $ffmpeg->save($fileName);
+        // in ms
+        $duration = File::duration($filesystem->path($file)) ?? 0.0;
+
+        $count = (int) ceil(($duration / 1_000) / $this->interval);
+
+        $ffmpeg = $ffmpeg->exportTile(
+            fn (TileFactory $tileFactory) => $tileFactory
+                ->interval($this->interval)
+                ->grid(1, $count)
+                ->scale($this->width)
+        );
+
+        $ffmpeg->save($newFile);
 
         return $media->addConversion(
-            file: $filesystem->path($fileName),
+            file: $filesystem->path($newFile),
             conversionName: $this->name,
             parent: $parent,
         );
