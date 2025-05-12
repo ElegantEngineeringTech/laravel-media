@@ -30,6 +30,7 @@ class MediaConversionDefinition
         public bool $immediate = true,
         public bool $queued = true,
         public ?string $queue = null,
+        public \DateTimeInterface|\DateInterval|int|null $delay = null,
         public array $conversions = [],
     ) {
         /** @var array<string, MediaConversionDefinition> $conversions */
@@ -71,7 +72,9 @@ class MediaConversionDefinition
             conversion: $parent ? "{$parent->conversion_name}.{$this->name}" : $this->name
         );
 
-        return dispatch($job)->onQueue($this->queue ?? $job->queue);
+        return dispatch($job)
+            ->onQueue($this->queue ?? $job->queue)
+            ->delay($this->delay ?? $job->delay);
     }
 
     public function execute(Media $media, ?MediaConversion $parent): ?MediaConversion

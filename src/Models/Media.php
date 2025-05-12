@@ -260,7 +260,9 @@ class Media extends Model
                 conversion: $conversion
             );
 
-            return dispatch($job)->onQueue($definition->queue ?? $job->queue);
+            return dispatch($job)
+                ->onQueue($definition->queue ?? $job->queue)
+                ->delay($definition->delay ?? $job->delay);
 
         }
 
