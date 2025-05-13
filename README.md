@@ -152,7 +152,7 @@ return [
 Optionally, you can publish the views using
 
 ```bash
-php artisan vendor:publish --tag="laravel-media-views"
+php artisan vendor:publish --tag="media-views"
 ```
 
 ## Basic Usage
