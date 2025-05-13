@@ -69,14 +69,14 @@ composer require elegantly/laravel-media
 You have to publish and run the migrations with:
 
 ```bash
-php artisan vendor:publish --tag="laravel-media-migrations"
+php artisan vendor:publish --tag="media-migrations"
 php artisan migrate
 ```
 
 You can publish the config file with:
 
 ```bash
-php artisan vendor:publish --tag="laravel-media-config"
+php artisan vendor:publish --tag="media-config"
 ```
 
 This is the contents of the published config file:
