@@ -205,6 +205,8 @@ This package provides common converions to simplify your work:
 -   `MediaConversionVideo`: This conversion optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
 -   `MediaConversionAudio`: This conversion optimizes, resizes, converts or extract any audio using `pbmedia/laravel-ffmpeg`.
 -   `MediaConversionPoster`: This conversion extracts a poster using `pbmedia/laravel-ffmpeg`.
+-   `MediaConversionPdfPreview`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
+-   `MediaConversionSpritesheet`: This conversion extracts a spritesheet from the video using `pbmedia/laravel-ffmpeg`.
 
 ```php
 namespace App\Models;
@@ -347,6 +349,11 @@ $thumbnailUrl = $media->getUrl(
     fallback: true // Falls back to original if conversion doesn't exist
 );
 
+$posterUrl = $media->getUrl(
+    conversion: 'poster.360p',
+    fallback: 'poster' // Falls back to an other conversion doesn't exist
+);
+
 // Use the same logic with other properties such as
 $media->getPath();
 $media->getWith();
@@ -418,6 +425,11 @@ new MediaCollection(
             width: 360,
             queued: true,  // (default) Dispatch as a background job
             queue: 'slow' // (optional) Specify a custom queue
+        ),
+        new MediaConversionImage(
+            name: '180',
+            width: 180,
+            queued: false,  // Generate the conversion synchronously
         )
     ]
 )
@@ -504,7 +516,7 @@ This allows you to hook into the conversion process and execute additional logic
 
 ### Custom Conversions
 
-Conversions can be anything—a variant of a file, a transcription of a video, a completely new file, or even just a string.
+Conversions can be anything: a variant of a file, a transcription of a video, a completely new file, or even just a string.
 
 You can use built-in presets or define your own custom conversion. To create a custom conversion, use the `MediaConversionDefinition` class:
 
@@ -530,9 +542,10 @@ class Channel extends Model implements InteractWithMedia
                     // Using a custom conversion definition
                     new MediaConversionDefinition(
                         name: 'webp',
-                        when: fn($media, $parent) => $media->type === MediaType::Image,
+                        when: fn($media, $parent) => ($parent ?? $media)->type === MediaType::Image,
                         handle: function($media, $parent, $file, $filesystem, $temporaryDirectory) {
-                            $target = $filesystem->path("{$media->name}.webp");
+                            $source = $parent ?? $media;
+                            $target = $filesystem->path("{$source->name}.webp");
 
                             Image::load($filesystem->path($file))
                                 ->optimize()
