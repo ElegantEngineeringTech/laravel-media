@@ -249,7 +249,12 @@ class Channel extends Model implements InteractWithMedia
 
 ### Adding Media
 
-Add media to your model from various sources:
+Add media to your model, using the `addMedia` method, from various sources:
+
+-   an url
+-   a resource or stream
+-   a \Illuminate\Http\UploadedFile instance
+-   a \Illuminate\Http\File instance
 
 #### From a Controller
 
@@ -267,7 +272,6 @@ public function store(Request $request, Channel $channel)
     } catch (InvalidMimeTypeException $exception){
         // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
     }
-
 }
 ```
 
@@ -297,6 +301,22 @@ class ImageUploader extends Component
             // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
         }
     }
+}
+```
+
+#### From an Url
+
+```php
+use Elegantly\Media\Exceptions\InvalidMimeTypeException;
+
+ try {
+    $channel->addMedia(
+        file: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+        collectionName: 'videos',
+        name: "BigBuckBunny"
+    );
+} catch (InvalidMimeTypeException $exception){
+    // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
 }
 ```
 
