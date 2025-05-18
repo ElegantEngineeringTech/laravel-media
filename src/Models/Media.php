@@ -134,7 +134,9 @@ class Media extends Model
             (is_string($file) && filter_var($file, FILTER_VALIDATE_URL)) ||
             ! is_string($file)
         ) {
-            return TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
+            /** @var static $value */
+            $value = TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
+
                 $path = FileDownloader::download(
                     file: $file,
                     destination: $temporaryDirectory->path()
@@ -142,6 +144,8 @@ class Media extends Model
 
                 return $this->storeFileFromHttpFile(new HttpFile($path), $destination, $name, $disk, $before);
             });
+
+            return $value;
         }
 
         return $this->storeFileFromHttpFile(new HttpFile($file), $destination, $name, $disk, $before);
