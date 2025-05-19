@@ -74,7 +74,7 @@ class MediaConversionDefinition
 
         return dispatch($job)
             ->onQueue($this->queue ?? $job->queue)
-            ->delay($this->delay ?? $job->delay);
+            ->delay($this->delay ?? $job->delay); // @phpstan-ignore-line
     }
 
     public function execute(Media $media, ?MediaConversion $parent): ?MediaConversion

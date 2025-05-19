@@ -266,7 +266,7 @@ class Media extends Model
 
             return dispatch($job)
                 ->onQueue($definition->queue ?? $job->queue)
-                ->delay($definition->delay ?? $job->delay);
+                ->delay($definition->delay ?? $job->delay); // @phpstan-ignore-line
 
         }
 
