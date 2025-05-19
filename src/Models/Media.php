@@ -325,9 +325,29 @@ class Media extends Model
         return $this->executeConversion($name);
     }
 
-    public function getConversion(string $name): ?MediaConversion
-    {
-        return $this->conversions->firstWhere('conversion_name', $name);
+    /**
+     * @param  null|string|string[]  $fallback
+     */
+    public function getConversion(
+        string $name,
+        null|string|array $fallback = null
+    ): ?MediaConversion {
+        if ($conversion = $this->conversions->firstWhere('conversion_name', $name)) {
+            return $conversion;
+        }
+
+        if (is_string($fallback)) {
+            return $this->getConversion($fallback);
+        }
+
+        if (is_array($fallback) && $firstFallback = array_shift($fallback)) {
+            return $this->getConversion(
+                name: $firstFallback,
+                fallback: $fallback
+            );
+        }
+
+        return null;
     }
 
     public function hasConversion(string $name): bool
