@@ -381,6 +381,7 @@ class Media extends Model
      */
     public function replaceConversion(
         MediaConversion $conversion,
+        bool $regenerateChildren = true
     ): MediaConversion {
 
         $existingConversion = $this->getConversion($conversion->conversion_name);
@@ -406,7 +407,7 @@ class Media extends Model
         $this->generateConversions(
             parent: $conversion,
             filter: fn ($definition) => $definition->immediate,
-            force: true,
+            force: $regenerateChildren,
         );
 
         return $conversion;
