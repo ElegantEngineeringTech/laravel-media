@@ -425,6 +425,7 @@ class Media extends Model
         ?string $name = null,
         ?string $destination = null,
         ?string $disk = null,
+        bool $regenerateChildren = true
     ): MediaConversion {
 
         /**
@@ -440,7 +441,7 @@ class Media extends Model
         $existingConversion = $this->getConversion($conversionName);
 
         /**
-         * To delete old conversion files, we will use a untouched replicate
+         * To delete old conversion files, we will use an untouched replicate
          */
         $existingConversionReplicate = $existingConversion?->replicate();
 
@@ -470,10 +471,14 @@ class Media extends Model
             ) {
                 $existingConversionReplicate->deleteFile();
             }
-            /**
-             * Because the conversion has been regenerated, its children are not up to date anymore
-             */
-            $this->deleteChildrenConversions($conversionName);
+
+            if ($regenerateChildren) {
+                /**
+                 * Because the conversion has been regenerated, its children are not up to date anymore
+                 */
+                $this->deleteChildrenConversions($conversionName);
+            }
+
         } else {
             $this->conversions->push($conversion);
         }
@@ -481,7 +486,7 @@ class Media extends Model
         $this->generateConversions(
             parent: $conversion,
             filter: fn ($definition) => $definition->immediate,
-            force: true,
+            force: $regenerateChildren,
         );
 
         event(new MediaConversionAddedEvent($conversion));
