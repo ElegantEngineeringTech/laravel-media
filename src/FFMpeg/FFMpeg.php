@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class FFMpeg
 {
@@ -17,9 +18,9 @@ class FFMpeg
         ?string $ffprobe = null,
     ) {
         // @phpstan-ignore-next-line
-        $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg') ?? config('laravel-ffmpeg.ffmpeg.binaries');
+        $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries') ?? config('laravel-ffmpeg.ffmpeg.binaries');
         // @phpstan-ignore-next-line
-        $this->ffprobe = $ffprobe ?? config('media.ffprobe') ?? config('laravel-ffmpeg.ffprobe.binaries');
+        $this->ffprobe = $ffprobe ?? config('media.ffprobe.ffprobe_binaries') ?? config('laravel-ffmpeg.ffprobe.binaries');
     }
 
     public static function make(
@@ -39,6 +40,11 @@ class FFMpeg
      */
     protected function execute(string $command): array
     {
+        // @phpstan-ignore-next-line
+        if ($channel = config('media.ffmpeg.log_channel')) {
+            Log::channel($channel)->info("ffmpeg: {$command}");
+        }
+
         exec($command, $output, $code);
 
         return [$code, $output];

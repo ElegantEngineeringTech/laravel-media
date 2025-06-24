@@ -9,77 +9,93 @@ use Elegantly\Media\UrlFormatters\DefaultUrlFormatter;
 
 return [
     /**
-     * The media model
-     * Define your own model here by extending \Elegantly\Media\Models\Media::class
+     * The media model.
+     * Define your own model here by extending \Elegantly\Media\Models\Media::class.
      */
     'model' => Media::class,
 
     /**
-     * The MediaConversion model
-     * Define your own model here by extending \Elegantly\Media\Models\MediaConversion::class
+     * The MediaConversion model.
+     * Define your own model here by extending \Elegantly\Media\Models\MediaConversion::class.
      */
     'media_conversion_model' => MediaConversion::class,
 
     /**
-     * The path used to store temporary file copy for conversions
-     * This will be used with storage_path() function
+     * The path used to store temporary file copies for conversions.
+     * This will be used with the storage_path() function.
      */
     'temporary_storage_path' => 'app/tmp/media',
 
     /**
-     * The default disk used for storing files
+     * The default disk used for storing files.
      */
     'disk' => env('MEDIA_DISK', env('FILESYSTEM_DISK', 'local')),
 
     /**
      * Determine if media should be deleted with the model
-     * when using the HasMedia Trait
+     * when using the HasMedia Trait.
      */
     'delete_media_with_model' => true,
 
     /**
      * Determine if media should be deleted with the model
-     * when it is soft deleted
+     * when it is soft deleted.
      */
     'delete_media_with_trashed_model' => false,
 
     /**
-     * Deleting a large number of media attached to a model can be time-consuming
-     * or even fail (e.g., cloud API error, permissions, etc.)
-     * For performance and monitoring, when a model with the HasMedia trait is deleted,
-     * each media is individually deleted inside a job.
+     * Job class responsible for deleting media when the model is deleted.
+     * This helps with performance and monitoring by queuing media deletions.
      */
     'delete_media_with_model_job' => DeleteModelMediaJob::class,
 
     /**
-     * The default collection name
+     * The default collection name assigned media.
      */
     'default_collection_name' => 'default',
 
     /**
-     * The default url formatter class, used with `$media->getUrl`
+     * The default URL formatter class.
+     * Used when calling `$media->getUrl()`.
      */
     'default_url_formatter' => DefaultUrlFormatter::class,
 
     /**
-     * Prefix for the generated path of files
-     * Set to null if you do not want any prefix
-     * To fully customize the generated default path, extend the Media model and override the generateBasePath method
+     * Prefix for the generated file path.
+     * Set to null to disable the prefix.
+     * Override the generateBasePath method in the Media model for full customization.
      */
     'generated_path_prefix' => null,
 
     /**
-     * Customize the queue connection used when dispatching conversion jobs
+     * Queue connection name to use when dispatching media conversion jobs.
      */
     'queue_connection' => env('QUEUE_CONNECTION', 'sync'),
 
     /**
-     * Customize the queue used when dispatching conversion jobs
-     * null will fall back to the default Laravel queue
+     * Queue name to use for media conversion jobs.
+     * Set to null to use the default Laravel queue.
      */
     'queue' => null,
 
-    'ffmpeg' => env('FFMPEG_BINARIES', 'ffmpeg'),
-    'ffprobe' => env('FFPROBE_BINARIES', 'ffprobe'),
+    /**
+     * Configuration for FFmpeg processing.
+     */
+    'ffmpeg' => [
+        /**
+         * The binary path to the FFmpeg executable.
+         */
+        'ffmpeg_binaries' => env('FFMPEG_BINARIES', 'ffmpeg'),
 
+        /**
+         * The binary path to the FFprobe executable.
+         */
+        'ffprobe_binaries' => env('FFPROBE_BINARIES', 'ffprobe'),
+
+        /**
+         * Optional log channel for FFmpeg operations.
+         * Set to false to disable logging.
+         */
+        'log_channel' => false,
+    ],
 ];
