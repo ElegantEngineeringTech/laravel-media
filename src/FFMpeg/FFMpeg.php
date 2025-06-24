@@ -46,13 +46,22 @@ class FFMpeg
     /**
      * @return array{0: int, 1: string[]}
      */
-    protected function execute(string $command): array
+    protected function execute(string $command, bool $throw = true): array
     {
+
         if ($this->logChannel) {
             Log::channel($this->logChannel)->info("ffmpeg: {$command}");
         }
 
-        exec($command, $output, $code);
+        exec("{$command} 2>&1", $output, $code);
+
+        if ($throw && $code !== 0) {
+            throw new Exception(
+                "Error Executing ffmpeg: {$command}",
+                500,
+                new Exception(implode("\n", $output), $code)
+            );
+        }
 
         return [$code, $output];
     }
@@ -62,15 +71,7 @@ class FFMpeg
      */
     public function ffmpeg(string $command): array
     {
-        $cmd = "{$this->ffmpeg} {$command} 2>&1";
-
-        [$code, $output] = $this->execute($cmd);
-
-        if ($code !== 0) {
-            throw new Exception("Error Executing ffmpeg: {$cmd}", $code);
-        }
-
-        return [$code, $output];
+        return $this->execute("{$this->ffmpeg} {$command}");
     }
 
     /**
@@ -78,14 +79,6 @@ class FFMpeg
      */
     public function ffprobe(string $command): array
     {
-        $cmd = "{$this->ffprobe} {$command} 2>&1";
-
-        [$code, $output] = $this->execute($cmd);
-
-        if ($code !== 0) {
-            throw new Exception("Error Executing ffprobe: {$cmd}", $code);
-        }
-
-        return [$code, $output];
+        return $this->execute("{$this->ffprobe} {$command}");
     }
 }
