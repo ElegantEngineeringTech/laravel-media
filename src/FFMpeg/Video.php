@@ -21,12 +21,13 @@ class Video extends FFMpeg
     }
 
     /**
+     * @param  int|float|string  $timecode  in seconds (SS.xxx) or formatted (HH:MM:SS.xx)
      * @return array{0: int, 1: string[]}
      */
     public function frame(
         string $input,
         string $output,
-        string $timecode = '00:00:00',
+        int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,
     ): array {
