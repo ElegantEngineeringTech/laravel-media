@@ -13,21 +13,29 @@ class FFMpeg
 
     public string $ffprobe;
 
+    public ?string $logChannel = null;
+
     final public function __construct(
         ?string $ffmpeg = null,
         ?string $ffprobe = null,
+        ?string $logChannel = null,
     ) {
         // @phpstan-ignore-next-line
         $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries') ?? config('laravel-ffmpeg.ffmpeg.binaries');
+
         // @phpstan-ignore-next-line
         $this->ffprobe = $ffprobe ?? config('media.ffprobe.ffprobe_binaries') ?? config('laravel-ffmpeg.ffprobe.binaries');
+
+        // @phpstan-ignore-next-line
+        $this->logChannel = $logChannel ?? config('media.ffmpeg.log_channel');
     }
 
     public static function make(
         ?string $ffmpeg = null,
         ?string $ffprobe = null,
+        ?string $logChannel = null,
     ): static {
-        return new static($ffmpeg, $ffprobe);
+        return new static($ffmpeg, $ffprobe, $logChannel);
     }
 
     public function video(): Video
@@ -40,9 +48,8 @@ class FFMpeg
      */
     protected function execute(string $command): array
     {
-        // @phpstan-ignore-next-line
-        if ($channel = config('media.ffmpeg.log_channel')) {
-            Log::channel($channel)->info("ffmpeg: {$command}");
+        if ($this->logChannel) {
+            Log::channel($this->logChannel)->info("ffmpeg: {$command}");
         }
 
         exec($command, $output, $code);
