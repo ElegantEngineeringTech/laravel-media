@@ -27,7 +27,7 @@ class FFMpeg
         $this->ffprobe = $ffprobe ?? config('media.ffprobe.ffprobe_binaries') ?? config('laravel-ffmpeg.ffprobe.binaries');
 
         // @phpstan-ignore-next-line
-        $this->logChannel = $logChannel ?? config('media.ffmpeg.log_channel');
+        $this->logChannel = $logChannel ?: config('media.ffmpeg.log_channel');
     }
 
     public static function make(

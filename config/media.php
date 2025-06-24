@@ -94,8 +94,8 @@ return [
 
         /**
          * Optional log channel for FFmpeg operations.
-         * Set to false to disable logging.
+         * Set to null to disable logging.
          */
-        'log_channel' => false,
+        'log_channel' => null,
     ],
 ];
