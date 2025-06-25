@@ -43,6 +43,33 @@ class FFMpeg
         return new Video($this->ffmpeg, $this->ffprobe);
     }
 
+    public function audio(): Audio
+    {
+        return new Audio($this->ffmpeg, $this->ffprobe);
+    }
+
+    /**
+     * @return array<array-key, mixed>
+     */
+    public function metadata(string $input): array
+    {
+        [$code, $output] = $this->ffprobe("-v error -show_format -show_streams -print_format json {$input}");
+
+        $metadata = json_decode(implode('', $output), true);
+
+        return is_array($metadata) ? $metadata : [];
+    }
+
+    /**
+     * @return array{0: int, 1: string[]}
+     */
+    public function stripMetadata(
+        string $input,
+        string $output,
+    ): array {
+        return $this->ffmpeg("-i {$input} -map_metadata -1 -c copy {$output}");
+    }
+
     /**
      * @return array{0: int, 1: string[]}
      */
@@ -80,5 +107,22 @@ class FFMpeg
     public function ffprobe(string $command): array
     {
         return $this->execute("{$this->ffprobe} {$command}");
+    }
+
+    protected function getScale(?int $width = null, ?int $height = null): ?string
+    {
+        if ($width && $height) {
+            return "scale={$width}:{$height}";
+        }
+
+        if ($width) {
+            return "scale={$width}:-2";
+        }
+
+        if ($height) {
+            return "scale=-2:{$height}";
+        }
+
+        return null;
     }
 }
