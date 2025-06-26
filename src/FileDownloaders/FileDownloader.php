@@ -17,6 +17,8 @@ class FileDownloader
 
         $path = tempnam($destination, 'media-');
 
+        Http::head($url)->throwUnlessStatus(200);
+
         Http::sink($path)
             ->withUserAgent('Elegantly laravel-media package')
             ->timeout(60 * 10)
