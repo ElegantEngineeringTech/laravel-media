@@ -67,6 +67,7 @@ interface InteractWithMedia
 
     /**
      * @param  string|resource|UploadedFile|File  $file
+     * @param  array<array-key, mixed>  $metadata
      * @return TMedia
      */
     public function addMedia(
@@ -75,6 +76,8 @@ interface InteractWithMedia
         ?string $collectionGroup = null,
         ?string $name = null,
         ?string $disk = null,
+        ?int $order = null,
+        ?array $metadata = null,
     ): Media;
 
     /**

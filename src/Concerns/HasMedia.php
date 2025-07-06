@@ -136,6 +136,7 @@ trait HasMedia
 
     /**
      * @param  string|resource|UploadedFile|File  $file
+     * @param  array<array-key, mixed>  $metadata
      * @return TMedia
      */
     public function addMedia(
@@ -144,7 +145,8 @@ trait HasMedia
         ?string $collectionGroup = null,
         ?string $name = null,
         ?string $disk = null,
-        ?int $order = null
+        ?int $order = null,
+        ?array $metadata = null,
     ): Media {
         $collectionName ??= config('media.default_collection_name');
 
@@ -156,6 +158,7 @@ trait HasMedia
         $media->collection_name = $collectionName;
         $media->collection_group = $collectionGroup;
         $media->order_column = $order;
+        $media->metadata = $metadata;
 
         $collection = $collectionName ? $this->getMediaCollection($collectionName) : null;
 
