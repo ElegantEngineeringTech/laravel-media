@@ -9,13 +9,14 @@ use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
+use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 class MediaCollection
 {
     /**
      * @param  null|(string[])  $acceptedMimeTypes
      * @param  null|string|(Closure(): null|string)  $fallback
-     * @param  null|(Closure(UploadedFile|File $file): (UploadedFile|File))  $transform
+     * @param  null|(Closure(UploadedFile|File $file, TemporaryDirectory $temporaryDirectory): (UploadedFile|File))  $transform
      * @param  null|(Closure(Media $media): void)  $onAdded
      * @param  MediaConversionDefinition[]  $conversions
      */

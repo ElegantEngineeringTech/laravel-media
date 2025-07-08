@@ -166,7 +166,7 @@ trait HasMedia
             file: $file,
             name: $name,
             disk: $disk ?? $collection?->disk,
-            before: function ($file) use ($collection) {
+            before: function ($file, $temporaryDirectory) use ($collection) {
                 if ($acceptedMimeTypes = $collection?->acceptedMimeTypes) {
                     $mime = HelpersFile::mimeType($file);
 
@@ -179,7 +179,7 @@ trait HasMedia
                 }
 
                 if ($transform = $collection?->transform) {
-                    return $transform($file);
+                    return $transform($file, $temporaryDirectory);
                 }
 
                 return $file;

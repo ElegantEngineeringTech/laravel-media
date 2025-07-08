@@ -152,7 +152,7 @@ class Media extends Model
     }
 
     /**
-     * @param  null|(Closure(UploadedFile|HttpFile $file):(UploadedFile|HttpFile))  $before
+     * @param  null|(Closure(UploadedFile|HttpFile $file, \Spatie\TemporaryDirectory\TemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
      */
     public function storeFileFromHttpFile(
         UploadedFile|HttpFile $file,
@@ -166,22 +166,25 @@ class Media extends Model
         $name ??= File::name($file) ?? Str::random(6);
         $disk ??= $this->disk ?? config()->string('media.disk', config()->string('filesystems.default', 'local'));
 
-        if ($before) {
-            $file = $before($file);
-        }
+        TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
+            if ($before) {
+                $file = $before($file, $temporaryDirectory);
+            }
 
-        $path = $this->putFile(
-            disk: $disk,
-            destination: $destination,
-            file: $file,
-            name: $name,
-        );
+            $path = $this->putFile(
+                disk: $disk,
+                destination: $destination,
+                file: $file,
+                name: $name,
+            );
 
-        if (! $path) {
-            throw new Exception("Storing Media File '{$file->getPath()}' to disk '{$disk}' at '{$destination}' failed.");
-        }
+            if (! $path) {
+                throw new Exception("Storing Media File '{$file->getPath()}' to disk '{$disk}' at '{$destination}' failed.");
+            }
 
-        $this->save();
+            $this->save();
+
+        });
 
         event(new MediaFileStoredEvent($this));
 
