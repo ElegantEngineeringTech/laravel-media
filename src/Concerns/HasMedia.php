@@ -137,6 +137,7 @@ trait HasMedia
     /**
      * @param  string|resource|UploadedFile|File  $file
      * @param  array<array-key, mixed>  $metadata
+     * @param  array<array-key, mixed>  $attributes
      * @return TMedia
      */
     public function addMedia(
@@ -147,6 +148,7 @@ trait HasMedia
         ?string $disk = null,
         ?int $order = null,
         ?array $metadata = null,
+        array $attributes = [],
     ): Media {
         $collectionName ??= config('media.default_collection_name');
 
@@ -154,6 +156,7 @@ trait HasMedia
         $model = config('media.model');
 
         $media = new $model;
+        $media->fill($attributes);
         $media->model()->associate($this);
         $media->collection_name = $collectionName;
         $media->collection_group = $collectionGroup;
