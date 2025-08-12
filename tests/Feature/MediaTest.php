@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Elegantly\Media\Database\Factories\MediaFactory;
-use Elegantly\Media\Definitions\MediaConversionDefinition;
+use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\Tests\Models\Test;

@@ -9,13 +9,12 @@ use Closure;
 use Elegantly\Media\Concerns\InteractWithFiles;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\Database\Factories\MediaFactory;
-use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
-use Elegantly\Media\Jobs\MediaConversionJob;
+use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -247,7 +246,6 @@ class Media extends Model
 
     /**
      * Dispatch any conversion while generating missing parents.
-     * Will check for 'shouldExecute' definition method.
      */
     public function dispatchConversion(
         string $conversion,
@@ -262,14 +260,15 @@ class Media extends Model
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            $job = new MediaConversionJob(
-                media: $this,
-                conversion: $conversion
-            );
+            $converter = ($definition->converter)($this);
 
-            return dispatch($job)
-                ->onQueue($definition->queue ?? $job->queue)
-                ->delay($definition->delay ?? $job->delay); // @phpstan-ignore-line
+            $job = dispatch($converter->conversion($conversion));
+
+            if ($queue = $definition->queue) {
+                $job->onQueue($queue);
+            }
+
+            return $job;
 
         }
 
@@ -278,7 +277,6 @@ class Media extends Model
 
     /**
      * Execute any conversion while generating missing parents.
-     * Will check for 'shouldExecute' definition method.
      */
     public function executeConversion(
         string $conversion,
@@ -292,28 +290,13 @@ class Media extends Model
             return null;
         }
 
+        dump('executeConversion: '.$conversion);
+
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            if (str_contains($conversion, '.')) {
-                $parent = $this->getOrExecuteConversion(
-                    str($conversion)->beforeLast('.')->value()
-                );
-                /**
-                 * Parent conversion can't be done, so children can't be executed either.
-                 */
-                if (! $parent) {
-                    return null;
-                }
-            } else {
-                $parent = null;
-            }
+            $converter = ($definition->converter)($this);
 
-            if (! $definition->shouldExecute($this, $parent)) {
-                return null;
-            }
-
-            return $definition->execute($this, $parent);
-
+            return $converter->conversion($conversion)->handle();
         }
 
         return null;
@@ -430,13 +413,14 @@ class Media extends Model
         ?string $disk = null,
         bool $regenerateChildren = true
     ): MediaConversion {
-
         /**
          * Prefix name with parent if not already done
          */
         if ($parent && ! str_contains($conversionName, '.')) {
             $conversionName = "{$parent->conversion_name}.{$conversionName}";
         }
+
+        dump('addConversion: '.$conversionName);
 
         /**
          * If the conversion already exists, we are going to overwrite it
@@ -492,6 +476,12 @@ class Media extends Model
             force: $regenerateChildren,
         );
 
+        $definition = $this->getConversionDefinition($conversionName);
+
+        if ($onCompleted = $definition?->onCompleted) {
+            $onCompleted($conversion, $this, $parent);
+        }
+
         event(new MediaConversionAddedEvent($conversion));
 
         return $conversion;
@@ -510,6 +500,8 @@ class Media extends Model
         ?bool $queued = null,
         bool $force = false,
     ): static {
+        dump('generateConversions');
+
         if ($parent) {
             $definitions = $this->getChildrenConversionsDefinitions($parent->conversion_name);
         } else {
@@ -525,12 +517,18 @@ class Media extends Model
             $conversion = $parent ? "{$parent->conversion_name}.{$definition->name}" : $definition->name;
 
             if ($queued ?? $definition->queued) {
-                $this->dispatchConversion(
+
+                $job = $this->dispatchConversion(
                     conversion: $conversion,
                     force: $force,
                 );
 
+                if ($definition->delay !== null) {
+                    $job?->delay($definition->delay);
+                }
+
             } else {
+
                 // A failed conversion should not interrupt the process
                 try {
                     $this->executeConversion(

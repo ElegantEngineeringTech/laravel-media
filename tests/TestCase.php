@@ -7,12 +7,16 @@ namespace Elegantly\Media\Tests;
 use Elegantly\Media\MediaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Schema\Blueprint;
+use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
-use ProtoneMedia\LaravelFFMpeg\Support\ServiceProvider;
+
+use function Orchestra\Testbench\artisan;
+use function Orchestra\Testbench\workbench_path;
 
 class TestCase extends Orchestra
 {
+    use WithWorkbench;
+
     public $dummy_pdf_url = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 
     public $dummy_video_url = 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
@@ -30,24 +34,35 @@ class TestCase extends Orchestra
     {
         return [
             MediaServiceProvider::class,
-            ServiceProvider::class,
         ];
+    }
+
+    protected function defineEnvironment($app)
+    {
+        $app['config']->set('database.default', 'testing');
+
+        $app['config']->set('media.ffmpeg.ffmpeg_binaries', '/opt/homebrew/bin/ffmpeg');
+        $app['config']->set('media.ffprobe.ffprobe_binaries', '/opt/homebrew/bin/ffprobe');
+    }
+
+    protected function defineDatabaseMigrations()
+    {
+        $this->loadMigrationsFrom(
+            workbench_path('database/migrations')
+        );
+
+        artisan($this, 'vendor:publish', ['--tag' => 'media-migrations']);
+
+        artisan($this, 'migrate');
+
+        $this->beforeApplicationDestroyed(
+            fn () => artisan($this, 'migrate:rollback')
+        );
     }
 
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
-
-        $migration = include __DIR__.'/../database/migrations/create_media_table.php.stub';
-        $migration->up();
-        $migration = include __DIR__.'/../database/migrations/create_media_conversions_table.php.stub';
-        $migration->up();
-
-        $app['db']->connection()->getSchemaBuilder()->create('tests', function (Blueprint $table) {
-            $table->increments('id');
-            $table->timestamps();
-            $table->softDeletes();
-        });
 
         Model::shouldBeStrict(true);
     }

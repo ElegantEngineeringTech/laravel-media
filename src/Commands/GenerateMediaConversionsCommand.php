@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Commands;
 
-use Elegantly\Media\Definitions\MediaConversionDefinition;
+use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;

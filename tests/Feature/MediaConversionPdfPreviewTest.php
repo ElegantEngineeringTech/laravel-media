@@ -16,7 +16,6 @@ it('generates a Pdf preview', function () {
         collectionName: 'files',
         disk: 'media'
     );
-
     // because some conversions are queued
     $media->refresh();
 

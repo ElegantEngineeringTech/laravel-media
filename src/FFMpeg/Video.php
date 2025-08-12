@@ -35,7 +35,7 @@ class Video extends FFMpeg
             return $this->ffmpeg("-ss {$timecode} -i {$input} -vframes 1 -vf {$scale} {$output}");
         }
 
-        return $this->ffmpeg("-ss {$timecode} -i {$input} -vframes 1 -vf {$output}");
+        return $this->ffmpeg("-ss {$timecode} -i {$input} -vframes 1 {$output}");
     }
 
     /**

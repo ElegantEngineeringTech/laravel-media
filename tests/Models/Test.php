@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Elegantly\Media\Tests\Models;
 
 use Elegantly\Media\Concerns\HasMedia;
-use Elegantly\Media\Definitions\MediaConversionImage;
-use Elegantly\Media\Definitions\MediaConversionPoster;
-use Elegantly\Media\Definitions\MediaConversionVideo;
+use Elegantly\Media\Converters\Image\MediaImageConverter;
+use Elegantly\Media\Converters\Video\MediaMp4Converter;
+use Elegantly\Media\Converters\Video\MediaPosterConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaCollection;
+use Elegantly\Media\MediaConversionDefinition;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Image\Enums\Fit;
@@ -68,31 +69,51 @@ class Test extends Model
                 single: false,
                 public: false,
                 conversions: [
-                    new MediaConversionPoster(
+                    new MediaConversionDefinition(
                         name: 'poster',
                         queued: false,
+                        converter: fn ($media) => new MediaPosterConverter(
+                            media: $media,
+                            filename: "{$media->name}.jpg"
+                        ),
                         conversions: [
-                            new MediaConversionImage(
+                            new MediaConversionDefinition(
                                 name: '360',
-                                width: 360,
                                 queued: false,
+                                converter: fn ($media) => new MediaImageConverter(
+                                    media: $media,
+                                    filename: "{$media->name}.jpg",
+                                    width: 360,
+                                ),
                             ),
-                            new MediaConversionImage(
+                            new MediaConversionDefinition(
                                 name: 'delayed',
                                 immediate: false,
                                 queued: false,
+                                converter: fn ($media) => new MediaImageConverter(
+                                    media: $media,
+                                    filename: "{$media->name}.jpg",
+                                ),
                             ),
                         ]
                     ),
-                    new MediaConversionVideo(
+                    new MediaConversionDefinition(
                         name: 'small',
                         queued: true,
-                        width: 100,
+                        converter: fn ($media) => new MediaMp4Converter(
+                            media: $media,
+                            filename: "{$media->name}.mp4",
+                            width: 100,
+                        ),
                     ),
-                    new MediaConversionVideo(
+                    new MediaConversionDefinition(
                         name: 'delayed',
                         immediate: false,
                         queued: false,
+                        converter: fn ($media) => new MediaMp4Converter(
+                            media: $media,
+                            filename: "{$media->name}.mp4",
+                        ),
                     ),
                 ]
             ),
@@ -101,16 +122,24 @@ class Test extends Model
                 single: false,
                 public: false,
                 conversions: [
-                    new MediaConversionPoster(
+                    new MediaConversionDefinition(
                         name: 'poster',
                         queued: false,
                         immediate: false,
+                        converter: fn ($media) => new MediaPosterConverter(
+                            media: $media,
+                            filename: "{$media->name}.jpg",
+                        ),
                         conversions: [
-                            new MediaConversionImage(
+                            new MediaConversionDefinition(
                                 name: '360',
-                                width: 360,
                                 queued: false,
                                 immediate: true,
+                                converter: fn ($media) => new MediaImageConverter(
+                                    media: $media,
+                                    filename: "{$media->name}-360.jpg",
+                                    width: 360,
+                                ),
                             ),
                         ]
                     ),

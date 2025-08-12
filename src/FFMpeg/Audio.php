@@ -25,4 +25,19 @@ class Audio extends FFMpeg
     ): array {
         return $this->ffmpeg("-i {$input} -vn -acodec pcm_s16le -ar 44100 -ac 2 {$output}");
     }
+
+    /**
+     * @return array{0: int, 1: string[]}
+     */
+    public function save(
+        string $input,
+        string $output,
+    ): array {
+        $extension = pathinfo($output, PATHINFO_EXTENSION);
+
+        return match ($extension) {
+            'mp3' => $this->mp3($input, $output),
+            default => $this->wav($input, $output),
+        };
+    }
 }
