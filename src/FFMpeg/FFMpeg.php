@@ -21,10 +21,10 @@ class FFMpeg
         ?string $logChannel = null,
     ) {
         // @phpstan-ignore-next-line
-        $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries') ?? config('laravel-ffmpeg.ffmpeg.binaries');
+        $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries');
 
         // @phpstan-ignore-next-line
-        $this->ffprobe = $ffprobe ?? config('media.ffprobe.ffprobe_binaries') ?? config('laravel-ffmpeg.ffprobe.binaries');
+        $this->ffprobe = $ffprobe ?? config('media.ffmpeg.ffprobe_binaries');
 
         // @phpstan-ignore-next-line
         $this->logChannel = $logChannel ?: config('media.ffmpeg.log_channel');

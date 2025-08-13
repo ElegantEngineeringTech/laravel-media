@@ -40,12 +40,6 @@ class TestCase extends Orchestra
     protected function defineEnvironment($app)
     {
         $app['config']->set('database.default', 'testing');
-
-        if (PHP_OS_FAMILY === 'Darwin') {
-            $app['config']->set('media.ffmpeg.ffmpeg_binaries', '/opt/homebrew/bin/ffmpeg');
-            $app['config']->set('media.ffprobe.ffprobe_binaries', '/opt/homebrew/bin/ffprobe');
-        }
-
     }
 
     protected function defineDatabaseMigrations()
