@@ -6,13 +6,14 @@ namespace Elegantly\Media\Converters\Video;
 
 use Elegantly\Media\Converters\Concerns\HasDimensions;
 use Elegantly\Media\Converters\MediaConverter;
+use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaPosterConverter extends MediaConverter
+class MediaFrameConverter extends MediaConverter
 {
     use HasDimensions;
 
@@ -42,6 +43,13 @@ class MediaPosterConverter extends MediaConverter
         return $this->timecode;
     }
 
+    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
+    {
+        $source = $parent ?? $media;
+
+        return $source->type === MediaType::Video;
+    }
+
     public function convert(
         Media $media,
         ?MediaConversion $parent,
@@ -60,7 +68,7 @@ class MediaPosterConverter extends MediaConverter
         $ffmpeg = new FFMpeg;
 
         if (! $ffmpeg->video()->hasVideo($input)) {
-            return null;
+            return $this->skipConversion();
         }
 
         $source = $parent ?? $media;

@@ -199,14 +199,14 @@ class Channel extends Model implements InteractWithMedia
 
 Media conversions create different variants of your media files. For example, a 720p version of a 1440p video or a WebP or PNG version of an image are common types of media conversions. Interestingly, a media conversion can also have its own additional conversions.
 
-This package provides common converions to simplify your work:
+This package provides common converter to simplify your work:
 
--   `MediaConversionImage`: This conversion optimizes, resizes, or converts any image using `spatie/image`.
--   `MediaConversionVideo`: This conversion optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionAudio`: This conversion optimizes, resizes, converts or extract any audio using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionPoster`: This conversion extracts a poster using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionPdfPreview`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
--   `MediaConversionSpritesheet`: This conversion extracts a spritesheet from the video using `pbmedia/laravel-ffmpeg`.
+-   `MediaImageConverter`: This converter optimizes, resizes, or converts any image using `spatie/image`.
+-   `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video to mp4 video using `ffmpeg`.
+-   `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
+-   `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
+-   `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
+-   `MediaPdfToImageConverter`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
 
 ```php
 namespace App\Models;
@@ -215,7 +215,10 @@ use Illuminate\Database\Eloquent\Model;
 use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\MediaCollection;
-use Elegantly\Media\Definitions\MediaConversionImage;
+use Elegantly\Media\MediaConversionDefinition;
+use Elegantly\Media\Converters\MediaMp4Converter;
+use Elegantly\Media\Converters\MediaFrameConverter;
+use Elegantly\Media\Converters\MediaImageConverter;
 
 class Channel extends Model implements InteractWithMedia
 {
@@ -227,18 +230,31 @@ class Channel extends Model implements InteractWithMedia
             new MediaCollection(
                 name: 'videos',
                 conversions: [
-                    new MediaConversionPoster(
+                    new MediaConversionDefinition(
                         name: 'poster',
+                        converter: fn ($media) => new MediaFrameConverter(
+                            media: $media,
+                            filename: "{$media->name}-thumbnail.jpg",
+                            timecode: 0,
+                        ),
                         conversions: [
-                            new MediaConversionImage(
+                            new MediaConversionDefinition(
                                 name: '360p',
-                                width: 360
+                                converter: fn ($media) => new MediaImageConverter(
+                                    media: $media,
+                                    filename: "{$media->name}.jpg"
+                                    width: 360
+                                )
                             ),
                         ],
                     ),
-                    new MediaConversionVideo(
+                    new MediaConversionDefinition(
                         name: '720p',
-                        width: 720
+                        converter: fn ($media) => new MediaMp4Converter(
+                            media: $media,
+                            filename: "{$media->name}.mp4"
+                            width: 720
+                        )
                     ),
                 ]
             )
@@ -440,17 +456,25 @@ You can configure the strategy in the conversion definition using the `queued` a
 new MediaCollection(
     name: 'avatar',
     conversions: [
-        new MediaConversionImage(
-            name: '360',
-            width: 360,
+        new MediaConversionDefinition(
+            name: '360p',
             queued: true,  // (default) Dispatch as a background job
             queue: 'slow' // (optional) Specify a custom queue
+            converter: fn ($media) => new MediaImageConverter(
+                media: $media,
+                filename: "{$media->name}.jpg"
+                width: 360
+            )
         ),
-        new MediaConversionImage(
-            name: '180',
-            width: 180,
+        new MediaConversionDefinition(
+            name: '180p',
             queued: false,  // Generate the conversion synchronously
-        )
+            converter: fn ($media) => new MediaImageConverter(
+                media: $media,
+                filename: "{$media->name}.jpg"
+                width: 180
+            )
+        ),
     ]
 )
 ```

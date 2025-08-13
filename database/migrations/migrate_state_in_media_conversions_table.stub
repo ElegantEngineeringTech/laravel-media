@@ -1,0 +1,24 @@
+<?php
+
+use Elegantly\Media\Enums\MediaConversionState;
+use Elegantly\Media\Models\MediaConversion;
+use Illuminate\Database\Migrations\Migration;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        MediaConversion::query()
+            ->where('state', 'success')
+            ->update(['state' => MediaConversionState::Succeeded]);
+
+    }
+
+    public function down()
+    {
+        MediaConversion::query()
+            ->where('state', MediaConversionState::Succeeded)
+            ->update(['state' => 'success']);
+    }
+
+};

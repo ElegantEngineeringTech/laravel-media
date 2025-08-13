@@ -9,7 +9,7 @@ it('transform an array of generated conversions into MediaConversion array', fun
         [],
         '',
         'foo' => [
-            'state' => 'success',
+            'state' => 'succeeded',
             'state_set_at' => now()->toJSON(),
             'disk' => 's3',
             'path' => 'uuid/foo.jpg',
@@ -32,7 +32,7 @@ it('transform an array of generated conversions into MediaConversion array', fun
                 [],
                 '',
                 'nested' => [
-                    'state' => 'success',
+                    'state' => 'succeeded',
                     'state_set_at' => now()->toJSON(),
                     'disk' => 's3',
                     'path' => 'uuid/nested.jpg',
@@ -52,7 +52,7 @@ it('transform an array of generated conversions into MediaConversion array', fun
                     'updated_at' => now()->toJSON(),
                     'generated_conversions' => [
                         'supernested' => [
-                            'state' => 'success',
+                            'state' => 'succeeded',
                             'state_set_at' => now()->toJSON(),
                             'disk' => 's3',
                             'path' => 'uuid/supernested.jpg',
@@ -76,7 +76,7 @@ it('transform an array of generated conversions into MediaConversion array', fun
             ],
         ],
         'bar' => [
-            'state' => 'success',
+            'state' => 'succeeded',
             'state_set_at' => now()->toJSON(),
             'disk' => 's3',
             'path' => 'uuid/bar.jpg',

@@ -6,8 +6,8 @@ namespace Elegantly\Media\Tests\Models;
 
 use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Converters\Image\MediaImageConverter;
+use Elegantly\Media\Converters\Video\MediaFrameConverter;
 use Elegantly\Media\Converters\Video\MediaMp4Converter;
-use Elegantly\Media\Converters\Video\MediaPosterConverter;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversionDefinition;
 use Illuminate\Contracts\Support\Arrayable;
@@ -37,7 +37,7 @@ class Test extends Model
                     new MediaConversionDefinition(
                         name: 'poster',
                         queued: false,
-                        converter: fn ($media) => new MediaPosterConverter(
+                        converter: fn ($media) => new MediaFrameConverter(
                             media: $media,
                             filename: "{$media->name}.jpg"
                         ),
@@ -91,7 +91,7 @@ class Test extends Model
                         name: 'poster',
                         queued: false,
                         immediate: false,
-                        converter: fn ($media) => new MediaPosterConverter(
+                        converter: fn ($media) => new MediaFrameConverter(
                             media: $media,
                             filename: "{$media->name}.jpg",
                         ),

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Tests\Models\TestPdf;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +20,7 @@ it('generates a Pdf preview', function () {
     // because some conversions are queued
     $media->refresh();
 
-    $conversion = $media->getConversion('preview');
+    $conversion = $media->getConversion('preview', MediaConversionState::Succeeded);
 
     expect($conversion)->not->toBe(null);
     expect($conversion->type)->toBe(MediaType::Image);

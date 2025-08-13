@@ -2,34 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Elegantly\Media\Converters\Image;
+namespace Elegantly\Media\Converters\Audio;
 
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Spatie\Image\Enums\Fit;
-use Spatie\Image\Image;
-use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaImageConverter extends MediaConverter
+class MediaMp3Converter extends MediaConverter
 {
     public function __construct(
         public readonly Media $media,
         public string $filename,
-        public ?int $width = null,
-        public ?int $height = null,
-        public Fit $fit = Fit::Contain,
-        public ?OptimizerChain $optimizerChain = null,
     ) {}
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {
         $source = $parent ?? $media;
 
-        return $source->type === MediaType::Image;
+        return in_array($source->type, [MediaType::Audio, MediaType::Video]);
     }
 
     public function convert(
@@ -47,10 +41,16 @@ class MediaImageConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($this->filename);
 
-        Image::load($input)
-            ->fit($this->fit, $this->width, $this->height)
-            ->optimize($this->optimizerChain)
-            ->save($output);
+        $ffmpeg = new FFMpeg;
+
+        if (! $ffmpeg->video()->hasAudio($input)) {
+            return $this->skipConversion();
+        }
+
+        $ffmpeg->audio()->mp3(
+            input: $input,
+            output: $output,
+        );
 
         return $media->addConversion(
             file: $output,

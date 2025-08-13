@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Converters\Pdf;
 
 use Elegantly\Media\Converters\MediaConverter;
+use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -13,7 +14,7 @@ use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaPdfPreviewConverter extends MediaConverter
+class MediaPdfToImageConverter extends MediaConverter
 {
     public function __construct(
         public readonly Media $media,
@@ -24,6 +25,13 @@ class MediaPdfPreviewConverter extends MediaConverter
         public Fit $fit = Fit::Contain,
         public ?OptimizerChain $optimizerChain = null,
     ) {}
+
+    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
+    {
+        $source = $parent ?? $media;
+
+        return $source->type === MediaType::Pdf;
+    }
 
     public function convert(
         Media $media,

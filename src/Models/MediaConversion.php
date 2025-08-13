@@ -7,6 +7,7 @@ namespace Elegantly\Media\Models;
 use Carbon\Carbon;
 use Elegantly\Media\Concerns\InteractWithFiles;
 use Elegantly\Media\Database\Factories\MediaConversionFactory;
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
@@ -28,7 +29,7 @@ use Illuminate\Support\Str;
  * @property int $id
  * @property string $uuid
  * @property string $conversion_name
- * @property ?string $state
+ * @property ?MediaConversionState $state
  * @property ?Carbon $state_set_at
  * @property ?string $disk
  * @property ?string $path
@@ -66,16 +67,17 @@ class MediaConversion extends Model
 
     protected $appends = ['url'];
 
-    /**
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'type' => MediaType::class,
-        'metadata' => AsArrayObject::class,
-        'state_set_at' => 'datetime',
-        'duration' => 'float',
-        'aspect_ratio' => 'float',
-    ];
+    public function casts()
+    {
+        return [
+            'type' => MediaType::class,
+            'metadata' => AsArrayObject::class,
+            'duration' => 'float',
+            'aspect_ratio' => 'float',
+            'state' => MediaConversionState::class,
+            'state_set_at' => 'datetime',
+        ];
+    }
 
     public static function booted()
     {

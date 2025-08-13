@@ -9,6 +9,7 @@ use Closure;
 use Elegantly\Media\Concerns\InteractWithFiles;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
@@ -253,7 +254,7 @@ class Media extends Model
     ): ?PendingDispatch {
         if (
             $force === false &&
-            $this->hasConversion($conversion)
+            $this->hasConversion($conversion, MediaConversionState::Succeeded)
         ) {
             return null;
         }
@@ -286,7 +287,7 @@ class Media extends Model
 
         if (
             $force === false &&
-            $this->hasConversion($conversion)
+            $this->hasConversion($conversion, MediaConversionState::Succeeded)
         ) {
             return null;
         }
@@ -308,7 +309,7 @@ class Media extends Model
         string $name,
         bool $withChildren = true,
     ): ?MediaConversion {
-        if ($conversion = $this->getConversion($name)) {
+        if ($conversion = $this->getConversion($name, MediaConversionState::Succeeded)) {
             return $conversion;
         }
 
@@ -320,19 +321,29 @@ class Media extends Model
      */
     public function getConversion(
         string $name,
+        ?MediaConversionState $state = null,
         null|string|array $fallback = null
     ): ?MediaConversion {
-        if ($conversion = $this->conversions->firstWhere('conversion_name', $name)) {
+        $conversion = $this->conversions->firstWhere(function ($mediaConversion) use ($name, $state) {
+            if ($state && $mediaConversion->state !== $state) {
+                return false;
+            }
+
+            return $mediaConversion->conversion_name === $name;
+        });
+
+        if ($conversion) {
             return $conversion;
         }
 
         if (is_string($fallback)) {
-            return $this->getConversion($fallback);
+            return $this->getConversion($fallback, $state);
         }
 
         if (is_array($fallback) && $firstFallback = array_shift($fallback)) {
             return $this->getConversion(
                 name: $firstFallback,
+                state: $state,
                 fallback: $fallback
             );
         }
@@ -340,9 +351,9 @@ class Media extends Model
         return null;
     }
 
-    public function hasConversion(string $name): bool
+    public function hasConversion(string $name, ?MediaConversionState $state = null): bool
     {
-        return (bool) $this->getConversion($name);
+        return (bool) $this->getConversion($name, $state);
     }
 
     public function getParentConversion(string $name): ?MediaConversion
@@ -428,12 +439,10 @@ class Media extends Model
 
         $conversion = $existingConversion ?? new $mediaConversionModel;
 
-        $conversion->fill([
-            'conversion_name' => $conversionName,
-            'media_id' => $this->id,
-            'state' => 'success',
-            'state_set_at' => now(),
-        ]);
+        $conversion->conversion_name = $conversionName;
+        $conversion->media_id = $this->id;
+        $conversion->state = MediaConversionState::Succeeded;
+        $conversion->state_set_at = now();
 
         $conversion->storeFile(
             file: $file,
@@ -645,7 +654,7 @@ class Media extends Model
         $path = null;
 
         if ($conversion) {
-            $path = $this->getConversion($conversion)?->path;
+            $path = $this->getConversion($conversion, MediaConversionState::Succeeded)?->path;
         } elseif ($this->path) {
             $path = $this->path;
         }
@@ -686,7 +695,7 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion)?->getUrl(
+            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getUrl(
                 parameters: $parameters,
                 formatter: $formatter,
             );
@@ -750,7 +759,7 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion)?->getTemporaryUrl($expiration, $options);
+            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getTemporaryUrl($expiration, $options);
         } elseif ($this->path) {
             /** @var null|string $url */
             $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
@@ -796,7 +805,7 @@ class Media extends Model
         $width = null;
 
         if ($conversion) {
-            $width = $this->getConversion($conversion)?->width;
+            $width = $this->getConversion($conversion, MediaConversionState::Succeeded)?->width;
         } else {
             $width = $this->width;
         }
@@ -831,7 +840,7 @@ class Media extends Model
         $height = null;
 
         if ($conversion) {
-            $height = $this->getConversion($conversion)?->height;
+            $height = $this->getConversion($conversion, MediaConversionState::Succeeded)?->height;
         } else {
             $height = $this->height;
         }
@@ -866,7 +875,7 @@ class Media extends Model
         $name = null;
 
         if ($conversion) {
-            $name = $this->getConversion($conversion)?->name;
+            $name = $this->getConversion($conversion, MediaConversionState::Succeeded)?->name;
         } else {
             $name = $this->name;
         }
@@ -899,7 +908,7 @@ class Media extends Model
         $fileName = null;
 
         if ($conversion) {
-            $fileName = $this->getConversion($conversion)?->file_name;
+            $fileName = $this->getConversion($conversion, MediaConversionState::Succeeded)?->file_name;
         } else {
             $fileName = $this->file_name;
         }
@@ -932,7 +941,7 @@ class Media extends Model
         $size = null;
 
         if ($conversion) {
-            $size = $this->getConversion($conversion)?->size;
+            $size = $this->getConversion($conversion, MediaConversionState::Succeeded)?->size;
         } else {
             $size = $this->size;
         }
@@ -967,7 +976,7 @@ class Media extends Model
         $aspectRatio = null;
 
         if ($conversion) {
-            $aspectRatio = $this->getConversion($conversion)?->aspect_ratio;
+            $aspectRatio = $this->getConversion($conversion, MediaConversionState::Succeeded)?->aspect_ratio;
         } else {
             $aspectRatio = $this->aspect_ratio;
         }
@@ -1002,7 +1011,7 @@ class Media extends Model
         $mimeType = null;
 
         if ($conversion) {
-            $mimeType = $this->getConversion($conversion)?->mime_type;
+            $mimeType = $this->getConversion($conversion, MediaConversionState::Succeeded)?->mime_type;
         } else {
             $mimeType = $this->mime_type;
         }

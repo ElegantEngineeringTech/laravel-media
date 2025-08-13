@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Elegantly\Media\Converters\Image\MediaImageConverter;
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Events\MediaConverterExecutedEvent;
 use Elegantly\Media\Tests\Models\TestConversions;
 use Illuminate\Support\Facades\Event;
@@ -48,7 +49,7 @@ it('generates immediate conversion when a media is added', function () {
     Queue::assertPushed(MediaImageConverter::class, 0);
     Event::assertDispatched(MediaConverterExecutedEvent::class, 1);
 
-    $conversion = $media->getConversion('small');
+    $conversion = $media->getConversion('small', MediaConversionState::Succeeded);
 
     expect($conversion)->not->toBe(null);
 
@@ -120,8 +121,8 @@ it('generates immediate nested conversion when a media is added', function () {
     Queue::assertPushed(MediaImageConverter::class, 0);
     Event::assertDispatched(MediaConverterExecutedEvent::class, 2);
 
-    $small = $media->getConversion('small');
-    $smaller = $media->getConversion('small.smaller');
+    $small = $media->getConversion('small', MediaConversionState::Succeeded);
+    $smaller = $media->getConversion('small.smaller', MediaConversionState::Succeeded);
 
     expect($small)->not->toBe(null);
     expect($smaller)->not->toBe(null);
@@ -146,7 +147,7 @@ it('does queue immediate queued nested conversion when a media is added', functi
     Queue::assertPushed(MediaImageConverter::class, 1);
     Event::assertDispatched(MediaConverterExecutedEvent::class, 1);
 
-    $small = $media->getConversion('small');
+    $small = $media->getConversion('small', MediaConversionState::Succeeded);
     $smaller = $media->getConversion('small.smaller');
 
     expect($small)->not->toBe(null);
@@ -174,8 +175,8 @@ it('generates non existant parent conversion when a child is executed', function
     Queue::assertPushed(MediaImageConverter::class, 0);
     Event::assertDispatched(MediaConverterExecutedEvent::class, 2);
 
-    $small = $media->getConversion('small');
-    $smaller = $media->getConversion('small.smaller');
+    $small = $media->getConversion('small', MediaConversionState::Succeeded);
+    $smaller = $media->getConversion('small.smaller', MediaConversionState::Succeeded);
 
     expect($small)->not->toBe(null);
     expect($smaller)->not->toBe(null);
@@ -202,8 +203,8 @@ it('generates immediate children conversion when a parent is executed', function
     Queue::assertPushed(MediaImageConverter::class, 0);
     Event::assertDispatched(MediaConverterExecutedEvent::class, 2);
 
-    $small = $media->getConversion('small');
-    $smaller = $media->getConversion('small.smaller');
+    $small = $media->getConversion('small', MediaConversionState::Succeeded);
+    $smaller = $media->getConversion('small.smaller', MediaConversionState::Succeeded);
 
     expect($small)->not->toBe(null);
     expect($smaller)->not->toBe(null);

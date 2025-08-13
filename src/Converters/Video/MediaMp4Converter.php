@@ -6,6 +6,7 @@ namespace Elegantly\Media\Converters\Video;
 
 use Elegantly\Media\Converters\Concerns\HasDimensions;
 use Elegantly\Media\Converters\MediaConverter;
+use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -25,6 +26,13 @@ class MediaMp4Converter extends MediaConverter
         public string $preset = 'veryslow',
     ) {}
 
+    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
+    {
+        $source = $parent ?? $media;
+
+        return $source->type === MediaType::Video;
+    }
+
     public function convert(
         Media $media,
         ?MediaConversion $parent,
@@ -43,7 +51,7 @@ class MediaMp4Converter extends MediaConverter
         $ffmpeg = new FFMpeg;
 
         if (! $ffmpeg->video()->hasVideo($input)) {
-            return null;
+            return $this->skipConversion();
         }
 
         $source = $parent ?? $media;

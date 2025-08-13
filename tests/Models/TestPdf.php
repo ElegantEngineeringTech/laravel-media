@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Tests\Models;
 
 use Elegantly\Media\Concerns\HasMedia;
-use Elegantly\Media\Converters\Pdf\MediaPdfPreviewConverter;
+use Elegantly\Media\Converters\Pdf\MediaPdfToImageConverter;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversionDefinition;
 use Illuminate\Contracts\Support\Arrayable;
@@ -28,7 +28,7 @@ class TestPdf extends Model
                     new MediaConversionDefinition(
                         name: 'preview',
                         queued: false,
-                        converter: fn ($media) => new MediaPdfPreviewConverter(
+                        converter: fn ($media) => new MediaPdfToImageConverter(
                             media: $media,
                             filename: "{$media->name}.jpg",
                             width: 100,

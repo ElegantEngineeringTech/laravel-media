@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Database\Factories;
 
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +20,7 @@ class MediaConversionFactory extends Factory
     {
         return [
             'conversion_name' => 'name',
-            'state' => 'success',
+            'state' => MediaConversionState::Succeeded,
             'state_set_at' => now(),
             'disk' => config('media.disk'),
             'path' => '{uuid}/conversions/name/fileName.jpg',
