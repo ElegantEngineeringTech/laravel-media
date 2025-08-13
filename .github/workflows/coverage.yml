@@ -4,6 +4,10 @@ on:
   push:
     paths:
       - "**.php"
+      - ".github/workflows/coverage.yml"
+      - "phpunit.xml.dist"
+      - "composer.json"
+      - "composer.lock"
 
 jobs:
   pest:
