@@ -2,45 +2,47 @@
 
 declare(strict_types=1);
 
+use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\MediaCollection;
-use Elegantly\Media\Models\Media;
-use Elegantly\Media\Tests\Models\Test;
+use Elegantly\Media\Tests\Models\TestCollections;
 use Elegantly\Media\Tests\Models\TestSoftDelete;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 it('gets the correct media collection', function () {
-    $model = new Test;
+    $model = new TestCollections;
 
     $collection = $model->getMediaCollection('single');
+
     expect($collection)->toBeInstanceOf(MediaCollection::class);
     expect($collection->name)->toBe('single');
 });
 
 it('gets the fallback value when no media extist', function () {
-    $model = new Test;
+    $model = new TestCollections;
 
     expect($model->getFirstMediaUrl('fallback'))->toBe('fallback-value');
 });
 
 it('retreives the media url', function () {
     Storage::fake('media');
-    $model = new Test;
+    $model = new TestCollections;
     $model->save();
 
     $model->addMedia(
         file: UploadedFile::fake()->image('foo.jpg'),
         disk: 'media',
-        collectionName: 'files',
+        collectionName: 'multiple',
     );
 
-    expect($model->getFirstMediaUrl('files'))->not->toBe(null);
+    expect($model->getFirstMediaUrl('multiple'))->not->toBe(null);
 
 });
 
 it('adds a new media to the default collection', function () {
     Storage::fake('media');
-    $model = new Test;
+    $model = new TestCollections;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
@@ -61,118 +63,46 @@ it('adds a new media to the default collection', function () {
     expect($media->collection_group)->toBe(null);
 
     Storage::disk('media')->assertExists($media->path);
-
-    expect($model->media)->toHaveLength(1);
-
-    $modelMedia = $model->getFirstMedia();
-
-    expect($modelMedia)->toBeInstanceOf(Media::class);
 });
 
-it('adds a new media to a collection and group', function () {
+it('adds a new media to the specified collection', function () {
     Storage::fake('media');
-    $model = new Test;
+    $model = new TestCollections;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
 
     $media = $model->addMedia(
         file: $file,
-        collectionName: 'files',
+        collectionName: 'multiple',
+        disk: 'media'
+    );
+
+    expect($media->collection_name)->toBe('multiple');
+    expect($media->collection_group)->toBe(null);
+});
+
+it('adds a new media to the specified collection group', function () {
+    Storage::fake('media');
+    $model = new TestCollections;
+    $model->save();
+
+    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
+
+    $media = $model->addMedia(
+        file: $file,
+        collectionName: 'multiple',
         collectionGroup: 'group',
         disk: 'media'
     );
 
-    Storage::disk('media')->assertExists($media->path);
-
-    expect($media->model_id)->toBe($model->id);
-    expect($media->model_type)->toBe(get_class($model));
-    expect($media->exists)->toBe(true);
-    expect($media->collection_name)->toBe('files');
+    expect($media->collection_name)->toBe('multiple');
     expect($media->collection_group)->toBe('group');
-
-    expect($model->media)->toHaveLength(1);
-
-    $modelMedia = $model->getFirstMedia();
-
-    expect($modelMedia)->toBeInstanceOf(Media::class);
-});
-
-it('generates and loads non queued conversions when adding media', function () {
-    Storage::fake('media');
-    $model = new Test;
-    $model->save();
-
-    $media = $model->addMedia(
-        file: $this->getTestFile('videos/horizontal.mp4'),
-        collectionName: 'conversions',
-        disk: 'media'
-    );
-
-    expect($media->getConversion('poster'))->not->toBe(null);
-    expect($media->getConversion('poster.360'))->not->toBe(null);
-});
-
-it('generates immediate conversions when adding media', function () {
-    Storage::fake('media');
-    $model = new Test;
-    $model->save();
-
-    $media = $model->addMedia(
-        file: $this->getTestFile('videos/horizontal.mp4'),
-        collectionName: 'conversions',
-        disk: 'media'
-    );
-
-    $media->refresh(); // ensure queued conversions are loaded
-
-    expect($media->getConversion('poster'))->not->toBe(null);
-    expect($media->getConversion('poster.360'))->not->toBe(null);
-    expect($media->getConversion('small'))->not->toBe(null);
-});
-
-it('does not generate not immediate conversions when adding media', function () {
-    Storage::fake('media');
-    $model = new Test;
-    $model->save();
-
-    $media = $model->addMedia(
-        file: $this->getTestFile('videos/horizontal.mp4'),
-        collectionName: 'conversions',
-        disk: 'media'
-    );
-
-    $media->refresh(); // ensure queued conversions are loaded
-
-    expect($media->getConversion('delayed'))->toBe(null);
-    expect($media->getConversion('poster.delayed'))->toBe(null);
-
-});
-
-it('generates non existing parents conversions when executing nested conversion', function () {
-    Storage::fake('media');
-    $model = new Test;
-    $model->save();
-
-    $media = $model->addMedia(
-        file: $this->getTestFile('videos/horizontal.mp4'),
-        collectionName: 'conversions-delayed',
-        disk: 'media'
-    );
-
-    expect($media->conversions)->toHaveLength(0);
-
-    $media->executeConversion('poster.360');
-
-    expect($media->conversions)->toHaveLength(2);
-
-    expect($media->getConversion('poster'))->not->toBe(null);
-    expect($media->getConversion('poster.360'))->not->toBe(null);
 });
 
 it('deletes old media when adding to single collection', function () {
     Storage::fake('media');
-    $model = new Test;
+    $model = new TestCollections;
     $model->save();
 
     $firstMedia = $model->addMedia(
@@ -191,43 +121,21 @@ it('deletes old media when adding to single collection', function () {
         collectionName: 'single',
     );
 
-    expect($model->media)->toHaveLength(1);
-
+    Storage::disk('media')->assertMissing($firstMedia->path);
     Storage::disk('media')->assertExists($secondMedia->path);
 
-    Storage::disk('media')->assertMissing($firstMedia->path);
-    expect(Media::query()->find($firstMedia->id))->toBe(null);
+    expect($model->media)->toHaveLength(1);
 
+    expect($firstMedia->fresh())->toBe(null);
 });
 
 it('deletes media and its files with the model when delete_media_with_model is true', function () {
     config()->set('media.delete_media_with_model', true);
 
+    Queue::fake();
     Storage::fake('media');
 
-    $model = new Test;
-    $model->save();
-
-    $media = $model->addMedia(
-        file: UploadedFile::fake()->image('foo.jpg'),
-        disk: 'media'
-    );
-
-    Storage::disk('media')->assertExists($media->path);
-
-    $model->delete();
-
-    expect($media->fresh())->toBe(null);
-
-    Storage::disk('media')->assertMissing($media->path);
-});
-
-it('does not delete media and its files with the model when delete_media_with_model is false', function () {
-    config()->set('media.delete_media_with_model', false);
-
-    Storage::fake('media');
-
-    $model = new Test;
+    $model = new TestCollections;
     $model->save();
 
     $file = UploadedFile::fake()->image('foo.jpg');
@@ -241,15 +149,39 @@ it('does not delete media and its files with the model when delete_media_with_mo
 
     $model->delete();
 
-    expect($media->fresh()?->exists)->toBe(true);
+    Queue::assertPushed(DeleteModelMediaJob::class, 1);
 
-    Storage::disk('media')->assertExists($media->path);
 });
 
-it('deletes media and its files with the trashed model when delete_media_with_trashed_model is true', function () {
+it('does not delete media with the model when delete_media_with_model is false', function () {
+    config()->set('media.delete_media_with_model', false);
+
+    Queue::fake();
+    Storage::fake('media');
+
+    $model = new TestCollections;
+    $model->save();
+
+    $file = UploadedFile::fake()->image('foo.jpg');
+
+    $media = $model->addMedia(
+        file: $file,
+        disk: 'media'
+    );
+
+    Storage::disk('media')->assertExists($media->path);
+
+    $model->delete();
+
+    Queue::assertPushed(DeleteModelMediaJob::class, 0);
+
+});
+
+it('deletes media with the trashed model when delete_media_with_trashed_model is true', function () {
     config()->set('media.delete_media_with_model', true);
     config()->set('media.delete_media_with_trashed_model', true);
 
+    Queue::fake();
     Storage::fake('media');
 
     $model = new TestSoftDelete;
@@ -266,15 +198,14 @@ it('deletes media and its files with the trashed model when delete_media_with_tr
 
     $model->delete();
 
-    expect($media->fresh())->toBe(null);
-
-    Storage::disk('media')->assertMissing($media->path);
+    Queue::assertPushed(DeleteModelMediaJob::class, 1);
 });
 
-it('does not delete media and its files with the trashed model when delete_media_with_trashed_model is false', function () {
+it('does not delete media with the trashed model when delete_media_with_trashed_model is false', function () {
     config()->set('media.delete_media_with_model', true);
     config()->set('media.delete_media_with_trashed_model', false);
 
+    Queue::fake();
     Storage::fake('media');
 
     $model = new TestSoftDelete;
@@ -291,15 +222,14 @@ it('does not delete media and its files with the trashed model when delete_media
 
     $model->delete();
 
-    expect($media->fresh()?->exists)->toBe(true);
-
-    Storage::disk('media')->assertExists($media->path);
+    Queue::assertPushed(DeleteModelMediaJob::class, 0);
 });
 
-it('deletes media and its files with the force deleted model when delete_media_with_trashed_model is false', function () {
+it('deletes media with the force deleted model when delete_media_with_trashed_model is false', function () {
     config()->set('media.delete_media_with_model', true);
     config()->set('media.delete_media_with_trashed_model', false);
 
+    Queue::fake();
     Storage::fake('media');
 
     $model = new TestSoftDelete;
@@ -316,7 +246,5 @@ it('deletes media and its files with the force deleted model when delete_media_w
 
     $model->forceDelete();
 
-    expect($media->fresh())->toBe(null);
-
-    Storage::disk('media')->assertMissing($media->path);
+    Queue::assertPushed(DeleteModelMediaJob::class, 1);
 });

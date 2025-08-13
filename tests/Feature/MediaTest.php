@@ -6,7 +6,7 @@ use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
-use Elegantly\Media\Tests\Models\Test;
+use Elegantly\Media\Tests\Models\TestConversions;
 use Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter;
 use Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter;
 use FFMpeg\Coordinate\Dimension;
@@ -190,27 +190,29 @@ it('stores a conversion file', function () {
 it('retrieves conversions definitions from the associated model', function () {
 
     $media = Media::factory()->make([
-        'collection_name' => 'conversions',
+        'collection_name' => 'multiple',
     ]);
-    $media->model()->associate(new Test);
+
+    $media->model()->associate(new TestConversions);
 
     $definitions = $media->getConversionsDefinitions();
 
-    expect($definitions)->toHaveLength(3);
-    expect($definitions['poster'])->toBeInstanceOf(MediaConversionDefinition::class);
-    expect($definitions['small'])->toBeInstanceOf(MediaConversionDefinition::class);
-    expect($definitions['delayed'])->toBeInstanceOf(MediaConversionDefinition::class);
+    expect($definitions)->toHaveLength(2);
+    expect($definitions['foo'])->toBeInstanceOf(MediaConversionDefinition::class);
+    expect($definitions['bar'])->toBeInstanceOf(MediaConversionDefinition::class);
+    expect($definitions['random'] ?? null)->toBe(null);
 
 });
 
 it('retrieves a conversion definition from the associated model', function () {
     $media = Media::factory()->make([
-        'collection_name' => 'conversions',
+        'collection_name' => 'simple',
     ]);
-    $media->model()->associate(new Test);
 
-    expect($media->getConversionDefinition('poster'))->not->toBe(null);
+    $media->model()->associate(new TestConversions);
+
     expect($media->getConversionDefinition('small'))->not->toBe(null);
+    expect($media->getConversionDefinition('random'))->toBe(null);
 });
 
 it('deletes old conversion files when adding the same conversion', function () {

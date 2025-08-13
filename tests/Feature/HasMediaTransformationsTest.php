@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Elegantly\Media\Tests\Models\Test;
+use Elegantly\Media\Tests\Models\TestTransformations;
 use Illuminate\Support\Facades\Storage;
 
-it('perform media transformations before storing files', function () {
+it('performs media transformations before storing files', function () {
     Storage::fake('media');
 
-    $model = new Test;
+    $model = new TestTransformations;
     $model->save();
 
     $original = $this->getTestFile('images/800x900.png');

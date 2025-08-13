@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Converters;
 
+use Elegantly\Media\Events\MediaConverterExecutedEvent;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -63,8 +64,11 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
         if (str_contains($this->conversion, '.')) {
 
+            $parentConversion = str($this->conversion)->beforeLast('.')->value();
+
             $parent = $this->media->getOrExecuteConversion(
-                str($this->conversion)->beforeLast('.')->value()
+                $parentConversion,
+                withChildren: false
             );
 
             /**
@@ -73,6 +77,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             if ($parent === null) {
                 return null;
             }
+
         } else {
             $parent = null;
         }
@@ -87,7 +92,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             return null;
         }
 
-        $value = TemporaryDirectory::callback(function ($temporaryDirectory) use ($parent) {
+        $mediaConversion = TemporaryDirectory::callback(function ($temporaryDirectory) use ($parent) {
 
             $storage = TemporaryDirectory::storage($temporaryDirectory);
 
@@ -101,6 +106,16 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             return $this->convert($this->media, $parent, $copy, $storage, $temporaryDirectory);
         });
 
-        return $value;
+        if ($this->withChildren) {
+            $this->media->generateConversions(
+                parent: $mediaConversion,
+                filter: fn ($definition) => $definition->immediate,
+                force: false,
+            );
+        }
+
+        event(new MediaConverterExecutedEvent($this));
+
+        return $mediaConversion;
     }
 }

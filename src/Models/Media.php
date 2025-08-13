@@ -281,6 +281,7 @@ class Media extends Model
     public function executeConversion(
         string $conversion,
         bool $force = true,
+        bool $withChildren = true,
     ): ?MediaConversion {
 
         if (
@@ -290,25 +291,28 @@ class Media extends Model
             return null;
         }
 
-        dump('executeConversion: '.$conversion);
-
         if ($definition = $this->getConversionDefinition($conversion)) {
 
             $converter = ($definition->converter)($this);
 
-            return $converter->conversion($conversion)->handle();
+            return $converter
+                ->conversion($conversion)
+                ->withChildren($withChildren)
+                ->handle();
         }
 
         return null;
     }
 
-    public function getOrExecuteConversion(string $name): ?MediaConversion
-    {
+    public function getOrExecuteConversion(
+        string $name,
+        bool $withChildren = true,
+    ): ?MediaConversion {
         if ($conversion = $this->getConversion($name)) {
             return $conversion;
         }
 
-        return $this->executeConversion($name);
+        return $this->executeConversion($name, withChildren: $withChildren);
     }
 
     /**
@@ -362,13 +366,8 @@ class Media extends Model
             ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
     }
 
-    /**
-     * Save a conversion and dispatch children conversions
-     */
-    public function replaceConversion(
-        MediaConversion $conversion,
-        bool $regenerateChildren = true
-    ): MediaConversion {
+    public function replaceConversion(MediaConversion $conversion): MediaConversion
+    {
 
         $existingConversion = $this->getConversion($conversion->conversion_name);
 
@@ -389,12 +388,6 @@ class Media extends Model
                 $this->conversions->except([$existingConversion->id])
             );
         }
-
-        $this->generateConversions(
-            parent: $conversion,
-            filter: fn ($definition) => $definition->immediate,
-            force: $regenerateChildren,
-        );
 
         return $conversion;
     }
@@ -419,8 +412,6 @@ class Media extends Model
         if ($parent && ! str_contains($conversionName, '.')) {
             $conversionName = "{$parent->conversion_name}.{$conversionName}";
         }
-
-        dump('addConversion: '.$conversionName);
 
         /**
          * If the conversion already exists, we are going to overwrite it
@@ -470,12 +461,6 @@ class Media extends Model
             $this->conversions->push($conversion);
         }
 
-        $this->generateConversions(
-            parent: $conversion,
-            filter: fn ($definition) => $definition->immediate,
-            force: $regenerateChildren,
-        );
-
         $definition = $this->getConversionDefinition($conversionName);
 
         if ($onCompleted = $definition?->onCompleted) {
@@ -500,7 +485,6 @@ class Media extends Model
         ?bool $queued = null,
         bool $force = false,
     ): static {
-        dump('generateConversions');
 
         if ($parent) {
             $definitions = $this->getChildrenConversionsDefinitions($parent->conversion_name);
