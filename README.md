@@ -15,7 +15,7 @@ It provides advanced features such as:
 -   🚀 Rich metadata automatically extracted
 -   🛠️ Highly flexible and customizable
 
-I developed this package with the highest degree of flexibility possible and I have been using it in production for nearly a year, handling terabytes of files monthly.
+I developed this package with the highest degree of flexibility possible and I have been using it in production for nearly two years, handling terabytes of files monthly.
 
 ## Table of Contents
 
@@ -56,7 +56,7 @@ I developed this package with the highest degree of flexibility possible and I h
 -   Laravel 11.0+
 -   `spatie/image` for image conversions
 -   `spatie/pdf-to-image` for PDF to image conversions
--   `ffmpeg` & `pbmedia/laravel-ffmpeg` for video/audio processing
+-   `ffmpeg` for video/audio processing
 
 ## Installation
 

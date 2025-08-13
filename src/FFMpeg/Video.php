@@ -4,8 +4,20 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\FFMpeg;
 
+use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
+
 class Video extends FFMpeg
 {
+    public function metadata(string $input): array
+    {
+        [$code, $output] = $this->ffprobe("-v error -select_streams v:0 -show_format -show_streams -print_format json {$input}");
+
+        $metadata = json_decode(implode('', $output), true);
+
+        // @phpstan-ignore-next-line
+        return is_array($metadata) ? $metadata : [];
+    }
+
     public function hasAudio(string $input): bool
     {
         [$code, $output] = $this->ffprobe("-v error -select_streams a -show_entries stream=index -of csv=p=0 {$input}");
@@ -18,6 +30,46 @@ class Video extends FFMpeg
         [$code, $output] = $this->ffprobe("-v error -select_streams v -show_entries stream=index -of csv=p=0 {$input}");
 
         return ! empty($output);
+    }
+
+    /**
+     * @return array{0: int, 1: int, 2: int}
+     */
+    public function dimensions(string $input): array
+    {
+        $metadata = $this->metadata($input);
+
+        if ($stream = $metadata['streams'][0] ?? null) {
+
+            // @phpstan-ignore-next-line
+            $width = (int) data_get($stream, 'width');
+            // @phpstan-ignore-next-line
+            $height = (int) data_get($stream, 'height');
+            // @phpstan-ignore-next-line
+            $rotation = (int) data_get($stream, 'side_data_list.0.rotation', 0);
+
+            return [$width, $height, $rotation];
+        }
+
+        throw VideoStreamNotFoundException::atPath($input);
+    }
+
+    /**
+     * @return float The duration in milliseconds
+     */
+    public function duration(string $input): float
+    {
+        $metadata = $this->metadata($input);
+
+        if ($stream = $metadata['streams'][0] ?? null) {
+
+            // @phpstan-ignore-next-line
+            $duration = (float) data_get($stream, 'duration');
+
+            return $duration * 1_000;
+        }
+
+        throw VideoStreamNotFoundException::atPath($input);
     }
 
     /**

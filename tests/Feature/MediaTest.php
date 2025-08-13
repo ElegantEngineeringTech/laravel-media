@@ -9,7 +9,6 @@ use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\Tests\Models\TestConversions;
 use Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter;
 use Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter;
-use FFMpeg\Coordinate\Dimension;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -33,7 +32,7 @@ it('stores an uploaded image', function () {
     expect($media->mime_type)->toBe('image/jpeg');
     expect($media->width)->toBe(16);
     expect($media->height)->toBe(9);
-    expect($media->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($media->aspect_ratio)->toBe(16 / 9);
     expect($media->duration)->toBe(null);
     expect($media->size)->toBe(695);
 
@@ -62,7 +61,7 @@ it('stores an uploaded image using a prefixed path', function () {
     expect($media->mime_type)->toBe('image/jpeg');
     expect($media->width)->toBe(16);
     expect($media->height)->toBe(9);
-    expect($media->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($media->aspect_ratio)->toBe(16 / 9);
     expect($media->duration)->toBe(null);
     expect($media->size)->toBe(695);
 
@@ -90,7 +89,7 @@ it('stores an uploaded image with a custom name', function () {
     expect($media->mime_type)->toBe('image/jpeg');
     expect($media->width)->toBe(16);
     expect($media->height)->toBe(9);
-    expect($media->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($media->aspect_ratio)->toBe(16 / 9);
     expect($media->duration)->toBe(null);
     expect($media->size)->toBe(695);
 
@@ -176,7 +175,7 @@ it('stores a conversion file', function () {
     expect($conversion->mime_type)->toBe('image/jpeg');
     expect($conversion->width)->toBe(16);
     expect($conversion->height)->toBe(9);
-    expect($conversion->aspect_ratio)->toBe((new Dimension(16, 9))->getRatio(false)->getValue());
+    expect($conversion->aspect_ratio)->toBe(16 / 9);
     expect($conversion->duration)->toBe(null);
     expect($conversion->size)->toBe(695);
 

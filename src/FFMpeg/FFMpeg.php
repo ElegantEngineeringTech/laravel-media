@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\FFMpeg;
 
+use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -49,7 +50,10 @@ class FFMpeg
     }
 
     /**
-     * @return array<array-key, mixed>
+     * @return array{
+     *  streams: array<int, mixed>,
+     *  format: array<string, mixed>
+     * }
      */
     public function metadata(string $input): array
     {
@@ -57,6 +61,7 @@ class FFMpeg
 
         $metadata = json_decode(implode('', $output), true);
 
+        // @phpstan-ignore-next-line
         return is_array($metadata) ? $metadata : [];
     }
 
@@ -83,7 +88,7 @@ class FFMpeg
         exec("{$command} 2>&1", $output, $code);
 
         if ($throw && $code !== 0) {
-            throw new Exception(
+            throw new FFMpegException(
                 "Error Executing ffmpeg: {$command}",
                 500,
                 new Exception(implode("\n", $output), $code)

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Helpers;
 
-use FFMpeg\Coordinate\AspectRatio;
-use FFMpeg\Coordinate\Dimension;
+use Elegantly\Media\Helpers\Contracts\HasDimension;
 use Spatie\Image\Image as SpatieImage;
 
 class Image implements HasDimension
@@ -18,10 +17,5 @@ class Image implements HasDimension
             width: $file->getWidth(),
             height: $file->getHeight(),
         );
-    }
-
-    public static function ratio(string $path, bool $forceStandards = true): AspectRatio
-    {
-        return static::dimension($path)->getRatio($forceStandards);
     }
 }

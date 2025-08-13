@@ -137,6 +137,8 @@ trait InteractWithFiles
 
         $name = File::sanitizeFilename($name);
 
+        $pathname = $file->getPathname();
+
         $fileName = $extension ? "{$name}.{$extension}" : $name;
 
         $path = $this->getDisk()?->putFileAs(
@@ -153,28 +155,19 @@ trait InteractWithFiles
         $this->mime_type = File::mimeType($file);
         $this->size = $file->getSize();
 
-        try {
-            $dimension = File::dimension($file->getPathname());
-            $this->height = $dimension?->getHeight();
-            $this->width = $dimension?->getWidth();
-            $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
-        } catch (\Throwable $th) {
-            $this->height = null;
-            $this->width = null;
-            $this->aspect_ratio = null;
+        if ($dimension = File::dimension($pathname)) {
+            $this->height = (int) $dimension->height;
+            $this->width = (int) $dimension->width;
+            $this->aspect_ratio = $dimension->getAspectRatio()->value;
         }
 
         try {
-            $this->type = File::type($file->getPathname());
+            $this->type = File::type($pathname);
         } catch (\Throwable $th) {
             $this->type = MediaType::Other;
         }
 
-        try {
-            $this->duration = File::duration($file->getPathname());
-        } catch (\Throwable $th) {
-            $this->duration = null;
-        }
+        $this->duration = File::duration($pathname);
 
         return $path;
     }

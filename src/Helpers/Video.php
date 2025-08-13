@@ -4,70 +4,47 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Helpers;
 
-use FFMpeg\Coordinate\AspectRatio;
-use FFMpeg\Coordinate\Dimension;
-use ProtoneMedia\LaravelFFMpeg\FFMpeg\FFProbe;
-use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
+use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
+use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Helpers\Contracts\HasDimension;
+use Elegantly\Media\Helpers\Contracts\HasDuration;
 
-class Video implements HasDimension
+class Video implements HasDimension, HasDuration
 {
     public static function dimension(string $path): ?Dimension
     {
-        $ffprobe = FFProbe::create([
-            'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
-            'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
-        ]);
-
-        $stream = $ffprobe
-            ->streams($path)
-            ->videos()
-            ->first();
-
-        if (! $stream) {
+        try {
+            [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
+        } catch (FFMpegException $th) {
             return null;
         }
 
-        $dimension = $stream->getDimensions();
-
-        /** @var int */
-        $rotation = data_get($stream->get('side_data_list'), '0.rotation', 0);
-
         if ($rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
-            return new Dimension($dimension->getHeight(), $dimension->getWidth());
+            return new Dimension($height, $width);
         }
 
-        return $dimension;
+        return new Dimension($width, $height);
     }
 
     public static function rotation(string $path): ?int
     {
-        $ffprobe = FFProbe::create([
-            'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
-            'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
-        ]);
-
-        $stream = $ffprobe
-            ->streams($path)
-            ->videos()
-            ->first();
-
-        if (! $stream) {
+        try {
+            [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
+        } catch (FFMpegException $th) {
             return null;
         }
-
-        /** @var int */
-        $rotation = data_get($stream->get('side_data_list'), '0.rotation', 0);
 
         return $rotation;
     }
 
-    public static function ratio(string $path, bool $forceStandards = true): ?AspectRatio
+    public static function duration(string $path): ?float
     {
-        return static::dimension($path)?->getRatio($forceStandards);
-    }
+        try {
+            $duration = FFMpeg::make()->video()->duration($path);
+        } catch (FFMpegException $th) {
+            return null;
+        }
 
-    public static function duration(string $path): float
-    {
-        return FFMpeg::open($path)->getDurationInMiliseconds();
+        return $duration;
     }
 }
