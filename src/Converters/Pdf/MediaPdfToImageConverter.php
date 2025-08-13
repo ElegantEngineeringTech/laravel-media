@@ -22,7 +22,7 @@ class MediaPdfToImageConverter extends MediaConverter
         public int $page = 1,
         public ?int $width = null,
         public ?int $height = null,
-        public Fit $fit = Fit::Contain,
+        public Fit $fit = Fit::Max,
         public ?OptimizerChain $optimizerChain = null,
     ) {}
 

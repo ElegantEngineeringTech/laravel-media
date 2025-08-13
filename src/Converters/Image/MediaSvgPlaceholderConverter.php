@@ -5,24 +5,23 @@ declare(strict_types=1);
 namespace Elegantly\Media\Converters\Image;
 
 use Elegantly\Media\Converters\MediaConverter;
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use Exception;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
-use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaImageConverter extends MediaConverter
+class MediaSvgPlaceholderConverter extends MediaConverter
 {
     public function __construct(
         public readonly Media $media,
-        public string $filename,
-        public ?int $width = null,
-        public ?int $height = null,
-        public Fit $fit = Fit::Max,
-        public ?OptimizerChain $optimizerChain = null,
+        public int $blur = 50,
+        public int $width = 20,
+        public ?int $height = 20,
     ) {}
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
@@ -45,18 +44,26 @@ class MediaImageConverter extends MediaConverter
         }
 
         $input = $filesystem->path($file);
-        $output = $filesystem->path($this->filename);
+        $output = $filesystem->path('tiny.jpg');
 
         Image::load($input)
-            ->fit($this->fit, $this->width, $this->height)
-            ->optimize($this->optimizerChain)
+            ->fit(Fit::Max, $this->width, $this->height)
+            ->blur($this->blur)
+            ->optimize()
             ->save($output);
 
-        return $media->addConversion(
-            file: $output,
-            conversionName: $this->conversion,
-            parent: $parent,
-        );
+        $content = file_get_contents($output);
+
+        if ($content === false) {
+            throw new Exception("Can't get file content at {$output}");
+        }
+
+        return $media->replaceConversion(new MediaConversion([
+            'state' => MediaConversionState::Succeeded,
+            'conversion_name' => $this->conversion,
+            'content' => base64_encode($content),
+            'size' => filesize($output),
+        ]));
 
     }
 }

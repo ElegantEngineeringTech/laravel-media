@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
  * @property ?string $name
  * @property ?string $file_name
  * @property ?string $mime_type
- * @property ?int $size in octets
+ * @property ?int $size in bytes
  * @property ?int $height
  * @property ?int $width
  * @property ?float $aspect_ratio
