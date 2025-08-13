@@ -4,20 +4,15 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Helpers;
 
-use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Helpers\Contracts\HasDimension;
 use Elegantly\Media\Helpers\Contracts\HasDuration;
 
 class Video implements HasDimension, HasDuration
 {
-    public static function dimension(string $path): ?Dimension
+    public static function dimension(string $path): Dimension
     {
-        try {
-            [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
-        } catch (FFMpegException $th) {
-            return null;
-        }
+        [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
 
         if ($rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
             return new Dimension($height, $width);
@@ -28,22 +23,14 @@ class Video implements HasDimension, HasDuration
 
     public static function rotation(string $path): ?int
     {
-        try {
-            [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
-        } catch (FFMpegException $th) {
-            return null;
-        }
+        [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
 
         return $rotation;
     }
 
     public static function duration(string $path): ?float
     {
-        try {
-            $duration = FFMpeg::make()->video()->duration($path);
-        } catch (FFMpegException $th) {
-            return null;
-        }
+        $duration = FFMpeg::make()->video()->duration($path);
 
         return $duration;
     }

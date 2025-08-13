@@ -8,6 +8,7 @@ use Carbon\CarbonInterval;
 use Closure;
 use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -155,10 +156,16 @@ trait InteractWithFiles
         $this->mime_type = File::mimeType($file);
         $this->size = $file->getSize();
 
-        if ($dimension = File::dimension($pathname)) {
-            $this->height = (int) $dimension->height;
-            $this->width = (int) $dimension->width;
-            $this->aspect_ratio = $dimension->getAspectRatio()->value;
+        try {
+            if ($dimension = File::dimension($pathname)) {
+                $this->height = (int) $dimension->height;
+                $this->width = (int) $dimension->width;
+                $this->aspect_ratio = $dimension->getAspectRatio()->value;
+            }
+
+            $this->duration = File::duration($pathname);
+        } catch (FFMpegException $th) {
+            report($th);
         }
 
         try {
@@ -166,8 +173,6 @@ trait InteractWithFiles
         } catch (\Throwable $th) {
             $this->type = MediaType::Other;
         }
-
-        $this->duration = File::duration($pathname);
 
         return $path;
     }
