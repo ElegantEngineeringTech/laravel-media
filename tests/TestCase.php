@@ -41,8 +41,11 @@ class TestCase extends Orchestra
     {
         $app['config']->set('database.default', 'testing');
 
-        $app['config']->set('media.ffmpeg.ffmpeg_binaries', '/opt/homebrew/bin/ffmpeg');
-        $app['config']->set('media.ffprobe.ffprobe_binaries', '/opt/homebrew/bin/ffprobe');
+        if (PHP_OS_FAMILY === 'Darwin') {
+            $app['config']->set('media.ffmpeg.ffmpeg_binaries', '/opt/homebrew/bin/ffmpeg');
+            $app['config']->set('media.ffprobe.ffprobe_binaries', '/opt/homebrew/bin/ffprobe');
+        }
+
     }
 
     protected function defineDatabaseMigrations()
