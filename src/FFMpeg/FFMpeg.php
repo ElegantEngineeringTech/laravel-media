@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
-use Exception;
 use Illuminate\Support\Facades\Log;
 
 class FFMpeg
@@ -88,11 +87,10 @@ class FFMpeg
         exec("{$command} 2>&1", $output, $code);
 
         if ($throw && $code !== 0) {
-            throw new FFMpegException(
-                "Error Executing ffmpeg: {$command}",
-                500,
-                new Exception(implode("\n", $output), $code)
-            );
+            throw new FFMpegException(implode("\n", [
+                "Error {$code} Executing ffmpeg: {$command}",
+                ...$output,
+            ]), 500);
         }
 
         return [$code, $output];
