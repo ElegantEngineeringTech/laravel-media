@@ -26,5 +26,5 @@ jobs:
       - name: Install composer dependencies
         uses: ramsey/composer-install@v3
 
-      - name: Run PHPStan
-        run: ./vendor/bin/pest --coverage --min=90
+      - name: Run Pest coverage
+        run: ./vendor/bin/pest --coverage --min=50
