@@ -171,4 +171,17 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
     {
         $this->failConversion($exception);
     }
+
+    /**
+     * @return array<int, string>
+     */
+    public function tags(): array
+    {
+        return [
+            'media',
+            "conversion:{$this->conversion}",
+            "{$this->media->model_type}:{$this->media->model_id}",
+            get_class($this->media).":{$this->media->id}",
+        ];
+    }
 }
