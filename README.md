@@ -270,8 +270,8 @@ Add media to your model, using the `addMedia` method, from various sources:
 
 -   an url
 -   a resource or stream
--   a \Illuminate\Http\UploadedFile instance
--   a \Illuminate\Http\File instance
+-   a `\Illuminate\Http\UploadedFile` instance
+-   a `\Illuminate\Http\File` instance
 
 #### From a Controller
 
