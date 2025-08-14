@@ -13,8 +13,8 @@ class MediaConversionDefinition
 {
     /**
      * @param  (Closure(Media $media): MediaConverter)  $converter
-     * @param  null|bool|(Closure(Media $media, ?MediaConversion $parent): null|bool)  $when
      * @param  null|(Closure(?MediaConversion $conversion, Media $media, ?MediaConversion $parent): void)  $onCompleted
+     * @param  null|bool|Closure(Media $media, ?MediaConversion $parent):bool  $when
      * @param  MediaConversionDefinition[]  $conversions
      */
     public function __construct(
