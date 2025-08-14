@@ -19,7 +19,7 @@ it('gets the correct media collection', function () {
     expect($collection->name)->toBe('single');
 });
 
-it('gets the fallback value when no media extist', function () {
+it('gets the fallback value when no media exist', function () {
     $model = new TestCollections;
 
     expect($model->getFirstMediaUrl('fallback'))->toBe('fallback-value');
