@@ -8,6 +8,7 @@ use Closure;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use Illuminate\Support\Arr;
 
 class MediaConversionDefinition
 {
@@ -29,7 +30,7 @@ class MediaConversionDefinition
         public array $conversions = [],
     ) {
         /** @var array<string, MediaConversionDefinition> $conversions */
-        $conversions = collect($conversions)->keyBy('name')->all();
+        $conversions = Arr::keyBy($conversions, 'name');
         $this->conversions = $conversions;
     }
 
