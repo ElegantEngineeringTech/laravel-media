@@ -276,7 +276,7 @@ trait InteractWithFiles
 
             if (
                 $result &&
-                $clone->path !== $path
+                $clone->path !== $this->path
             ) {
                 $clone->deleteFile();
             }
