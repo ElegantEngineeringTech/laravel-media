@@ -150,7 +150,11 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             return $this->convert($this->media, $parent, $copy, $storage, $temporaryDirectory);
         });
 
-        if ($mediaConversion && $this->withChildren) {
+        if (
+            $mediaConversion &&
+            $mediaConversion->state === MediaConversionState::Succeeded &&
+            $this->withChildren
+        ) {
             $this->media->generateConversions(
                 parent: $mediaConversion,
                 filter: fn ($definition) => $definition->immediate,
