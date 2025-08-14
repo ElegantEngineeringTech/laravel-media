@@ -73,7 +73,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
                 'media_id' => $this->media->id,
                 'state' => MediaConversionState::Failed,
                 'state_set_at' => now(),
-                'content' => $exception ? ($exception->getCode().': '.$exception->getMessage()) : null,
+                'contents' => $exception ? ($exception->getCode().': '.$exception->getMessage()) : null,
             ]));
 
         }
