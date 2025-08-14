@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Elegantly\Media\Tests\Models;
 
 use Elegantly\Media\Concerns\HasMedia;
-use Elegantly\Media\Definitions\MediaConversionPdfPreview;
+use Elegantly\Media\Converters\Pdf\MediaPdfToImageConverter;
 use Elegantly\Media\MediaCollection;
+use Elegantly\Media\MediaConversionDefinition;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,10 +25,14 @@ class TestPdf extends Model
             new MediaCollection(
                 name: 'files',
                 conversions: [
-                    new MediaConversionPdfPreview(
+                    new MediaConversionDefinition(
                         name: 'preview',
                         queued: false,
-                        width: 100,
+                        converter: fn ($media) => new MediaPdfToImageConverter(
+                            media: $media,
+                            filename: "{$media->name}.jpg",
+                            width: 100,
+                        )
                     ),
                 ]
             ),

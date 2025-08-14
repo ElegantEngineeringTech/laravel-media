@@ -9,13 +9,13 @@ use Closure;
 use Elegantly\Media\Concerns\InteractWithFiles;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\Database\Factories\MediaFactory;
-use Elegantly\Media\Definitions\MediaConversionDefinition;
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
-use Elegantly\Media\Jobs\MediaConversionJob;
+use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -247,7 +247,6 @@ class Media extends Model
 
     /**
      * Dispatch any conversion while generating missing parents.
-     * Will check for 'shouldExecute' definition method.
      */
     public function dispatchConversion(
         string $conversion,
@@ -255,21 +254,22 @@ class Media extends Model
     ): ?PendingDispatch {
         if (
             $force === false &&
-            $this->hasConversion($conversion)
+            $this->hasConversion($conversion, MediaConversionState::Succeeded)
         ) {
             return null;
         }
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            $job = new MediaConversionJob(
-                media: $this,
-                conversion: $conversion
-            );
+            $converter = ($definition->converter)($this);
 
-            return dispatch($job)
-                ->onQueue($definition->queue ?? $job->queue)
-                ->delay($definition->delay ?? $job->delay); // @phpstan-ignore-line
+            $job = dispatch($converter->conversion($conversion));
+
+            if ($queue = $definition->queue) {
+                $job->onQueue($queue);
+            }
+
+            return $job;
 
         }
 
@@ -278,54 +278,42 @@ class Media extends Model
 
     /**
      * Execute any conversion while generating missing parents.
-     * Will check for 'shouldExecute' definition method.
      */
     public function executeConversion(
         string $conversion,
         bool $force = true,
+        bool $withChildren = true,
     ): ?MediaConversion {
 
         if (
             $force === false &&
-            $this->hasConversion($conversion)
+            $this->hasConversion($conversion, MediaConversionState::Succeeded)
         ) {
             return null;
         }
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            if (str_contains($conversion, '.')) {
-                $parent = $this->getOrExecuteConversion(
-                    str($conversion)->beforeLast('.')->value()
-                );
-                /**
-                 * Parent conversion can't be done, so children can't be executed either.
-                 */
-                if (! $parent) {
-                    return null;
-                }
-            } else {
-                $parent = null;
-            }
+            $converter = ($definition->converter)($this);
 
-            if (! $definition->shouldExecute($this, $parent)) {
-                return null;
-            }
-
-            return $definition->execute($this, $parent);
-
+            return $converter
+                ->conversion($conversion)
+                ->withChildren($withChildren)
+                ->handle();
         }
 
         return null;
     }
 
-    public function getOrExecuteConversion(string $name): ?MediaConversion
-    {
-        if ($conversion = $this->getConversion($name)) {
+    public function getOrExecuteConversion(
+        string $name,
+        bool $withChildren = true,
+    ): ?MediaConversion {
+        if ($conversion = $this->getConversion($name, MediaConversionState::Succeeded)) {
             return $conversion;
         }
 
-        return $this->executeConversion($name);
+        return $this->executeConversion($name, withChildren: $withChildren);
     }
 
     /**
@@ -333,19 +321,29 @@ class Media extends Model
      */
     public function getConversion(
         string $name,
+        ?MediaConversionState $state = null,
         null|string|array $fallback = null
     ): ?MediaConversion {
-        if ($conversion = $this->conversions->firstWhere('conversion_name', $name)) {
+        $conversion = $this->conversions->firstWhere(function ($mediaConversion) use ($name, $state) {
+            if ($state && $mediaConversion->state !== $state) {
+                return false;
+            }
+
+            return $mediaConversion->conversion_name === $name;
+        });
+
+        if ($conversion) {
             return $conversion;
         }
 
         if (is_string($fallback)) {
-            return $this->getConversion($fallback);
+            return $this->getConversion($fallback, $state);
         }
 
         if (is_array($fallback) && $firstFallback = array_shift($fallback)) {
             return $this->getConversion(
                 name: $firstFallback,
+                state: $state,
                 fallback: $fallback
             );
         }
@@ -353,9 +351,9 @@ class Media extends Model
         return null;
     }
 
-    public function hasConversion(string $name): bool
+    public function hasConversion(string $name, ?MediaConversionState $state = null): bool
     {
-        return (bool) $this->getConversion($name);
+        return (bool) $this->getConversion($name, $state);
     }
 
     public function getParentConversion(string $name): ?MediaConversion
@@ -379,13 +377,8 @@ class Media extends Model
             ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
     }
 
-    /**
-     * Save a conversion and dispatch children conversions
-     */
-    public function replaceConversion(
-        MediaConversion $conversion,
-        bool $regenerateChildren = true
-    ): MediaConversion {
+    public function replaceConversion(MediaConversion $conversion): MediaConversion
+    {
 
         $existingConversion = $this->getConversion($conversion->conversion_name);
 
@@ -407,12 +400,6 @@ class Media extends Model
             );
         }
 
-        $this->generateConversions(
-            parent: $conversion,
-            filter: fn ($definition) => $definition->immediate,
-            force: $regenerateChildren,
-        );
-
         return $conversion;
     }
 
@@ -430,7 +417,6 @@ class Media extends Model
         ?string $disk = null,
         bool $regenerateChildren = true
     ): MediaConversion {
-
         /**
          * Prefix name with parent if not already done
          */
@@ -453,12 +439,10 @@ class Media extends Model
 
         $conversion = $existingConversion ?? new $mediaConversionModel;
 
-        $conversion->fill([
-            'conversion_name' => $conversionName,
-            'media_id' => $this->id,
-            'state' => 'success',
-            'state_set_at' => now(),
-        ]);
+        $conversion->conversion_name = $conversionName;
+        $conversion->media_id = $this->id;
+        $conversion->state = MediaConversionState::Succeeded;
+        $conversion->state_set_at = now();
 
         $conversion->storeFile(
             file: $file,
@@ -486,11 +470,11 @@ class Media extends Model
             $this->conversions->push($conversion);
         }
 
-        $this->generateConversions(
-            parent: $conversion,
-            filter: fn ($definition) => $definition->immediate,
-            force: $regenerateChildren,
-        );
+        $definition = $this->getConversionDefinition($conversionName);
+
+        if ($onCompleted = $definition?->onCompleted) {
+            $onCompleted($conversion, $this, $parent);
+        }
 
         event(new MediaConversionAddedEvent($conversion));
 
@@ -510,6 +494,7 @@ class Media extends Model
         ?bool $queued = null,
         bool $force = false,
     ): static {
+
         if ($parent) {
             $definitions = $this->getChildrenConversionsDefinitions($parent->conversion_name);
         } else {
@@ -525,12 +510,18 @@ class Media extends Model
             $conversion = $parent ? "{$parent->conversion_name}.{$definition->name}" : $definition->name;
 
             if ($queued ?? $definition->queued) {
-                $this->dispatchConversion(
+
+                $job = $this->dispatchConversion(
                     conversion: $conversion,
                     force: $force,
                 );
 
+                if ($definition->delay !== null) {
+                    $job?->delay($definition->delay);
+                }
+
             } else {
+
                 // A failed conversion should not interrupt the process
                 try {
                     $this->executeConversion(
@@ -663,7 +654,7 @@ class Media extends Model
         $path = null;
 
         if ($conversion) {
-            $path = $this->getConversion($conversion)?->path;
+            $path = $this->getConversion($conversion, MediaConversionState::Succeeded)?->path;
         } elseif ($this->path) {
             $path = $this->path;
         }
@@ -704,7 +695,7 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion)?->getUrl(
+            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getUrl(
                 parameters: $parameters,
                 formatter: $formatter,
             );
@@ -768,7 +759,7 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion)?->getTemporaryUrl($expiration, $options);
+            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getTemporaryUrl($expiration, $options);
         } elseif ($this->path) {
             /** @var null|string $url */
             $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
@@ -814,7 +805,7 @@ class Media extends Model
         $width = null;
 
         if ($conversion) {
-            $width = $this->getConversion($conversion)?->width;
+            $width = $this->getConversion($conversion, MediaConversionState::Succeeded)?->width;
         } else {
             $width = $this->width;
         }
@@ -849,7 +840,7 @@ class Media extends Model
         $height = null;
 
         if ($conversion) {
-            $height = $this->getConversion($conversion)?->height;
+            $height = $this->getConversion($conversion, MediaConversionState::Succeeded)?->height;
         } else {
             $height = $this->height;
         }
@@ -884,7 +875,7 @@ class Media extends Model
         $name = null;
 
         if ($conversion) {
-            $name = $this->getConversion($conversion)?->name;
+            $name = $this->getConversion($conversion, MediaConversionState::Succeeded)?->name;
         } else {
             $name = $this->name;
         }
@@ -917,7 +908,7 @@ class Media extends Model
         $fileName = null;
 
         if ($conversion) {
-            $fileName = $this->getConversion($conversion)?->file_name;
+            $fileName = $this->getConversion($conversion, MediaConversionState::Succeeded)?->file_name;
         } else {
             $fileName = $this->file_name;
         }
@@ -950,7 +941,7 @@ class Media extends Model
         $size = null;
 
         if ($conversion) {
-            $size = $this->getConversion($conversion)?->size;
+            $size = $this->getConversion($conversion, MediaConversionState::Succeeded)?->size;
         } else {
             $size = $this->size;
         }
@@ -985,7 +976,7 @@ class Media extends Model
         $aspectRatio = null;
 
         if ($conversion) {
-            $aspectRatio = $this->getConversion($conversion)?->aspect_ratio;
+            $aspectRatio = $this->getConversion($conversion, MediaConversionState::Succeeded)?->aspect_ratio;
         } else {
             $aspectRatio = $this->aspect_ratio;
         }
@@ -1020,7 +1011,7 @@ class Media extends Model
         $mimeType = null;
 
         if ($conversion) {
-            $mimeType = $this->getConversion($conversion)?->mime_type;
+            $mimeType = $this->getConversion($conversion, MediaConversionState::Succeeded)?->mime_type;
         } else {
             $mimeType = $this->mime_type;
         }

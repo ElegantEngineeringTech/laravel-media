@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Elegantly\Media;
 
 use Closure;
-use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;

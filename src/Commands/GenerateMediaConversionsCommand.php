@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Commands;
 
-use Elegantly\Media\Definitions\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,30 +13,27 @@ use function Laravel\Prompts\confirm;
 
 class GenerateMediaConversionsCommand extends Command
 {
-    public $signature = 'media:generate-conversions {ids?*} {--force} {--immediate} {--conversions=*} {--collections=*} {--models=*}';
+    public $signature = 'media:generate-conversions 
+                        {ids?* : Media Ids}
+                        {--force : Replace existing conversions}
+                        {--immediate : Only generates immediate conversions}
+                        {--conversions=* : Conversions names}
+                        {--collections=* : Collection names}
+                        {--models=* : Models class}';
 
-    public $description = 'Generate all media conversions';
+    public $description = 'Generate media conversions';
 
     public function handle(): int
     {
         $ids = (array) $this->argument('ids');
-        $immediate = (bool) $this->option('immediate');
         $force = (bool) $this->option('force');
+        $immediate = (bool) $this->option('immediate');
         /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
         /** @var string[] $models */
         $models = (array) $this->option('models');
         /** @var string[] $collections */
         $collections = (array) $this->option('collections');
-
-        $filter = function (MediaConversionDefinition $definition) use ($immediate) {
-
-            if ($immediate) {
-                return true;
-            }
-
-            return $definition->immediate;
-        };
 
         /**
          * @var class-string<Media> $model
@@ -58,38 +54,19 @@ class GenerateMediaConversionsCommand extends Command
 
         $progress = new Progress('Dispatching Media conversions', $count);
 
-        $query->chunkById(5_000, function ($items) use ($progress, $force, $conversions, $filter) {
+        $query->chunkById(1_000, function ($media) use ($progress, $force, $immediate, $conversions) {
 
-            foreach ($items as $media) {
-                /** @var Media $media */
-                if (! empty($conversions)) {
+            foreach ($media as $medium) {
+
+                if ($conversions) {
                     foreach ($conversions as $conversion) {
-                        $media->dispatchConversion(
-                            conversion: $conversion,
-                            force: $force
-                        );
+                        $medium->dispatchConversion($conversion, $force);
                     }
                 } else {
-
-                    /**
-                     * Generate missing children conversions
-                     */
-                    $media->conversions->each(function ($conversion) use ($media, $force, $filter) {
-                        $media->generateConversions(
-                            parent: $conversion,
-                            queued: true,
-                            force: $force,
-                            filter: $filter,
-                        );
-                    });
-
-                    /**
-                     * Generate missing root conversions
-                     */
-                    $media->generateConversions(
+                    $medium->generateConversions(
+                        filter: fn ($definition) => $immediate ? $definition->immediate : true,
                         queued: true,
-                        force: $force,
-                        filter: $filter,
+                        force: $force
                     );
                 }
 

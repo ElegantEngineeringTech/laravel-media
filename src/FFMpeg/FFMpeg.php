@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\FFMpeg;
 
-use Exception;
+use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Illuminate\Support\Facades\Log;
 
 class FFMpeg
@@ -21,10 +21,10 @@ class FFMpeg
         ?string $logChannel = null,
     ) {
         // @phpstan-ignore-next-line
-        $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries') ?? config('laravel-ffmpeg.ffmpeg.binaries');
+        $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries');
 
         // @phpstan-ignore-next-line
-        $this->ffprobe = $ffprobe ?? config('media.ffprobe.ffprobe_binaries') ?? config('laravel-ffmpeg.ffprobe.binaries');
+        $this->ffprobe = $ffprobe ?? config('media.ffmpeg.ffprobe_binaries');
 
         // @phpstan-ignore-next-line
         $this->logChannel = $logChannel ?: config('media.ffmpeg.log_channel');
@@ -49,7 +49,10 @@ class FFMpeg
     }
 
     /**
-     * @return array<array-key, mixed>
+     * @return array{
+     *  streams: array<int, mixed>,
+     *  format: array<string, mixed>
+     * }
      */
     public function metadata(string $input): array
     {
@@ -57,6 +60,7 @@ class FFMpeg
 
         $metadata = json_decode(implode('', $output), true);
 
+        // @phpstan-ignore-next-line
         return is_array($metadata) ? $metadata : [];
     }
 
@@ -83,11 +87,10 @@ class FFMpeg
         exec("{$command} 2>&1", $output, $code);
 
         if ($throw && $code !== 0) {
-            throw new Exception(
-                "Error Executing ffmpeg: {$command}",
-                500,
-                new Exception(implode("\n", $output), $code)
-            );
+            throw new FFMpegException(implode("\n", [
+                "Error {$code} Executing ffmpeg: {$command}",
+                ...$output,
+            ]), 500);
         }
 
         return [$code, $output];

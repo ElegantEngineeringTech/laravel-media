@@ -2,6 +2,7 @@
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Coverage Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/coverage.yml?branch=main&label=coverage&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3Acoverage+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
 
@@ -15,7 +16,7 @@ It provides advanced features such as:
 -   🚀 Rich metadata automatically extracted
 -   🛠️ Highly flexible and customizable
 
-I developed this package with the highest degree of flexibility possible and I have been using it in production for nearly a year, handling terabytes of files monthly.
+I developed this package with the highest degree of flexibility possible and I have been using it in production for nearly two years, handling terabytes of files monthly.
 
 ## Table of Contents
 
@@ -56,7 +57,7 @@ I developed this package with the highest degree of flexibility possible and I h
 -   Laravel 11.0+
 -   `spatie/image` for image conversions
 -   `spatie/pdf-to-image` for PDF to image conversions
--   `ffmpeg` & `pbmedia/laravel-ffmpeg` for video/audio processing
+-   `ffmpeg` for video/audio processing
 
 ## Installation
 
@@ -199,14 +200,14 @@ class Channel extends Model implements InteractWithMedia
 
 Media conversions create different variants of your media files. For example, a 720p version of a 1440p video or a WebP or PNG version of an image are common types of media conversions. Interestingly, a media conversion can also have its own additional conversions.
 
-This package provides common converions to simplify your work:
+This package provides common converter to simplify your work:
 
--   `MediaConversionImage`: This conversion optimizes, resizes, or converts any image using `spatie/image`.
--   `MediaConversionVideo`: This conversion optimizes, resizes, or converts any video using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionAudio`: This conversion optimizes, resizes, converts or extract any audio using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionPoster`: This conversion extracts a poster using `pbmedia/laravel-ffmpeg`.
--   `MediaConversionPdfPreview`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
--   `MediaConversionSpritesheet`: This conversion extracts a spritesheet from the video using `pbmedia/laravel-ffmpeg`.
+-   `MediaImageConverter`: This converter optimizes, resizes, or converts any image using `spatie/image`.
+-   `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video to mp4 video using `ffmpeg`.
+-   `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
+-   `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
+-   `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
+-   `MediaPdfToImageConverter`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
 
 ```php
 namespace App\Models;
@@ -215,7 +216,10 @@ use Illuminate\Database\Eloquent\Model;
 use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\MediaCollection;
-use Elegantly\Media\Definitions\MediaConversionImage;
+use Elegantly\Media\MediaConversionDefinition;
+use Elegantly\Media\Converters\MediaMp4Converter;
+use Elegantly\Media\Converters\MediaFrameConverter;
+use Elegantly\Media\Converters\MediaImageConverter;
 
 class Channel extends Model implements InteractWithMedia
 {
@@ -227,18 +231,31 @@ class Channel extends Model implements InteractWithMedia
             new MediaCollection(
                 name: 'videos',
                 conversions: [
-                    new MediaConversionPoster(
+                    new MediaConversionDefinition(
                         name: 'poster',
+                        converter: fn ($media) => new MediaFrameConverter(
+                            media: $media,
+                            filename: "{$media->name}-thumbnail.jpg",
+                            timecode: 0,
+                        ),
                         conversions: [
-                            new MediaConversionImage(
+                            new MediaConversionDefinition(
                                 name: '360p',
-                                width: 360
+                                converter: fn ($media) => new MediaImageConverter(
+                                    media: $media,
+                                    filename: "{$media->name}.jpg"
+                                    width: 360
+                                )
                             ),
                         ],
                     ),
-                    new MediaConversionVideo(
+                    new MediaConversionDefinition(
                         name: '720p',
-                        width: 720
+                        converter: fn ($media) => new MediaMp4Converter(
+                            media: $media,
+                            filename: "{$media->name}.mp4"
+                            width: 720
+                        )
                     ),
                 ]
             )
@@ -440,17 +457,25 @@ You can configure the strategy in the conversion definition using the `queued` a
 new MediaCollection(
     name: 'avatar',
     conversions: [
-        new MediaConversionImage(
-            name: '360',
-            width: 360,
+        new MediaConversionDefinition(
+            name: '360p',
             queued: true,  // (default) Dispatch as a background job
             queue: 'slow' // (optional) Specify a custom queue
+            converter: fn ($media) => new MediaImageConverter(
+                media: $media,
+                filename: "{$media->name}.jpg"
+                width: 360
+            )
         ),
-        new MediaConversionImage(
-            name: '180',
-            width: 180,
+        new MediaConversionDefinition(
+            name: '180p',
             queued: false,  // Generate the conversion synchronously
-        )
+            converter: fn ($media) => new MediaImageConverter(
+                media: $media,
+                filename: "{$media->name}.jpg"
+                width: 180
+            )
+        ),
     ]
 )
 ```
@@ -467,10 +492,18 @@ To achieve this, configure the conversion with the `immediate` parameter set to 
 new MediaCollection(
     name: 'avatar',
     conversions: [
+        new MediaConversionDefinition(
+            name: '360p',
+            immediate: false, // Conversion will not be generated at upload time
+            converter: fn ($media) => new MediaImageConverter(
+                media: $media,
+                filename: "{$media->name}.jpg"
+                width: 360
+            )
+        ),
         new MediaConversionImage(
             name: '360',
             width: 360,
-            immediate: false, // Conversion will not be generated at upload time
         )
     ]
 )
@@ -538,54 +571,70 @@ This allows you to hook into the conversion process and execute additional logic
 
 Conversions can be anything: a variant of a file, a transcription of a video, a completely new file, or even just a string.
 
-You can use built-in presets or define your own custom conversion. To create a custom conversion, use the `MediaConversionDefinition` class:
+You can use built-in presets or define your own custom converter. To create a custom converter, start by creating a new class extending the `MediaConverter` class:
 
 ```php
-namespace App\Models;
+namespace App\Media\Converters\Image;
 
-use Illuminate\Database\Eloquent\Model;
-use Elegantly\Media\Concerns\HasMedia;
-use Elegantly\Media\Contracts\InteractWithMedia;
-use Elegantly\Media\MediaCollection;
-use Elegantly\Media\Definitions\MediaConversionDefinition;
+use Elegantly\Media\Converters\MediaConverter;
+use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Models\Media;
+use Elegantly\Media\Models\MediaConversion;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Spatie\Image\Enums\Fit;
+use Spatie\Image\Image;
+use Spatie\ImageOptimizer\OptimizerChain;
+use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class Channel extends Model implements InteractWithMedia
+class MediaImageConverter extends MediaConverter
 {
-    use HasMedia;
+    public function __construct(
+        public readonly Media $media,
+        public string $filename,
+        public ?int $width = null,
+        public ?int $height = null,
+        public Fit $fit = Fit::Max,
+        public ?OptimizerChain $optimizerChain = null,
+    ) {}
 
-    public function registerMediaCollections(): array
+    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {
-        return [
-            new MediaCollection(
-                name: 'videos',
-                conversions: [
-                    // Using a custom conversion definition
-                    new MediaConversionDefinition(
-                        name: 'webp',
-                        when: fn($media, $parent) => ($parent ?? $media)->type === MediaType::Image,
-                        handle: function($media, $parent, $file, $filesystem, $temporaryDirectory) {
-                            $source = $parent ?? $media;
-                            $target = $filesystem->path("{$source->name}.webp");
+        $source = $parent ?? $media;
 
-                            Image::load($filesystem->path($file))
-                                ->optimize()
-                                ->save($target);
+        return $source->type === MediaType::Image;
+    }
 
-                            return $media->addConversion(
-                                file: $target,
-                                conversionName: $this->name,
-                                parent: $parent,
-                            );
-                        }
-                    ),
-                ]
-            ),
-        ];
+    public function convert(
+        Media $media,
+        ?MediaConversion $parent,
+        ?string $file,
+        Filesystem $filesystem,
+        SpatieTemporaryDirectory $temporaryDirectory
+    ): ?MediaConversion {
+
+        if (! $file) {
+            return null;
+        }
+
+        $input = $filesystem->path($file);
+        $output = $filesystem->path($this->filename);
+
+        Image::load($input)
+            ->fit($this->fit, $this->width, $this->height)
+            ->optimize($this->optimizerChain)
+            ->save($output);
+
+        return $media->addConversion(
+            file: $output,
+            conversionName: $this->conversion,
+            parent: $parent,
+        );
+
     }
 }
 ```
 
-The `handle` method of `MediaConversionDefinition` is where the logic for the conversion is implemented. It provides the following parameters:
+The `convert` method is where the logic for the conversion is implemented. It provides the following parameters:
 
 -   **`$media`**: The Media model.
 -   **`$parent`**: The MediaConversion model, if the conversion is nested.
@@ -593,9 +642,9 @@ The `handle` method of `MediaConversionDefinition` is where the logic for the co
 -   **`$filesystem`**: An instance of the local filesystem where the file copy is stored.
 -   **`$temporaryDirectory`**: An instance of `TemporaryDirectory` where the file copy is temporarily stored.
 
-You don’t need to worry about cleaning up the files, as the `$temporaryDirectory` will be deleted automatically when the process completes.
+You don’t need to worry about cleaning up the files, as the `$temporaryDirectory` will be deleted automatically when the process completes or fails.
 
-To finalize the conversion, ensure you save it by calling `$media->addConversion` or returning a `MediaConversion` instance at the end of the `handle` method.
+To finalize the conversion, ensure you save it by calling `$media->addConversion` or `$media->replaceConversion` at the end of the `handle` method.
 
 ### Manually Generate Conversions
 
@@ -638,6 +687,12 @@ Additionally, you can use an Artisan command to generate conversions with variou
 
 ```bash
 php artisan media:generate-conversions
+```
+
+You can also use the following command to retry failed conversions:
+
+```bash
+php artisan media-conversions:retry
 ```
 
 This provides a convenient way to process conversions in bulk or automate them within your workflows.

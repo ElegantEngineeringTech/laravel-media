@@ -8,6 +8,7 @@ use Carbon\CarbonInterval;
 use Closure;
 use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -27,7 +28,7 @@ use Illuminate\Support\Str;
  * @property ?string $name
  * @property ?string $file_name
  * @property ?string $mime_type
- * @property ?int $size in octets
+ * @property ?int $size in bytes
  * @property ?int $height
  * @property ?int $width
  * @property ?float $aspect_ratio
@@ -137,6 +138,8 @@ trait InteractWithFiles
 
         $name = File::sanitizeFilename($name);
 
+        $pathname = $file->getPathname();
+
         $fileName = $extension ? "{$name}.{$extension}" : $name;
 
         $path = $this->getDisk()?->putFileAs(
@@ -154,26 +157,21 @@ trait InteractWithFiles
         $this->size = $file->getSize();
 
         try {
-            $dimension = File::dimension($file->getPathname());
-            $this->height = $dimension?->getHeight();
-            $this->width = $dimension?->getWidth();
-            $this->aspect_ratio = $dimension?->getRatio(forceStandards: false)->getValue();
-        } catch (\Throwable $th) {
-            $this->height = null;
-            $this->width = null;
-            $this->aspect_ratio = null;
+            if ($dimension = File::dimension($pathname)) {
+                $this->height = (int) $dimension->height;
+                $this->width = (int) $dimension->width;
+                $this->aspect_ratio = $dimension->getAspectRatio()->value;
+            }
+
+            $this->duration = File::duration($pathname);
+        } catch (FFMpegException $th) {
+            report($th);
         }
 
         try {
-            $this->type = File::type($file->getPathname());
+            $this->type = File::type($pathname);
         } catch (\Throwable $th) {
             $this->type = MediaType::Other;
-        }
-
-        try {
-            $this->duration = File::duration($file->getPathname());
-        } catch (\Throwable $th) {
-            $this->duration = null;
         }
 
         return $path;
@@ -242,23 +240,22 @@ trait InteractWithFiles
     {
 
         TemporaryDirectory::callback(function ($temporaryDirectory) use ($transform) {
-
-            if (
-                ! $this->path ||
-                ! $this->disk ||
-                ! $this->name
-            ) {
-                return $this;
-            }
-
             /** Used to delete the old file at the end */
             $clone = clone $this;
+
+            $disk = $this->disk;
+            $path = $this->path;
+            $name = $this->name;
+
+            if (! $path || ! $disk || ! $name) {
+                return $this;
+            }
 
             $storage = TemporaryDirectory::storage($temporaryDirectory);
 
             $copy = $this->copyFileTo(
                 disk: $storage,
-                path: $this->path
+                path: $path
             );
 
             if (! $copy) {
@@ -271,10 +268,10 @@ trait InteractWithFiles
             );
 
             $result = $this->putFile(
-                disk: $this->disk,
-                destination: dirname($this->path),
+                disk: $disk,
+                destination: dirname($path),
                 file: $file,
-                name: $this->name
+                name: $name
             );
 
             if (

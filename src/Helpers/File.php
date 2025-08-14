@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace Elegantly\Media\Helpers;
 
 use Elegantly\Media\Enums\MediaType;
-use FFMpeg\Coordinate\Dimension;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use ProtoneMedia\LaravelFFMpeg\Support\FFMpeg;
 
 class File
 {
@@ -60,20 +57,14 @@ class File
 
     public static function duration(string $path): ?float
     {
-        if (
-            in_array(static::type($path), [MediaType::Video, MediaType::Audio])
-        ) {
-            $filesystem = Storage::build([
-                'driver' => 'local',
-                'root' => SupportFile::dirname($path),
-            ]);
+        $type = static::type($path);
 
-            return FFMpeg::fromFilesystem($filesystem)
-                ->open(SupportFile::basename($path))
-                ->getDurationInMiliseconds();
-        }
+        return match ($type) {
+            MediaType::Video => Video::duration($path),
+            MediaType::Audio => Audio::duration($path),
+            default => null,
+        };
 
-        return null;
     }
 
     public static function dimension(string $path): ?Dimension

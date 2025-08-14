@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Enums;
 
+use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Helpers\File;
-use ProtoneMedia\LaravelFFMpeg\FFMpeg\FFProbe;
 
 enum MediaType: string
 {
@@ -44,22 +44,15 @@ enum MediaType: string
     {
         $type = self::tryFromMimeType(File::mimeType($path) ?? '');
 
-        if (
-            $type === self::Video ||
-            $type === self::Audio
-        ) {
-            $ffprobe = FFProbe::create([
-                'ffmpeg.binaries' => config('laravel-ffmpeg.ffmpeg.binaries'),
-                'ffprobe.binaries' => config('laravel-ffmpeg.ffprobe.binaries'),
-            ]);
+        if ($type === self::Video || $type === self::Audio) {
 
-            $streams = $ffprobe->streams($path);
+            $ffmpeg = new FFMpeg;
 
-            if ($streams->videos()->first()) {
+            if ($ffmpeg->video()->hasVideo($path)) {
                 return self::Video;
             }
 
-            if ($streams->audios()->first()) {
+            if ($ffmpeg->video()->hasAudio($path)) {
                 return self::Audio;
             }
 

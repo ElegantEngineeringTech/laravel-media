@@ -3,7 +3,10 @@ name: Fix PHP code style issues
 on:
   push:
     paths:
-      - '**.php'
+      - "**.php"
+      - ".github/workflows/fix-php-code-style-issues.yml"
+      - "composer.json"
+      - "composer.lock"
 
 permissions:
   contents: write
