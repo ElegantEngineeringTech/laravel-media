@@ -13,9 +13,9 @@ class MediaConversionDefinition
 {
     /**
      * @param  (Closure(Media $media): MediaConverter)  $converter
-     * @param  bool  $immediate  Determine if the conversion should be dispatched immediatly and synchronously after the media is added
-     * @param  MediaConversionDefinition[]  $conversions
+     * @param  null|bool|(Closure(Media $media, ?MediaConversion $parent): null|bool)  $when
      * @param  null|(Closure(?MediaConversion $conversion, Media $media, ?MediaConversion $parent): void)  $onCompleted
+     * @param  MediaConversionDefinition[]  $conversions
      */
     public function __construct(
         public string $name,
