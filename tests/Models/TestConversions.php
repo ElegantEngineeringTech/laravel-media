@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Tests\Models;
 
-use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Converters\Image\MediaImageConverter;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversionDefinition;
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Eloquent\Model;
 
-class TestConversions extends Model
+class TestConversions extends Test
 {
-    use HasMedia;
-
-    protected $table = 'tests';
-
-    protected $guarded = [];
-
     public function registerMediaCollections(): Arrayable|iterable|null
     {
         return [

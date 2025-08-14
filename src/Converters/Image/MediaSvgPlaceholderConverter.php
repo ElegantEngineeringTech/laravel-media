@@ -61,7 +61,7 @@ class MediaSvgPlaceholderConverter extends MediaConverter
         return $media->replaceConversion(new MediaConversion([
             'state' => MediaConversionState::Succeeded,
             'conversion_name' => $this->conversion,
-            'content' => base64_encode($content),
+            'contents' => base64_encode($content),
             'size' => filesize($output),
         ]));
 

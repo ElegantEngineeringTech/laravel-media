@@ -240,23 +240,22 @@ trait InteractWithFiles
     {
 
         TemporaryDirectory::callback(function ($temporaryDirectory) use ($transform) {
-
-            if (
-                ! $this->path ||
-                ! $this->disk ||
-                ! $this->name
-            ) {
-                return $this;
-            }
-
             /** Used to delete the old file at the end */
             $clone = clone $this;
+
+            $disk = $this->disk;
+            $path = $this->path;
+            $name = $this->name;
+
+            if (! $path || ! $disk || ! $name) {
+                return $this;
+            }
 
             $storage = TemporaryDirectory::storage($temporaryDirectory);
 
             $copy = $this->copyFileTo(
                 disk: $storage,
-                path: $this->path
+                path: $path
             );
 
             if (! $copy) {
@@ -269,15 +268,15 @@ trait InteractWithFiles
             );
 
             $result = $this->putFile(
-                disk: $this->disk,
-                destination: dirname($this->path),
+                disk: $disk,
+                destination: dirname($path),
                 file: $file,
-                name: $this->name
+                name: $name
             );
 
             if (
                 $result &&
-                $clone->path !== $this->path
+                $clone->path !== $path
             ) {
                 $clone->deleteFile();
             }

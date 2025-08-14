@@ -4,23 +4,15 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Tests\Models;
 
-use Elegantly\Media\Concerns\HasMedia;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaCollection;
 use Illuminate\Contracts\Support\Arrayable;
-use Illuminate\Database\Eloquent\Model;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 
-class TestCollections extends Model
+class TestCollections extends Test
 {
-    use HasMedia;
-
-    protected $table = 'tests';
-
-    protected $guarded = [];
-
     public function registerMediaCollections(): Arrayable|iterable|null
     {
         return [
