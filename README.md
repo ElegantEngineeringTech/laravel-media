@@ -44,6 +44,10 @@ I developed this package with the highest degree of flexibility possible and I h
     - [Manually generate conversions](#manually-generate-conversions)
     - [Format Media Url](#format-media-url)
 
+1. [Conversions Presets](#conversions-presets)
+
+    - [Image Placeholder](#image-placeholder)
+
 1. [Customization](#customization)
 
     - [Custom Media Model](#custom-media-model)
@@ -732,6 +736,73 @@ This package comes with 3 formatters out of the box:
 -   `\Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter`
 
 Feel free to implement your own formatter by extending `\Elegantly\Media\UrlFormatters\AbstractUrlFormatter`.
+
+## Conversions Presets
+
+### Image Placeholder
+
+When loading images on the web, it’s common to show a low-resolution blurred placeholder first, then swap it with the full-resolution image once it’s ready. This improves perceived performance, reduces layout shifts, and gives a polished feel to your UI.
+
+This package includes a ready-to-use preset for generating these placeholders in Base64-encoded format. The placeholder is tiny in size, quick to load, and designed to be displayed while the actual image is being fetched.
+
+#### Defining the Placeholder Conversion
+
+To create a placeholder, simply define a media conversion using the `MediaImagePlaceholderConverter`:
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Elegantly\Media\Concerns\HasMedia;
+use Elegantly\Media\Contracts\InteractWithMedia;
+use Elegantly\Media\MediaCollection;
+use Elegantly\Media\MediaConversionDefinition;
+use Elegantly\Media\Converters\MediaImagePlaceholderConverter;
+
+class User extends Model implements InteractWithMedia
+{
+    use HasMedia;
+
+    public function registerMediaCollections(): array;
+    {
+        return [
+            new MediaCollection(
+                name: 'avatar',
+                single: true,
+                conversions: [
+                    new MediaConversionDefinition(
+                        name: 'placeholder',
+                        converter: fn ($media) => new MediaImagePlaceholderConverter($media),
+                    ),
+                ]
+            )
+        ];
+    }
+}
+```
+
+#### Using the Placeholder in Your Views
+
+If you’re using the built-in <x-media::img> Blade component, you can directly specify the placeholder conversion name:
+
+```html
+<x-media::img
+    :media="$user->getFirstMedia('avatar')"
+    placeholder="placeholder"
+/>
+```
+
+This will automatically load the blurred placeholder as a background-image.
+
+#### Retrieving the Base64 Value Directly
+
+If you need to manually work with the placeholder (e.g., for API responses or inline styles), you can retrieve it like this:
+
+```php
+$placeholder = $media->getConversion('placeholder');
+
+$base64Image = $placeholder?->contents;
+```
 
 ## Customization
 

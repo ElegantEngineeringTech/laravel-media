@@ -15,11 +15,11 @@ use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
-class MediaSvgPlaceholderConverter extends MediaConverter
+class MediaImagePlaceholderConverter extends MediaConverter
 {
     public function __construct(
         public readonly Media $media,
-        public int $blur = 50,
+        public int $blur = 20,
         public int $width = 20,
         public ?int $height = 20,
     ) {}

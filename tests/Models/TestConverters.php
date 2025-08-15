@@ -7,7 +7,7 @@ namespace Elegantly\Media\Tests\Models;
 use Elegantly\Media\Converters\Audio\MediaMp3Converter;
 use Elegantly\Media\Converters\Audio\MediaWavConverter;
 use Elegantly\Media\Converters\Image\MediaImageConverter;
-use Elegantly\Media\Converters\Image\MediaSvgPlaceholderConverter;
+use Elegantly\Media\Converters\Image\MediaImagePlaceholderConverter;
 use Elegantly\Media\Converters\Pdf\MediaPdfToImageConverter;
 use Elegantly\Media\Converters\Video\MediaFrameConverter;
 use Elegantly\Media\Converters\Video\MediaMp4Converter;
@@ -80,7 +80,7 @@ class TestConverters extends Test
                         name: 'svg',
                         immediate: false,
                         queued: false,
-                        converter: fn ($media) => new MediaSvgPlaceholderConverter(
+                        converter: fn ($media) => new MediaImagePlaceholderConverter(
                             media: $media,
                         )
                     ),
