@@ -57,6 +57,32 @@ class Audio extends FFMpeg
     }
 
     /**
+     * @param  string  $bitrate
+     *                           - 32k   : Very low quality, speech/voice only, smallest file size.
+     *                           - 48k   : Low quality, speech with some music.
+     *                           - 64k   : Medium quality, low-quality music or streaming voice.
+     *                           - 96k   : Good quality, general music, small files.
+     *                           - 128k  : Standard quality, good for most uses (default for MP3).
+     *                           - 192k  : High quality, detailed music.
+     *                           - 256k+ : Very high quality, archival purposes (large files).
+     * @param  int  $channels
+     *                         - 1 : Mono — single channel audio, smallest file size, good for voice.
+     *                         - 2 : Stereo — two-channel audio, standard for music and video.
+     *                         - 4 : Quad — four-channel audio (rare, surround setups).
+     *                         - 6 : 5.1 Surround — six channels (home theater, cinema).
+     *                         - 8 : 7.1 Surround — eight channels (high-end surround systems).
+     * @return array{0: int, 1: string[]}
+     */
+    public function aac(
+        string $input,
+        string $output,
+        string $bitrate = '64k',
+        int $channels = 2,
+    ): array {
+        return $this->ffmpeg("-i {$input} -vn -c:a aac -b:a {$bitrate} -ac {$channels} {$output}");
+    }
+
+    /**
      * @return array{0: int, 1: string[]}
      */
     public function save(

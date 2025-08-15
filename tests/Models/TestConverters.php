@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Tests\Models;
 
+use Elegantly\Media\Converters\Audio\MediaAacConverter;
 use Elegantly\Media\Converters\Audio\MediaMp3Converter;
 use Elegantly\Media\Converters\Audio\MediaWavConverter;
 use Elegantly\Media\Converters\Image\MediaImageConverter;
@@ -62,6 +63,15 @@ class TestConverters extends Test
                         converter: fn ($media) => new MediaWavConverter(
                             media: $media,
                             filename: "{$media->name}.wav",
+                        )
+                    ),
+                    new MediaConversionDefinition(
+                        name: 'aac',
+                        immediate: false,
+                        queued: false,
+                        converter: fn ($media) => new MediaAacConverter(
+                            media: $media,
+                            filename: "{$media->name}.m4a",
                         )
                     ),
                     new MediaConversionDefinition(
