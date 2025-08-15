@@ -42,9 +42,9 @@ class GenerateMediaConversionsCommand extends Command
 
         $query = $model::query()
             ->with(['model', 'conversions'])
-            ->when(! empty($ids), fn (Builder $query) => $query->whereIn('id', $ids))
-            ->when(! empty($models), fn (Builder $query) => $query->whereIn('model_type', $models))
-            ->when(! empty($collections), fn (Builder $query) => $query->whereIn('collection_name', $collections));
+            ->when($ids, fn (Builder $query) => $query->whereIn('id', $ids))
+            ->when($models, fn (Builder $query) => $query->whereIn('model_type', $models))
+            ->when($collections, fn (Builder $query) => $query->whereIn('collection_name', $collections));
 
         $count = $query->count();
 
