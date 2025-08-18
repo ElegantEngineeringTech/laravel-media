@@ -293,6 +293,7 @@ it('deletes children conversions when adding the same conversion', function () {
         file: $file,
         conversionName: 'poster',
         name: 'new-poster',
+        deleteChildren: true
     );
 
     foreach ($children as $child) {
