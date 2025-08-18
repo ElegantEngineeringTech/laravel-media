@@ -40,6 +40,7 @@ I developed this package with the highest degree of flexibility possible and I h
     - [Delayed conversions](#delayed-conversions)
     - [`onAdded` MediaCollection Callback](#onadded-mediacollection-callback)
     - [`onCompleted` MediaConversionDefinition Callback](#oncompleted-mediaconversiondefinition-callback)
+    - [Regenerate children conversions on parent execution](#regenerate-children-conversions-when-parent-is-executed)
     - [Custom conversions](#custom-conversions)
     - [Manually generate conversions](#manually-generate-conversions)
     - [Format Media Url](#format-media-url)
@@ -505,10 +506,6 @@ new MediaCollection(
                 width: 360
             )
         ),
-        new MediaConversionImage(
-            name: '360',
-            width: 360,
-        )
     ]
 )
 ```
@@ -557,7 +554,7 @@ The `onCompleted` callback allows you to define custom logic that will be execut
 To use it, simply set the `onCompleted` parameter when defining a `MediaConversionDefinition`. For example:
 
 ```php
-new MediaConversionImage(
+new MediaConversionDefinition(
     name: '360',
     onCompleted: function ($conversion, $media, $parent) {
         // Example: Refresh your UI
@@ -570,6 +567,44 @@ This allows you to hook into the conversion process and execute additional logic
 
 > [!TIP]
 > The same behavior can be achieved by listening to `Elegantly\Media\Events\MediaConversionAddedEvent`.
+
+### Regenerating Child Conversions When a Parent Runs
+
+In some cases, you may want all **child conversions** of a given conversion to be **regenerated whenever the parent conversion is re-executed**.
+
+There are two ways to achieve this, depending on where you handle conversions:
+
+#### From the conversion definition
+
+You can hook into the `onCompleted` callback of a conversion definition and instruct Laravel to delete all child conversions when the parent finishes.
+
+```php
+new MediaConversionDefinition(
+    name: '360',
+    onCompleted: function (?MediaConversion $conversion, Media $media, ?MediaConversion $parent) {
+        if ($conversion) {
+            // Delete any children so they’ll be regenerated automatically
+            $media->deleteChildrenConversions($conversion->conversion_name);
+        }
+    }
+);
+```
+
+#### From `addConversion`
+
+When adding a new conversion programmatically, you can explicitly tell it to remove children and regenerate them automatically:
+
+```php
+$mediaConversion = $media->addConversion(
+    file: $file,
+    deleteChildren: true, // ensures child conversions are refreshed
+);
+
+// regenerate children conversion
+$this->media->generateConversions(
+    parent: $mediaConversion,
+);
+```
 
 ### Custom Conversions
 

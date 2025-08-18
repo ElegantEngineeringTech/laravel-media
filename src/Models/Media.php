@@ -20,8 +20,6 @@ use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Exception;
-use Illuminate\Database\Eloquent\Casts\ArrayObject;
-use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,7 +38,7 @@ use Illuminate\Support\Str;
  * @property ?string $collection_group
  * @property ?string $average_color
  * @property ?int $order_column
- * @property ?ArrayObject<array-key, mixed> $metadata
+ * @property ?array<array-key, mixed> $metadata
  * @property ?InteractWithMedia<Media> $model
  * @property ?string $model_type
  * @property ?int $model_id
@@ -67,14 +65,17 @@ class Media extends Model
     protected $appends = ['url'];
 
     /**
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'type' => MediaType::class,
-        'metadata' => AsArrayObject::class,
-        'duration' => 'float',
-        'aspect_ratio' => 'float',
-    ];
+    public function casts(): array
+    {
+        return [
+            'type' => MediaType::class,
+            'metadata' => 'array',
+            'duration' => 'float',
+            'aspect_ratio' => 'float',
+        ];
+    }
 
     public static function booted()
     {
@@ -407,6 +408,8 @@ class Media extends Model
      * Store a file as a conversion and dispatch children conversions
      *
      * @param  string|resource|UploadedFile|HttpFile  $file
+     * @param  array<array-key, mixed>  $metadata
+     * @param  array<array-key, mixed>  $attributes
      */
     public function addConversion(
         $file,
@@ -415,7 +418,9 @@ class Media extends Model
         ?string $name = null,
         ?string $destination = null,
         ?string $disk = null,
-        bool $regenerateChildren = true
+        ?array $metadata = null,
+        array $attributes = [],
+        bool $deleteChildren = false
     ): MediaConversion {
         /**
          * Prefix name with parent if not already done
@@ -441,8 +446,26 @@ class Media extends Model
 
         $conversion->conversion_name = $conversionName;
         $conversion->media_id = $this->id;
+
+        // reset values
+        $conversion->type = null;
+        $conversion->name = null;
+        $conversion->extension = null;
+        $conversion->file_name = null;
+        $conversion->mime_type = null;
+        $conversion->width = null;
+        $conversion->height = null;
+        $conversion->aspect_ratio = null;
+        $conversion->duration = null;
+        $conversion->average_color = null;
+        $conversion->size = null;
+        $conversion->contents = null;
+
         $conversion->state = MediaConversionState::Succeeded;
         $conversion->state_set_at = now();
+        $conversion->metadata = $metadata;
+        $conversion->created_at = now();
+        $conversion->fill($attributes);
 
         $conversion->storeFile(
             file: $file,
@@ -458,22 +481,12 @@ class Media extends Model
             ) {
                 $existingConversionReplicate->deleteFile();
             }
-
-            if ($regenerateChildren) {
-                /**
-                 * Because the conversion has been regenerated, its children are not up to date anymore
-                 */
-                $this->deleteChildrenConversions($conversionName);
-            }
-
         } else {
             $this->conversions->push($conversion);
         }
 
-        $definition = $this->getConversionDefinition($conversionName);
-
-        if ($onCompleted = $definition?->onCompleted) {
-            $onCompleted($conversion, $this, $parent);
+        if ($deleteChildren) {
+            $this->deleteChildrenConversions($conversionName);
         }
 
         event(new MediaConversionAddedEvent($conversion));

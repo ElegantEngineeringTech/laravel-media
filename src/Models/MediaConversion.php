@@ -15,8 +15,6 @@ use Elegantly\Media\Helpers\File;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Exception;
-use Illuminate\Database\Eloquent\Casts\ArrayObject;
-use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,7 +43,7 @@ use Illuminate\Support\Str;
  * @property ?int $size
  * @property ?float $duration
  * @property ?string $contents Arbitrary stored value
- * @property ?ArrayObject<array-key, mixed> $metadata
+ * @property ?array<array-key, mixed> $metadata
  * @property int $media_id
  * @property Media $media
  * @property Carbon $created_at
@@ -71,7 +69,7 @@ class MediaConversion extends Model
     {
         return [
             'type' => MediaType::class,
-            'metadata' => AsArrayObject::class,
+            'metadata' => 'array',
             'duration' => 'float',
             'aspect_ratio' => 'float',
             'state' => MediaConversionState::class,
