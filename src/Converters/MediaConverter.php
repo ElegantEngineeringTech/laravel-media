@@ -21,6 +21,8 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
+    public bool $deleteWhenMissingModels = true;
+
     public string $conversion;
 
     public bool $withChildren = true;
