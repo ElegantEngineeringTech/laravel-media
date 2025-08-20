@@ -380,18 +380,11 @@ class Media extends Model
 
     public function replaceConversion(MediaConversion $conversion): MediaConversion
     {
-
         $existingConversion = $this->getConversion($conversion->conversion_name);
 
-        if (
-            $conversion->exists ||
-            $conversion->is($existingConversion)
-        ) {
+        if ($existingConversion?->is($conversion)) {
             return $conversion;
         }
-
-        $this->conversions()->save($conversion);
-        $this->conversions->push($conversion);
 
         if ($existingConversion) {
             $existingConversion->delete();
@@ -400,6 +393,9 @@ class Media extends Model
                 $this->conversions->except([$existingConversion->id])
             );
         }
+
+        $this->conversions()->save($conversion);
+        $this->conversions->push($conversion);
 
         return $conversion;
     }
@@ -429,42 +425,24 @@ class Media extends Model
             $conversionName = "{$parent->conversion_name}.{$conversionName}";
         }
 
-        /**
-         * If the conversion already exists, we are going to overwrite it
-         */
-        $existingConversion = $this->getConversion($conversionName);
-
-        /**
-         * To delete old conversion files, we will use an untouched replicate
-         */
-        $existingConversionReplicate = $existingConversion?->replicate();
+        if ($existingConversion = $this->getConversion($conversionName)) {
+            $existingConversion->delete();
+            $this->setRelation(
+                'conversions',
+                $this->conversions->except([$existingConversion->id])
+            );
+        }
 
         /** @var class-string<MediaConversion> */
         $mediaConversionModel = config()->string('media.media_conversion_model');
 
-        $conversion = $existingConversion ?? new $mediaConversionModel;
+        $conversion = new $mediaConversionModel;
 
-        $conversion->conversion_name = $conversionName;
         $conversion->media_id = $this->id;
-
-        // reset values
-        $conversion->type = null;
-        $conversion->name = null;
-        $conversion->extension = null;
-        $conversion->file_name = null;
-        $conversion->mime_type = null;
-        $conversion->width = null;
-        $conversion->height = null;
-        $conversion->aspect_ratio = null;
-        $conversion->duration = null;
-        $conversion->average_color = null;
-        $conversion->size = null;
-        $conversion->contents = null;
-
+        $conversion->conversion_name = $conversionName;
         $conversion->state = MediaConversionState::Succeeded;
-        $conversion->state_set_at = now();
+
         $conversion->metadata = $metadata;
-        $conversion->created_at = now();
         $conversion->fill($attributes);
 
         $conversion->storeFile(
@@ -474,16 +452,7 @@ class Media extends Model
             disk: $disk ?? $this->disk
         );
 
-        if ($existingConversionReplicate) {
-            if (
-                $existingConversionReplicate->path !== $conversion->path ||
-                $existingConversionReplicate->disk !== $conversion->disk
-            ) {
-                $existingConversionReplicate->deleteFile();
-            }
-        } else {
-            $this->conversions->push($conversion);
-        }
+        $this->conversions->push($conversion);
 
         if ($deleteChildren) {
             $this->deleteChildrenConversions($conversionName);

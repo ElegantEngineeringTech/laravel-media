@@ -79,6 +79,16 @@ class MediaConversion extends Model
 
     public static function booted()
     {
+        static::creating(function (MediaConversion $conversion) {
+            $conversion->state_set_at ??= now();
+        });
+
+        static::updating(function (MediaConversion $conversion) {
+            if ($conversion->isDirty('state_set_at')) {
+                $conversion->state_set_at = now();
+            }
+        });
+
         static::deleting(function (MediaConversion $conversion) {
             $conversion->deleteFile();
         });
