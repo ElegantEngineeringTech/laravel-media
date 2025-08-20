@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media;
 
 use Elegantly\Media\Commands\GenerateMediaConversionsCommand;
+use Elegantly\Media\Commands\RetryMediaConversionsCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -25,6 +26,7 @@ class MediaServiceProvider extends PackageServiceProvider
             ->hasMigration('migrate_generated_conversions_to_media_conversions_table')
             ->hasMigration('migrate_state_in_media_conversions_table')
             ->hasCommand(GenerateMediaConversionsCommand::class)
+            ->hasCommand(RetryMediaConversionsCommand::class)
             ->hasViews();
     }
 }
