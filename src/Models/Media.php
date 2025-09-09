@@ -127,14 +127,12 @@ class Media extends Model
         ?string $disk = null,
         ?Closure $before = null,
     ): static {
+
         if ($file instanceof UploadedFile || $file instanceof HttpFile) {
             return $this->storeFileFromHttpFile($file, $destination, $name, $disk, $before);
         }
 
-        if (
-            (is_string($file) && filter_var($file, FILTER_VALIDATE_URL)) ||
-            ! is_string($file)
-        ) {
+        if (! is_string($file) || filter_var($file, FILTER_VALIDATE_URL)) {
             /** @var static $value */
             $value = TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
 
@@ -163,9 +161,9 @@ class Media extends Model
         ?Closure $before = null,
     ): static {
 
-        $destination ??= $this->makeFreshPath();
+        $destination ??= $this->getDefaultPath();
         $name ??= File::name($file) ?? Str::random(6);
-        $disk ??= $this->disk ?? config()->string('media.disk', config()->string('filesystems.default', 'local'));
+        $disk ??= config()->string('media.disk', config()->string('filesystems.default', 'local'));
 
         TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
             if ($before) {
@@ -447,7 +445,7 @@ class Media extends Model
 
         $conversion->storeFile(
             file: $file,
-            destination: $destination ?? $this->makeFreshPath($conversionName),
+            destination: $destination ?? $this->getDefaultPath($conversionName),
             name: $name,
             disk: $disk ?? $this->disk
         );
@@ -559,15 +557,22 @@ class Media extends Model
 
     // \ Managing Conversions ----------------------------------------------------------
 
-    /**
-     * Generate the default base path for storing files
-     * uuid/
-     *  files
-     *  /conversions
-     *      /conversionName
-     *      files
-     */
+    /** @deprecated use getDefaultPath */
     public function makeFreshPath(
+        ?string $conversion = null,
+        ?string $fileName = null
+    ): string {
+        return $this->getDefaultPath($conversion, $fileName);
+    }
+
+    /**
+     * Default path where files will be put
+     * Ex: root files
+     * /{prefix}/uuid/{fileName}
+     * Ex: conversion files
+     * /{prefix}/uuid/conversions/{conversion}/{fileName}
+     */
+    public function getDefaultPath(
         ?string $conversion = null,
         ?string $fileName = null
     ): string {
