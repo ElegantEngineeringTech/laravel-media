@@ -36,11 +36,12 @@ I developed this package with the highest degree of flexibility possible and I h
 
 1. [Advanced Usage](#advanced-usage)
 
+    - [Transforming a file before storing it](#transforming-a-file-before-storing-it)
     - [Async vs Sync conversions](#async-vs-sync-conversions)
     - [Delayed conversions](#delayed-conversions)
     - [`onAdded` MediaCollection Callback](#onadded-mediacollection-callback)
     - [`onCompleted` MediaConversionDefinition Callback](#oncompleted-mediaconversiondefinition-callback)
-    - [Regenerate children conversions on parent execution](#regenerate-children-conversions-when-parent-is-executed)
+    - [Regenerating Child Conversions When a Parent Runs](#regenerating-child-conversions-when-a-parent-runs)
     - [Custom conversions](#custom-conversions)
     - [Manually generate conversions](#manually-generate-conversions)
     - [Format Media Url](#format-media-url)
@@ -208,7 +209,8 @@ Media conversions create different variants of your media files. For example, a 
 This package provides common converter to simplify your work:
 
 -   `MediaImageConverter`: This converter optimizes, resizes, or converts any image using `spatie/image`.
--   `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video to mp4 video using `ffmpeg`.
+-   `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video or gif to mp4 video using `ffmpeg`.
+-   `MediaWebmConverter`: This conversion optimizes, resizes, or converts any video or gif to webm video using `ffmpeg`.
 -   `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
 -   `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
 -   `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
@@ -451,6 +453,37 @@ The package also provides blade components.
 ```
 
 ## Advanced Usage
+
+### Transforming a file before storing it
+
+You can define a transformation step that runs before a file is stored by using the `transform` method on a media collection.
+
+This is useful if you want to **resize, optimize, or otherwise process an uploaded file** before it gets saved to disk.
+
+For example, the snippet below shows how you can resize and optimize an uploaded image before storing it:
+
+```php
+use Illuminate\Http\File;
+use Spatie\TemporaryDirectory\TemporaryDirectory;
+use Spatie\Image\Image;
+use Spatie\Image\Enums\Fit;
+
+new MediaCollection(
+    name: 'avatar',
+    acceptedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    transform: function (File $file, TemporaryDirectory $temporaryDirectory): File {
+        $input = $file->getRealPath();
+        $output = $temporaryDirectory->path('avatar.jpg');
+
+        Image::load($input)
+            ->fit(Fit::Contain, 500)
+            ->optimize()
+            ->save($output);
+
+        return new File($output);
+    }
+);
+```
 
 ### Async vs. Sync Conversions
 
