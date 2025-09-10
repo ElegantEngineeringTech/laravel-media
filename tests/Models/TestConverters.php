@@ -12,6 +12,7 @@ use Elegantly\Media\Converters\Image\MediaImagePlaceholderConverter;
 use Elegantly\Media\Converters\Pdf\MediaPdfToImageConverter;
 use Elegantly\Media\Converters\Video\MediaFrameConverter;
 use Elegantly\Media\Converters\Video\MediaMp4Converter;
+use Elegantly\Media\Converters\Video\MediaWebmConverter;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversionDefinition;
 use Illuminate\Contracts\Support\Arrayable;
@@ -44,6 +45,16 @@ class TestConverters extends Test
                         converter: fn ($media) => new MediaMp4Converter(
                             media: $media,
                             filename: "{$media->name}.mp4",
+                            width: 10,
+                        )
+                    ),
+                    new MediaConversionDefinition(
+                        name: 'webm',
+                        immediate: false,
+                        queued: false,
+                        converter: fn ($media) => new MediaWebmConverter(
+                            media: $media,
+                            filename: "{$media->name}.webm",
                             width: 10,
                         )
                     ),

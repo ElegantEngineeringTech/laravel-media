@@ -107,4 +107,23 @@ class Video extends FFMpeg
 
         return $this->ffmpeg("-i {$input} -vf -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
     }
+
+    /**
+     * @return array{0: int, 1: string[]}
+     */
+    public function webm(
+        string $input,
+        string $output,
+        ?int $width = null,
+        ?int $height = null,
+        int $crf = 32,
+        string $deadline = 'good',
+        int $cpuUsed = 3,
+    ): array {
+        if ($scale = $this->getScale($width, $height)) {
+            return $this->ffmpeg("-i {$input} -vf {$scale} -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
+        }
+
+        return $this->ffmpeg("-i {$input} -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
+    }
 }
