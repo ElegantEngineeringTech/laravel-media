@@ -24,3 +24,22 @@ it('converts and resizes a video into a webm', function () {
     expect($conversion->extension)->toBe('webm');
 
 });
+
+it('converts and resizes a gif into a webm', function () {
+    Storage::fake('media');
+
+    $model = new TestConverters;
+    $model->save();
+
+    $media = $model->addMedia(
+        file: $this->getTestFile('images/240x183.gif'),
+        disk: 'media'
+    );
+
+    $conversion = $media->executeConversion('gif-webm');
+
+    expect($conversion)->toBeInstanceOf(MediaConversion::class);
+    expect($conversion->width)->toBe(10);
+    expect($conversion->extension)->toBe('webm');
+
+});

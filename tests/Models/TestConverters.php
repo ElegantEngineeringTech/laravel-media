@@ -49,7 +49,27 @@ class TestConverters extends Test
                         )
                     ),
                     new MediaConversionDefinition(
+                        name: 'gif-mp4',
+                        immediate: false,
+                        queued: false,
+                        converter: fn ($media) => new MediaMp4Converter(
+                            media: $media,
+                            filename: "{$media->name}.mp4",
+                            width: 10,
+                        )
+                    ),
+                    new MediaConversionDefinition(
                         name: 'webm',
+                        immediate: false,
+                        queued: false,
+                        converter: fn ($media) => new MediaWebmConverter(
+                            media: $media,
+                            filename: "{$media->name}.webm",
+                            width: 10,
+                        )
+                    ),
+                    new MediaConversionDefinition(
+                        name: 'gif-webm',
                         immediate: false,
                         queued: false,
                         converter: fn ($media) => new MediaWebmConverter(

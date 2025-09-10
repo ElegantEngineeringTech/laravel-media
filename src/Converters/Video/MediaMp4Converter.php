@@ -30,7 +30,11 @@ class MediaMp4Converter extends MediaConverter
     {
         $source = $parent ?? $media;
 
-        return $source->type === MediaType::Video;
+        if ($source->type === MediaType::Video) {
+            return true;
+        }
+
+        return in_array($media->mime_type, ['image/gif']);
     }
 
     public function convert(
@@ -49,10 +53,6 @@ class MediaMp4Converter extends MediaConverter
         $output = $filesystem->path($this->filename);
 
         $ffmpeg = new FFMpeg;
-
-        if (! $ffmpeg->video()->hasVideo($input)) {
-            return $this->skipConversion();
-        }
 
         $source = $parent ?? $media;
 

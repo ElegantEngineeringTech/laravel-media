@@ -24,3 +24,22 @@ it('converts and resizes a video into a mp4', function () {
     expect($conversion->extension)->toBe('mp4');
 
 });
+
+it('converts and resizes a gif into a mp4', function () {
+    Storage::fake('media');
+
+    $model = new TestConverters;
+    $model->save();
+
+    $media = $model->addMedia(
+        file: $this->getTestFile('images/240x183.gif'),
+        disk: 'media'
+    );
+
+    $conversion = $media->executeConversion('gif-mp4');
+
+    expect($conversion)->toBeInstanceOf(MediaConversion::class);
+    expect($conversion->width)->toBe(10);
+    expect($conversion->extension)->toBe('mp4');
+
+});
