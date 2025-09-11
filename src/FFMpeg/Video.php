@@ -61,15 +61,9 @@ class Video extends FFMpeg
     {
         $metadata = $this->metadata($input);
 
-        if ($stream = $metadata['streams'][0] ?? null) {
+        $duration = (float) data_get($metadata, 'format.duration');
 
-            // @phpstan-ignore-next-line
-            $duration = (float) data_get($stream, 'duration');
-
-            return $duration * 1_000;
-        }
-
-        throw VideoStreamNotFoundException::atPath($input);
+        return $duration * 1_000;
     }
 
     /**

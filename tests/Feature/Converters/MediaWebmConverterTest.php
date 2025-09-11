@@ -22,7 +22,7 @@ it('converts and resizes a video into a webm', function () {
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
     expect($conversion->width)->toBe(10);
     expect($conversion->extension)->toBe('webm');
-
+    expect(round($conversion->duration))->toBe(2740.0);
 });
 
 it('converts and resizes a gif into a webm', function () {
@@ -41,5 +41,4 @@ it('converts and resizes a gif into a webm', function () {
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
     expect($conversion->width)->toBe(10);
     expect($conversion->extension)->toBe('webm');
-
 });

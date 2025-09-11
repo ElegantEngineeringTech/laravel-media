@@ -24,11 +24,11 @@ it('get the correct dimension from a rotated video', function () {
     expect($dimension?->width)->toBe(1080);
 });
 
-it('get the correct duration of a video', function () {
+it('get the correct duration of an mp4 video', function () {
 
     $file = $this->getTestFile('videos/horizontal.mp4');
 
     $duration = Video::duration($file);
 
-    expect($duration)->toBe(2736.067);
+    expect(round($duration))->toBe(2763.0);
 });
