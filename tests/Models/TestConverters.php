@@ -46,7 +46,7 @@ class TestConverters extends Test
                             media: $media,
                             filename: "{$media->name}.mp4",
                             width: 10,
-                        )
+                        ),
                     ),
                     new MediaConversionDefinition(
                         name: 'gif-mp4',
@@ -118,7 +118,7 @@ class TestConverters extends Test
                         )
                     ),
                     new MediaConversionDefinition(
-                        name: 'svg',
+                        name: 'placeholder',
                         immediate: false,
                         queued: false,
                         converter: fn ($media) => new MediaImagePlaceholderConverter(
@@ -133,7 +133,18 @@ class TestConverters extends Test
                             media: $media,
                             filename: "{$media->name}.jpg",
                             width: 10,
-                        )
+                        ),
+                        conversions: [
+                            new MediaConversionDefinition(
+                                name: 'placeholder',
+                                immediate: false,
+                                queued: false,
+                                converter: fn ($media) => new MediaImagePlaceholderConverter(
+                                    media: $media,
+                                    width: 5,
+                                )
+                            ),
+                        ]
                     ),
                 ],
             ),

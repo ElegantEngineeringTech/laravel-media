@@ -142,7 +142,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
             $storage = TemporaryDirectory::storage($temporaryDirectory);
 
-            $source = $this->parent ?? $this->media;
+            $source = $parent ?? $this->media;
 
             $copy = $source->path ? $source->copyFileTo(
                 disk: $storage,
