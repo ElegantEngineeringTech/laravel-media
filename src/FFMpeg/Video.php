@@ -61,7 +61,10 @@ class Video extends FFMpeg
     {
         $metadata = $this->metadata($input);
 
-        $duration = (float) data_get($metadata, 'format.duration');
+        /** @var float|int|string */
+        $duration = data_get($metadata, 'format.duration');
+
+        $duration = (float) $duration;
 
         return $duration * 1_000;
     }
