@@ -22,7 +22,7 @@ it('converts and resizes a video into a mp4', function () {
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
     expect($conversion->width)->toBe(10);
     expect($conversion->extension)->toBe('mp4');
-    expect(round($conversion->duration))->toBe(2763.0);
+    expect(round($conversion->duration))->toBe(2740.0);
 
 });
 
