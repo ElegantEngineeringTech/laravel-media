@@ -55,6 +55,7 @@ class Media extends Model
     use HasUuid;
     use InteractWithFiles {
         getUrl as traitGetUrl;
+        getTemporaryUrl as traitGetTemporaryUrl;
     }
 
     /**
@@ -671,21 +672,30 @@ class Media extends Model
      * @param  null|bool|string|array<int, string|bool>  $fallback
      * @param  null|array<array-key, mixed>  $parameters
      * @param  null|class-string<AbstractUrlFormatter>  $formatter
+     * @param  bool  $dispatch  Dispatch not found conversion
      */
     public function getUrl(
         ?string $conversion = null,
         null|bool|string|array $fallback = null,
         ?array $parameters = null,
-        ?string $formatter = null
+        ?string $formatter = null,
+        bool $dispatch = false
     ): ?string {
 
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getUrl(
-                parameters: $parameters,
-                formatter: $formatter,
-            );
+            $mediaConversion = $this->getConversion($conversion);
+
+            if ($mediaConversion && $mediaConversion->state === MediaConversionState::Succeeded) {
+                $url = $mediaConversion->getUrl(
+                    parameters: $parameters,
+                    formatter: $formatter,
+                );
+            } elseif ($mediaConversion === null && $dispatch) {
+                $this->dispatchConversion($conversion, false);
+            }
+
         } elseif ($this->path) {
             /** @var null|string $url */
             $url = $this->traitGetUrl(
@@ -699,24 +709,28 @@ class Media extends Model
         } elseif ($fallback === true) {
             return $this->getUrl(
                 parameters: $parameters,
+                formatter: $formatter,
             );
         } elseif (is_string($fallback)) {
             return $this->getUrl(
                 conversion: $fallback,
-                parameters: $parameters
+                parameters: $parameters,
+                formatter: $formatter,
             ) ?? $fallback;
         } elseif (is_array($fallback)) {
             $fallbackValue = array_shift($fallback);
 
             if ($fallbackValue === true) {
                 return $this->getUrl(
-                    parameters: $parameters
+                    parameters: $parameters,
+                    formatter: $formatter,
                 );
             } elseif (is_string($fallbackValue)) {
                 return $this->getUrl(
                     conversion: $fallbackValue,
                     fallback: $fallback,
-                    parameters: $parameters
+                    parameters: $parameters,
+                    formatter: $formatter,
                 );
             }
 
@@ -746,28 +760,28 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getTemporaryUrl($expiration, $options);
+            $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getTemporaryUrl($expiration, $options, $parameters, $formatter);
         } elseif ($this->path) {
             /** @var null|string $url */
-            $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
+            $url = $this->traitGetTemporaryUrl($expiration, $options, $parameters, $formatter);
         }
 
         if ($url) {
-            $formatter ??= $this->getDefaultUrlFormatter();
-
-            return (new $formatter)->format($url, $parameters);
+            return $url;
         } elseif ($fallback === true) {
             return $this->getTemporaryUrl(
                 expiration: $expiration,
                 options: $options,
                 parameters: $parameters,
+                formatter: $formatter,
             );
         } elseif (is_string($fallback)) {
             return $this->getTemporaryUrl(
                 expiration: $expiration,
                 conversion: $fallback,
                 options: $options,
-                parameters: $parameters
+                parameters: $parameters,
+                formatter: $formatter,
             );
         } elseif (is_array($fallback)) {
             return $this->getTemporaryUrl(
@@ -775,7 +789,8 @@ class Media extends Model
                 conversion: array_shift($fallback),
                 options: $options,
                 fallback: $fallback,
-                parameters: $parameters
+                parameters: $parameters,
+                formatter: $formatter,
             );
         }
 

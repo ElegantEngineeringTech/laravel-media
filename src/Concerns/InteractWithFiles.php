@@ -83,16 +83,28 @@ trait InteractWithFiles
 
     /**
      * @param  array<array-key, mixed>  $options
+     * @param  null|array<array-key, mixed>  $parameters
+     * @param  null|class-string<AbstractUrlFormatter>  $formatter
      */
     public function getTemporaryUrl(
         DateTimeInterface $expiration,
-        array $options = []
+        array $options = [],
+        ?array $parameters = null,
+        ?string $formatter = null,
     ): ?string {
         if (! $this->path) {
             return null;
         }
 
-        return $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
+        $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
+
+        if ($url) {
+            $formatter ??= $this->getDefaultUrlFormatter();
+
+            return (new $formatter)->format($url, $parameters);
+        }
+
+        return null;
     }
 
     /**
