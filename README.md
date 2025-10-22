@@ -395,12 +395,12 @@ $thumbnailUrl = $media->getUrl(
 
 $posterUrl = $media->getUrl(
     conversion: 'poster.360p',
-    fallback: 'poster' // Falls back to an other conversion doesn't exist
+    fallback: 'poster' // Falls back to an other conversion if conversion doesn't exist
 );
 
 // Use the same logic with other properties such as
 $media->getPath();
-$media->getWith();
+$media->getWidth();
 // ...
 ```
 
@@ -458,7 +458,7 @@ The package also provides blade components.
 
 You can define a transformation step that runs before a file is stored by using the `transform` method on a media collection.
 
-This is useful if you want to **resize, optimize, or otherwise process an uploaded file** before it gets saved to disk.
+This is useful if you want to **resize, optimize, or process an uploaded file** before it gets saved to disk.
 
 For example, the snippet below shows how you can resize and optimize an uploaded image before storing it:
 
@@ -854,9 +854,11 @@ class User extends Model implements InteractWithMedia
 If you’re using the built-in <x-media::img> Blade component, you can directly specify the placeholder conversion name:
 
 ```html
+<x-media::img :media="$user->getFirstMedia('avatar')" placeholder />
+
 <x-media::img
     :media="$user->getFirstMedia('avatar')"
-    placeholder="placeholder"
+    placeholder="custom-placeholder-name"
 />
 ```
 
