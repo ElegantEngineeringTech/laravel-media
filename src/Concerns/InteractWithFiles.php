@@ -8,7 +8,6 @@ use Carbon\CarbonInterval;
 use Closure;
 use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
