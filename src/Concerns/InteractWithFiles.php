@@ -176,7 +176,7 @@ trait InteractWithFiles
             }
 
             $this->duration = File::duration($pathname);
-        } catch (FFMpegException $th) {
+        } catch (\Throwable $th) {
             report($th);
         }
 
