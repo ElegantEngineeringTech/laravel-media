@@ -37,7 +37,7 @@ class MediaFrameConverter extends MediaConverter
         $seconds = $source->duration / 1_000;
 
         if ($this->timecode > $seconds) {
-            return $seconds;
+            return floor($seconds);
         }
 
         return $this->timecode;
