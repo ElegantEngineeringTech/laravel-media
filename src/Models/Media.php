@@ -13,9 +13,10 @@ use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
+use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Elegantly\Media\Helpers\File;
-use Elegantly\Media\HttpFileDownloaders\HttpFileDownloader;
 use Elegantly\Media\MediaConversionDefinition;
+use Elegantly\Media\PathGenerators\AbstractPathGenerator;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -162,7 +163,10 @@ class Media extends Model
         ?Closure $before = null,
     ): static {
 
-        $destination ??= $this->getDefaultPath();
+        /** @var class-string<AbstractPathGenerator> */
+        $pathGenerator = config('media.default_path_generator');
+
+        $destination ??= (new $pathGenerator)->media($this)->value();
         $name ??= File::name($file) ?? Str::random(6);
         $disk ??= config()->string('media.disk', config()->string('filesystems.default', 'local'));
 
@@ -417,6 +421,10 @@ class Media extends Model
         array $attributes = [],
         bool $deleteChildren = false
     ): MediaConversion {
+
+        /** @var class-string<AbstractPathGenerator> */
+        $pathGenerator = config('media.default_path_generator');
+
         /**
          * Prefix name with parent if not already done
          */
@@ -446,7 +454,7 @@ class Media extends Model
 
         $conversion->storeFile(
             file: $file,
-            destination: $destination ?? $this->getDefaultPath($conversionName),
+            destination: $destination ?? (new $pathGenerator)->conversion($this, $conversion)->value(),
             name: $name,
             disk: $disk ?? $this->disk
         );
@@ -557,45 +565,6 @@ class Media extends Model
     }
 
     // \ Managing Conversions ----------------------------------------------------------
-
-    /** @deprecated use getDefaultPath */
-    public function makeFreshPath(
-        ?string $conversion = null,
-        ?string $fileName = null
-    ): string {
-        return $this->getDefaultPath($conversion, $fileName);
-    }
-
-    /**
-     * Default path where files will be put
-     * Ex: root files
-     * /{prefix}/uuid/{fileName}
-     * Ex: conversion files
-     * /{prefix}/uuid/conversions/{conversion}/{fileName}
-     */
-    public function getDefaultPath(
-        ?string $conversion = null,
-        ?string $fileName = null
-    ): string {
-        /** @var string $prefix */
-        $prefix = config('media.generated_path_prefix') ?? '';
-
-        $root = Str::of($prefix)
-            ->when($prefix, fn ($string) => $string->finish('/'))
-            ->append($this->uuid)
-            ->finish('/');
-
-        if ($conversion) {
-            return $root
-                ->append('conversions/')
-                ->append(str_replace('.', '/conversions/', $conversion))
-                ->finish('/')
-                ->append($fileName ?? '')
-                ->value();
-        }
-
-        return $root->append($fileName ?? '')->value();
-    }
 
     /**
      * @param  array<array-key, float|int|string>  $keys

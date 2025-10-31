@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Elegantly\Media\HttpFileDownloaders\HttpFileDownloader;
+use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('download a file from an url as a temporary file', function () {

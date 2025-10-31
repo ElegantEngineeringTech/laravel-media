@@ -168,7 +168,7 @@ it('stores a conversion file', function () {
     expect($conversion->media_id)->toBe($media->id);
     expect($conversion->id)->not->toBe(null);
     expect($conversion->exists)->toBe(true);
-    expect($conversion->path)->toBe("{$media->uuid}/conversions/poster/poster.jpg");
+    expect($conversion->path)->toBe("{$media->uuid}/conversions/poster/{$conversion->uuid}/poster.jpg");
     expect($conversion->name)->toBe('poster');
     expect($conversion->extension)->toBe('jpg');
     expect($conversion->file_name)->toBe('poster.jpg');

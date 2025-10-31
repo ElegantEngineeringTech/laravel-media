@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Elegantly\Media\HttpFileDownloaders;
+namespace Elegantly\Media\FileDownloaders;
 
 use Elegantly\Media\Helpers\File;
 use Illuminate\Support\Facades\Http;

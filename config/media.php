@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use Elegantly\Media\PathGenerators\UuidPathGenerator;
 use Elegantly\Media\UrlFormatters\DefaultUrlFormatter;
 
 return [
@@ -59,6 +60,12 @@ return [
      * Used when calling `$media->getUrl()`.
      */
     'default_url_formatter' => DefaultUrlFormatter::class,
+
+    /**
+     * The default path generator class.
+     * Used when storing new files.
+     */
+    'default_path_generator' => UuidPathGenerator::class,
 
     /**
      * Prefix for the generated file path.
