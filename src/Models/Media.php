@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 /**
@@ -322,14 +323,18 @@ class Media extends Model
 
     /**
      * @param  null|string|string[]  $fallback
+     * @param  null|MediaConversionState|MediaConversionState[]  $state
      */
     public function getConversion(
         string $name,
-        ?MediaConversionState $state = null,
+        null|MediaConversionState|array $state = null,
         null|string|array $fallback = null
     ): ?MediaConversion {
+
+        $state = Arr::wrap($state);
+
         $conversion = $this->conversions->firstWhere(function ($mediaConversion) use ($name, $state) {
-            if ($state && $mediaConversion->state !== $state) {
+            if ($state && ! in_array($mediaConversion->state, $state)) {
                 return false;
             }
 
