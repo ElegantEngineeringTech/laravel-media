@@ -13,8 +13,8 @@ use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
-use Elegantly\Media\FileDownloaders\FileDownloader;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\HttpFileDownloaders\HttpFileDownloader;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
@@ -137,7 +137,7 @@ class Media extends Model
             /** @var static $value */
             $value = TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
 
-                $path = FileDownloader::download(
+                $path = HttpFileDownloader::download(
                     file: $file,
                     destination: $temporaryDirectory->path()
                 );

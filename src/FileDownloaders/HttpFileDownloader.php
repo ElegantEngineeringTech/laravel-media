@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Elegantly\Media\FileDownloaders;
+namespace Elegantly\Media\HttpFileDownloaders;
 
 use Elegantly\Media\Helpers\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-class FileDownloader
+class HttpFileDownloader
 {
     public static function fromUrl(
         string $url,

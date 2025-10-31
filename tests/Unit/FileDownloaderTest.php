@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Elegantly\Media\FileDownloaders\FileDownloader;
+use Elegantly\Media\HttpFileDownloaders\HttpFileDownloader;
 use Spatie\TemporaryDirectory\TemporaryDirectory;
 
 it('download a file from an url as a temporary file', function () {
@@ -11,7 +11,7 @@ it('download a file from an url as a temporary file', function () {
         ->location(storage_path('media-tmp'))
         ->create();
 
-    $path = FileDownloader::fromUrl(
+    $path = HttpFileDownloader::fromUrl(
         $this->dummy_pdf_url,
         $temporaryDirectory->path()
     );
@@ -29,7 +29,7 @@ it('download a file from an url as a temporary file and sets the right extension
         ->location(storage_path('media-tmp'))
         ->create();
 
-    $path = FileDownloader::fromUrl(
+    $path = HttpFileDownloader::fromUrl(
         'https://icon.horse/icon/discord.com',
         $temporaryDirectory->path()
     );
