@@ -19,16 +19,18 @@
 
 @php
 
-    $source = $conversion
-        ? $media->getConversion(
+    if ($conversion) {
+        $source = $media->getConversion(
             name: $conversion,
             state: \Elegantly\Media\Enums\MediaConversionState::Succeeded,
             fallback: is_bool($fallback) ? null : $fallback,
             dispatch: $dispatch,
-        )
-        : null;
+        );
 
-    $source ??= $fallback === true ? $media : null;
+        $source ??= $fallback === true ? $media : null;
+    } else {
+        $source = $media;
+    }
 
     if ($posterConversion) {
         $poster ??= $media->getUrl(conversion: $posterConversion, dispatch: $posterDispatch);
