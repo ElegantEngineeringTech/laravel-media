@@ -259,7 +259,7 @@ class Media extends Model
     ): ?PendingDispatch {
         if (
             $force === false &&
-            $this->hasConversion($conversion, MediaConversionState::Succeeded)
+            $this->hasConversion($conversion, [MediaConversionState::Succeeded, MediaConversionState::Pending])
         ) {
             return null;
         }
@@ -314,7 +314,7 @@ class Media extends Model
         string $name,
         bool $withChildren = true,
     ): ?MediaConversion {
-        if ($conversion = $this->getConversion($name, MediaConversionState::Succeeded)) {
+        if ($conversion = $this->getConversion($name, [MediaConversionState::Succeeded, MediaConversionState::Pending])) {
             return $conversion;
         }
 
@@ -328,7 +328,8 @@ class Media extends Model
     public function getConversion(
         string $name,
         null|MediaConversionState|array $state = null,
-        null|string|array $fallback = null
+        null|string|array $fallback = null,
+        bool $dispatch = false,
     ): ?MediaConversion {
 
         $state = Arr::wrap($state);
@@ -343,6 +344,8 @@ class Media extends Model
 
         if ($conversion) {
             return $conversion;
+        } elseif ($dispatch) {
+            $this->dispatchConversion($name, false);
         }
 
         if (is_string($fallback)) {
@@ -360,8 +363,13 @@ class Media extends Model
         return null;
     }
 
-    public function hasConversion(string $name, ?MediaConversionState $state = null): bool
-    {
+    /**
+     * @param  null|MediaConversionState|MediaConversionState[]  $state
+     */
+    public function hasConversion(
+        string $name,
+        null|MediaConversionState|array $state = null
+    ): bool {
         return (bool) $this->getConversion($name, $state);
     }
 
@@ -659,15 +667,17 @@ class Media extends Model
         $url = null;
 
         if ($conversion) {
-            $mediaConversion = $this->getConversion($conversion);
+            $mediaConversion = $this->getConversion(
+                name: $conversion,
+                state: MediaConversionState::Succeeded,
+                dispatch: $dispatch,
+            );
 
-            if ($mediaConversion && $mediaConversion->state === MediaConversionState::Succeeded) {
+            if ($mediaConversion) {
                 $url = $mediaConversion->getUrl(
                     parameters: $parameters,
                     formatter: $formatter,
                 );
-            } elseif ($mediaConversion === null && $dispatch) {
-                $this->dispatchConversion($conversion, false);
             }
 
         } elseif ($this->path) {
