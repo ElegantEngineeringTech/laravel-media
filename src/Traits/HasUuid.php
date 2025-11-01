@@ -7,7 +7,7 @@ namespace Elegantly\Media\Traits;
 use Illuminate\Support\Str;
 
 /**
- * @property ?string $uuid
+ * @property string $uuid
  */
 trait HasUuid
 {
