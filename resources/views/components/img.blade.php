@@ -13,16 +13,21 @@
 ])
 
 @php
-    $placeholder = $placeholder === true ? 'placeholder' : $placeholder;
-    $placeholderValue = $placeholder ? $media->getConversion($placeholder)?->contents : null;
+    $source = $conversion
+        ? $media->getConversion(
+            name: $conversion,
+            state: \Elegantly\Media\Enums\MediaConversionState::Succeeded,
+            fallback: is_bool($fallback) ? null : $fallback,
+            dispatch: $dispatch,
+        )
+        : null;
 
-    $url =
-        $src ??
-        $media->getUrl(conversion: $conversion, fallback: $fallback, parameters: $parameters, dispatch: $dispatch);
+    $source ??= $fallback === true ? $media : null;
+
+    $placeholder = $placeholder === true ? 'placeholder' : $placeholder;
+    $placeholderContents = $placeholder ? $media->getConversion($placeholder)?->contents : null;
 @endphp
 
-<img {!! $attributes !!} loading="{{ $loading }}" src="{!! $url !!}"
-    height="{{ $height ?? $media->getHeight($conversion, $fallback) }}"
-    width="{{ $width ?? $media->getWidth($conversion, $fallback) }}"
-    alt="{{ $alt ?? $media->getName($conversion, $fallback) }}"
-    @if ($placeholderValue) style="background-size:cover;background-image: url(data:image/jpeg;base64,{{ $placeholderValue }})" @endif>
+<img {!! $attributes !!} loading="{{ $loading }}" src="{!! $src ?? $source?->getUrl($parameters) !!}"
+    height="{{ $height ?? $source?->height }}" width="{{ $width ?? $source?->width }}" alt="{{ $alt ?? $source?->name }}"
+    @if ($placeholderContents) style="background-size:cover;background-image: url(data:image/jpeg;base64,{{ $placeholderContents }})" @endif>

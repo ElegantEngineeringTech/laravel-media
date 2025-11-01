@@ -324,4 +324,18 @@ trait InteractWithFiles
             ->cascade()
             ->forHumans($syntax, $short, $parts, $options);
     }
+
+    /**
+     * Whether the file is safe to use with <img>, <video>, etc. in the browser.
+     */
+    public function isBrowserSafe(): bool
+    {
+        return match ($this->type) {
+            MediaType::Image => in_array($this->mime_type, ['image/apng', 'image/avif', 'image/gif', 'image/jpeg', 'image/png', 'image/svg', 'image/webp']),
+            MediaType::Video => in_array($this->mime_type, ['video/mp4', 'video/x-m4v', 'video/webm']),
+            MediaType::Audio => in_array($this->mime_type, ['audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/wav']),
+            MediaType::Pdf => true,
+            default => false,
+        };
+    }
 }
