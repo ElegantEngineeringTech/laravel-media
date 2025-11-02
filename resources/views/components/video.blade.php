@@ -38,7 +38,7 @@
 
 @endphp
 
-<video {!! $attributes !!} src="{!! $src ?? $source?->getUrl($parameters) !!}" height="{{ $height ?? $source?->height }}"
+<video {!! $attributes !!} src="{!! $src ?? $source?->getUrl(parameters: $parameters) !!}" height="{{ $height ?? $source?->height }}"
     width="{{ $width ?? $source?->width }}" alt="{{ $alt ?? $source?->name }}" poster="{{ $poster }}"
     {{ when($autoplay, 'autoplay') }} {{ when($muted, 'muted') }} {{ when($playsinline, 'playsinline') }}
     {{ when($loop, 'loop') }}>
