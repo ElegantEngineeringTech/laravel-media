@@ -55,6 +55,9 @@ class File
         return MediaType::tryFromStreams($path);
     }
 
+    /**
+     * Duration in Ms
+     */
     public static function duration(string $path): ?float
     {
         $type = static::type($path);
