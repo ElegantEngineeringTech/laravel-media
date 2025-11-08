@@ -256,6 +256,7 @@ class Media extends Model
     public function dispatchConversion(
         string $conversion,
         bool $force = true,
+        ?string $queue = null
     ): ?PendingDispatch {
         if (
             $force === false &&
@@ -270,8 +271,10 @@ class Media extends Model
 
             $job = dispatch($converter->conversion($conversion));
 
-            if ($queue = $definition->queue) {
+            if ($queue) {
                 $job->onQueue($queue);
+            } elseif ($definition->queue) {
+                $job->onQueue($definition->queue);
             }
 
             return $job;
