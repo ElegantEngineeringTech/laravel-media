@@ -48,6 +48,16 @@ trait InteractWithFiles
         return $formatter;
     }
 
+    public function dirname(): ?string
+    {
+
+        if ($this->path) {
+            return dirname($this->path);
+        }
+
+        return null;
+    }
+
     public function getDisk(): ?Filesystem
     {
         if (! $this->disk) {
@@ -131,6 +141,23 @@ trait InteractWithFiles
         }
 
         return true;
+    }
+
+    public function deleteDirectory(): bool
+    {
+        $dirname = $this->dirname();
+
+        if (! $dirname) {
+            return true;
+        }
+
+        $filesystem = $this->getDisk();
+
+        if (! $filesystem) {
+            return true;
+        }
+
+        return $filesystem->deleteDirectory($dirname);
     }
 
     /**
