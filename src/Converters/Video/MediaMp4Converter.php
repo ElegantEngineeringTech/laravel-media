@@ -22,6 +22,7 @@ class MediaMp4Converter extends MediaConverter
         public string $filename,
         public ?int $width = null,
         public ?int $height = null,
+        public ?int $fps = null,
         public int $crf = 18,
         public string $preset = 'veryslow',
     ) {}
@@ -63,6 +64,7 @@ class MediaMp4Converter extends MediaConverter
             output: $output,
             width: $width,
             height: $height,
+            fps: $this->fps,
             crf: $this->crf,
             preset: $this->preset,
         );

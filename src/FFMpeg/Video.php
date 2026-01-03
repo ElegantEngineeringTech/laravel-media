@@ -88,39 +88,76 @@ class Video extends FFMpeg
     }
 
     /**
-     * @return array{0: int, 1: string[]}
+     * Transcodes a video file to MP4 (H.264/AAC) using FFmpeg.
+     * This method optimizes the video for web playback by applying a YUV420p pixel format and the +faststart flag.
+     *
+     * @param  string  $input  The absolute path to the source video file.
+     * @param  string  $output  The absolute path where the output MP4 should be saved.
+     * @param  int|null  $width  The target width in pixels. If null, original width is kept.
+     * @param  int|null  $height  The target height in pixels. If null, original height is kept.
+     * @param  int|null  $fps  Target frames per second.
+     * @param  int  $crf  Constant Rate Factor (0–51).
+     *                    18 is visually lossless;
+     *                    23 is default;
+     *                    higher is lower quality.
+     * @param  string  $preset  The compression speed (e.g., 'ultrafast', 'medium', 'veryslow').
+     *                          Slower presets result in better compression/smaller files.
+     * @return array{0: int, 1: string[]} Returns an array where index 0 is the exit code and index 1 is the output log.
      */
     public function mp4(
         string $input,
         string $output,
         ?int $width = null,
         ?int $height = null,
+        ?int $fps = null,
         int $crf = 18,
         string $preset = 'veryslow'
     ): array {
-        if ($scale = $this->getScale($width, $height)) {
-            return $this->ffmpeg("-i {$input} -vf {$scale} -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
-        }
 
-        return $this->ffmpeg("-i {$input} -vf -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
+        $filters = implode(',', [
+            $this->getScale($width, $height),
+            $fps ? "fps={$fps}" : 'null',
+        ]);
+
+        return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
     }
 
     /**
-     * @return array{0: int, 1: string[]}
+     * Transcodes a video file to WebM (VP9/Opus) using FFmpeg.
+     *
+     * This method uses the libvpx-vp9 encoder in Constrained Quality (CQ) mode.
+     * It enables multi-threading and modern audio compression (Opus) for superior web performance.
+     *
+     * @param  string  $input  The absolute path to the source video file.
+     * @param  string  $output  The absolute path for the output .webm file.
+     * @param  int|null  $width  Target width in pixels. Auto-scales if null.
+     * @param  int|null  $height  Target height in pixels. Auto-scales if null.
+     * @param  int|null  $fps  Target frames per second. Keeps original if null.
+     * @param  int  $crf  Constant Rate Factor (0–63).
+     *                    Lower is higher quality.
+     *                    31–34 is recommended for 1080p;
+     *                    15-18 for high-quality archiving.
+     * @param  string  $deadline  The quality/speed tradeoff: 'realtime', 'good', or 'best'.
+     *                            'good' is the recommended balance.
+     * @param  int  $cpuUsed  Encoding efficiency (0–8). Higher values speed up encoding at a slight cost to quality.
+     * @return array{0: int, 1: string[]} Returns an array where index 0 is the exit code and index 1 is the output log.
      */
     public function webm(
         string $input,
         string $output,
         ?int $width = null,
         ?int $height = null,
+        ?int $fps = null,
         int $crf = 32,
         string $deadline = 'good',
         int $cpuUsed = 3,
     ): array {
-        if ($scale = $this->getScale($width, $height)) {
-            return $this->ffmpeg("-i {$input} -vf {$scale} -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
-        }
 
-        return $this->ffmpeg("-i {$input} -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
+        $filters = implode(',', [
+            $this->getScale($width, $height),
+            $fps ? "fps={$fps}" : 'null',
+        ]);
+
+        return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
     }
 }

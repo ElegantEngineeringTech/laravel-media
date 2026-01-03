@@ -112,7 +112,10 @@ class FFMpeg
         return $this->execute("{$this->ffprobe} {$command}");
     }
 
-    protected function getScale(?int $width = null, ?int $height = null): ?string
+    /**
+     * The 'null' filter is an identity filter.
+     */
+    protected function getScale(?int $width = null, ?int $height = null): string
     {
         if ($width && $height) {
             return "scale={$width}:{$height}";
@@ -126,6 +129,6 @@ class FFMpeg
             return "scale=-2:{$height}";
         }
 
-        return null;
+        return 'null';
     }
 }
