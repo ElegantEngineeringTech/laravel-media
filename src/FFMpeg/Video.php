@@ -95,7 +95,7 @@ class Video extends FFMpeg
      * @param  string  $output  The absolute path where the output MP4 should be saved.
      * @param  int|null  $width  The target width in pixels. If null, original width is kept.
      * @param  int|null  $height  The target height in pixels. If null, original height is kept.
-     * @param  int|null  $fps  Target frames per second.
+     * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $crf  Constant Rate Factor (0–51).
      *                    18 is visually lossless;
      *                    23 is default;
@@ -116,7 +116,7 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->getScale($width, $height),
-            $fps ? "fps={$fps}" : 'null',
+            $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
 
         return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
@@ -132,7 +132,7 @@ class Video extends FFMpeg
      * @param  string  $output  The absolute path for the output .webm file.
      * @param  int|null  $width  Target width in pixels. Auto-scales if null.
      * @param  int|null  $height  Target height in pixels. Auto-scales if null.
-     * @param  int|null  $fps  Target frames per second. Keeps original if null.
+     * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
      *                    31–34 is recommended for 1080p;
@@ -155,7 +155,7 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->getScale($width, $height),
-            $fps ? "fps={$fps}" : 'null',
+            $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
 
         return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
