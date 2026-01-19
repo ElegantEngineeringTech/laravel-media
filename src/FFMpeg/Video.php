@@ -115,8 +115,9 @@ class Video extends FFMpeg
     ): array {
 
         $filters = implode(',', [
-            $this->getScale($width, $height),
+            'format=yuv420p',
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
+            $this->getScale($width, $height),
         ]);
 
         return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
