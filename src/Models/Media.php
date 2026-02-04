@@ -267,7 +267,7 @@ class Media extends Model
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            $converter = ($definition->converter)($this);
+            $converter = ($definition->converter)($this->withoutRelations());
 
             $job = dispatch($converter->conversion($conversion));
 
