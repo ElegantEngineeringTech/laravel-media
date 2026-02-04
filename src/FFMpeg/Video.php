@@ -82,8 +82,8 @@ class Video extends FFMpeg
     ): array {
 
         $filters = implode(',', [
-            $this->getScale($width, $height),
             'format=yuv420p', // Fix Invalid color space caused by HDR
+            $this->getScale($width, $height),
         ]);
 
         return $this->ffmpeg("-ss {$timecode} -i {$input} -vframes 1 -vf \"{$filters}\" {$output}");
@@ -117,9 +117,9 @@ class Video extends FFMpeg
     ): array {
 
         $filters = implode(',', [
+            'format=yuv420p', // Fix Invalid color space caused by HDR
             $this->getScale($width, $height),
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
-            'format=yuv420p', // Fix Invalid color space caused by HDR
         ]);
 
         return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
