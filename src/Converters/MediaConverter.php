@@ -29,7 +29,12 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
     public function __construct(
         public readonly Media $media,
-    ) {}
+    ) {
+        /** @var ?string */
+        $queue = config('media.queue');
+
+        $this->onQueue($queue);
+    }
 
     public function conversion(string $value): static
     {
