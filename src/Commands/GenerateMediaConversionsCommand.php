@@ -15,7 +15,7 @@ class GenerateMediaConversionsCommand extends Command
 {
     public $signature = 'media:generate-conversions 
                         {ids?* : Media Ids}
-                        {--queue : Queue}
+                        {--queue= : Queue}
                         {--force : Replace existing conversions}
                         {--with-children : Generate children conversions}
                         {--with-force-children : Force children to be re-generated}
