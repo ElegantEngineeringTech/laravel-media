@@ -12,6 +12,7 @@ use Elegantly\Media\Converters\Image\MediaImagePlaceholderConverter;
 use Elegantly\Media\Converters\Pdf\MediaPdfToImageConverter;
 use Elegantly\Media\Converters\Video\MediaFrameConverter;
 use Elegantly\Media\Converters\Video\MediaMp4Converter;
+use Elegantly\Media\Converters\Video\MediaThumbnailConverter;
 use Elegantly\Media\Converters\Video\MediaWebmConverter;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversionDefinition;
@@ -145,6 +146,16 @@ class TestConverters extends Test
                                 )
                             ),
                         ]
+                    ),
+                    new MediaConversionDefinition(
+                        name: 'thumbnail',
+                        immediate: false,
+                        queued: false,
+                        converter: fn ($media) => new MediaThumbnailConverter(
+                            media: $media,
+                            filename: "{$media->name}.webp",
+                            width: 10,
+                        ),
                     ),
                 ],
             ),

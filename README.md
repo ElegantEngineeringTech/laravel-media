@@ -10,11 +10,11 @@ This package offers an extremely flexible media library, enabling you to store a
 
 It provides advanced features such as:
 
--   🌐 Supports any filesystem solutions (local or cloud), such as S3, R2, Bunny.net, DO...
--   ⚡ Supports any file conversion solutions (local or cloud), such as ffmpeg, Transloadit, Cloudflare, Coconut, and others.
--   🔄 Advanced nested media conversions
--   🚀 Rich metadata automatically extracted
--   🛠️ Highly flexible and customizable
+- 🌐 Supports any filesystem solutions (local or cloud), such as S3, R2, Bunny.net, DO...
+- ⚡ Supports any file conversion solutions (local or cloud), such as ffmpeg, Transloadit, Cloudflare, Coconut, and others.
+- 🔄 Advanced nested media conversions
+- 🚀 Rich metadata automatically extracted
+- 🛠️ Highly flexible and customizable
 
 I developed this package with the highest degree of flexibility possible and I have been using it in production for nearly two years, handling terabytes of files monthly.
 
@@ -25,7 +25,6 @@ I developed this package with the highest degree of flexibility possible and I h
 1. [Installation](#installation)
 
 1. [Basic Usage](#basic-usage)
-
     - [Define Media Collection](#defining-media-collections)
     - [Define Media Conversions](#defining-media-conversions)
     - [Adding Media](#adding-media)
@@ -35,7 +34,6 @@ I developed this package with the highest degree of flexibility possible and I h
     - [Blade components](#blade-components)
 
 1. [Advanced Usage](#advanced-usage)
-
     - [Transforming a file before storing it](#transforming-a-file-before-storing-it)
     - [Async vs Sync conversions](#async-vs-sync-conversions)
     - [Delayed conversions](#delayed-conversions)
@@ -47,11 +45,9 @@ I developed this package with the highest degree of flexibility possible and I h
     - [Format Media Url](#format-media-url)
 
 1. [Conversions Presets](#conversions-presets)
-
     - [Image Placeholder](#image-placeholder)
 
 1. [Customization](#customization)
-
     - [Custom Media Model](#custom-media-model)
 
 1. [Troubleshooting](#troubleshooting)
@@ -59,11 +55,11 @@ I developed this package with the highest degree of flexibility possible and I h
 
 ## Requirements
 
--   PHP 8.1+
--   Laravel 11.0+
--   `spatie/image` for image conversions
--   `spatie/pdf-to-image` for PDF to image conversions
--   `ffmpeg` for video/audio processing
+- PHP 8.1+
+- Laravel 11.0+
+- `spatie/image` for image conversions
+- `spatie/pdf-to-image` for PDF to image conversions
+- `ffmpeg` for video/audio processing
 
 ## Installation
 
@@ -247,13 +243,14 @@ Media conversions create different variants of your media files. For example, a 
 
 This package provides common converter to simplify your work:
 
--   `MediaImageConverter`: This converter optimizes, resizes, or converts any image using `spatie/image`.
--   `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video or gif to mp4 video using `ffmpeg`.
--   `MediaWebmConverter`: This conversion optimizes, resizes, or converts any video or gif to webm video using `ffmpeg`.
--   `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
--   `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
--   `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
--   `MediaPdfToImageConverter`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
+- `MediaImageConverter`: This converter optimizes, resizes, or converts any image using `spatie/image`.
+- `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video or gif to mp4 video using `ffmpeg`.
+- `MediaWebmConverter`: This conversion optimizes, resizes, or converts any video or gif to webm video using `ffmpeg`.
+- `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
+- `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
+- `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
+- `MediaThumbnailConverter`: This conversion smartly extracts the best thumbnail from a video using `ffmpeg`.
+- `MediaPdfToImageConverter`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
 
 ```php
 namespace App\Models;
@@ -314,10 +311,10 @@ class Channel extends Model implements InteractWithMedia
 
 Add media to your model, using the `addMedia` method, from various sources:
 
--   an url
--   a resource or stream
--   a `\Illuminate\Http\UploadedFile` instance
--   a `\Illuminate\Http\File` instance
+- an url
+- a resource or stream
+- a `\Illuminate\Http\UploadedFile` instance
+- a `\Illuminate\Http\File` instance
 
 #### From a Controller
 
@@ -747,11 +744,11 @@ class MediaImageConverter extends MediaConverter
 
 The `convert` method is where the logic for the conversion is implemented. It provides the following parameters:
 
--   **`$media`**: The Media model.
--   **`$parent`**: The MediaConversion model, if the conversion is nested.
--   **`$file`**: A local copy of the file associated with either `$media` or `$parent`.
--   **`$filesystem`**: An instance of the local filesystem where the file copy is stored.
--   **`$temporaryDirectory`**: An instance of `TemporaryDirectory` where the file copy is temporarily stored.
+- **`$media`**: The Media model.
+- **`$parent`**: The MediaConversion model, if the conversion is nested.
+- **`$file`**: A local copy of the file associated with either `$media` or `$parent`.
+- **`$filesystem`**: An instance of the local filesystem where the file copy is stored.
+- **`$temporaryDirectory`**: An instance of `TemporaryDirectory` where the file copy is temporarily stored.
 
 You don’t need to worry about cleaning up the files, as the `$temporaryDirectory` will be deleted automatically when the process completes or fails.
 
@@ -816,8 +813,8 @@ This package gives you a simple way to format your URLs so you can take advantag
 
 When using the `$media->getUrl()` method, you can specify two parameters:
 
--   `parameters`: An array of values
--   `formatter`: The class name of the formatter you want to use
+- `parameters`: An array of values
+- `formatter`: The class name of the formatter you want to use
 
 By combining these parameters, you can retrieve formatted URLs like this:
 
@@ -838,9 +835,9 @@ $cloudflare = $media->getUrl(
 
 This package comes with 3 formatters out of the box:
 
--   `\Elegantly\Media\UrlFormatters\DefaultUrlFormatter`
--   `\Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter`
--   `\Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter`
+- `\Elegantly\Media\UrlFormatters\DefaultUrlFormatter`
+- `\Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter`
+- `\Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter`
 
 Feel free to implement your own formatter by extending `\Elegantly\Media\UrlFormatters\AbstractUrlFormatter`.
 
@@ -895,10 +892,7 @@ If you’re using the built-in <x-media::img> Blade component, you can directly 
 ```html
 <x-media::img :media="$user->getFirstMedia('avatar')" placeholder />
 
-<x-media::img
-    :media="$user->getFirstMedia('avatar')"
-    placeholder="custom-placeholder-name"
-/>
+<x-media::img :media="$user->getFirstMedia('avatar')" placeholder="custom-placeholder-name" />
 ```
 
 This will automatically load the blurred placeholder as a background-image.
@@ -975,8 +969,8 @@ This package relies on the `spatie/pdf-to-image` library, which uses Ghostscript
 
 If you encounter errors while generating images from PDFs, such as:
 
--   `attempt to perform an operation not allowed by the security policy 'PDF'`
--   `Uncaught ImagickException: FailedToExecuteCommand 'gs'`
+- `attempt to perform an operation not allowed by the security policy 'PDF'`
+- `Uncaught ImagickException: FailedToExecuteCommand 'gs'`
 
 these issues are likely related to the configuration of Ghostscript or Imagick on your system.
 
@@ -1002,8 +996,8 @@ Please contact [me](https://github.com/QuentinGab) to report security vulnerabil
 
 ## Credits
 
--   [Quentin Gabriele](https://github.com/QuentinGab)
--   [All Contributors](../../contributors)
+- [Quentin Gabriele](https://github.com/QuentinGab)
+- [All Contributors](../../contributors)
 
 ## License
 

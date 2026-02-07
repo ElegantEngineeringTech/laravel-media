@@ -71,6 +71,7 @@ class Video extends FFMpeg
 
     /**
      * @param  int|float|string  $timecode  in seconds (SS.xxx) or formatted (HH:MM:SS.xx)
+     * @param  string[]  $filters  Additional ffmpeg filters
      * @return array{0: int, 1: string[]}
      */
     public function frame(
@@ -79,14 +80,40 @@ class Video extends FFMpeg
         int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,
+        array $filters = []
     ): array {
 
         $filters = implode(',', [
+            ...$filters,
             'format=yuv420p', // Fix Invalid color space caused by HDR
             $this->getScale($width, $height),
         ]);
 
         return $this->ffmpeg("-ss {$timecode} -i {$input} -vframes 1 -vf \"{$filters}\" {$output}");
+    }
+
+    /**
+     * Extract a representative thumbnail using FFmpeg's thumbnail filter.
+     *
+     * @param  int  $frames  Number of frames to analyze per batch
+     * @return array{0: int, 1: string[]}
+     */
+    public function thumbnail(
+        string $input,
+        string $output,
+        int $frames = 150,
+        int|float|string $timecode = '00:00:00',
+        ?int $width = null,
+        ?int $height = null,
+    ): array {
+        return $this->frame(
+            input: $input,
+            output: $output,
+            timecode: $timecode,
+            width: $width,
+            height: $height,
+            filters: ["thumbnail={$frames}"],
+        );
     }
 
     /**
