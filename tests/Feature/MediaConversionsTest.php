@@ -198,7 +198,11 @@ it('generates immediate children conversion when a parent is executed', function
         disk: 'media'
     );
 
-    $media->executeConversion('small');
+    $media->executeConversion(
+        conversion: 'small',
+        withChildren: true,
+        withForceChildren: true,
+    );
 
     Queue::assertPushed(MediaImageConverter::class, 0);
     Event::assertDispatched(MediaConverterExecutedEvent::class, 2);

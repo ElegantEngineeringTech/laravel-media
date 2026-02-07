@@ -15,7 +15,10 @@ class GenerateMediaConversionsCommand extends Command
 {
     public $signature = 'media:generate-conversions 
                         {ids?* : Media Ids}
+                        {--queue : Queue}
                         {--force : Replace existing conversions}
+                        {--with-children : Generate children conversions}
+                        {--with-force-children : Force children to be re-generated}
                         {--immediate : Only generates immediate conversions}
                         {--conversions=* : Conversions names}
                         {--collections=* : Collection names}
@@ -27,6 +30,10 @@ class GenerateMediaConversionsCommand extends Command
     {
         $ids = (array) $this->argument('ids');
         $force = (bool) $this->option('force');
+        /** @var ?string $queue */
+        $queue = $this->option('queue');
+        $withChildren = (bool) $this->option('with-children');
+        $withForceChildren = (bool) $this->option('with-force-children');
         $immediate = (bool) $this->option('immediate');
         /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
@@ -54,19 +61,28 @@ class GenerateMediaConversionsCommand extends Command
 
         $progress = new Progress('Dispatching Media conversions', $count);
 
-        $query->chunkById(1_000, function ($media) use ($progress, $force, $immediate, $conversions) {
+        $query->chunkById(1_000, function ($media) use ($progress, $queue, $force, $immediate, $conversions, $withChildren, $withForceChildren) {
 
+            /** @var Media $medium */
             foreach ($media as $medium) {
 
                 if ($conversions) {
                     foreach ($conversions as $conversion) {
-                        $medium->dispatchConversion($conversion, $force);
+                        $medium->dispatchConversion(
+                            conversion: $conversion,
+                            force: $force,
+                            withChildren: $withChildren,
+                            withForceChildren: $withForceChildren,
+                            queue: $queue,
+                        );
                     }
                 } else {
                     $medium->generateConversions(
                         filter: fn ($definition) => $immediate ? $definition->immediate : true,
                         queued: true,
-                        force: $force
+                        force: $force,
+                        withChildren: $withChildren,
+                        withForceChildren: $withForceChildren,
                     );
                 }
 

@@ -256,7 +256,9 @@ class Media extends Model
     public function dispatchConversion(
         string $conversion,
         bool $force = true,
-        ?string $queue = null
+        bool $withChildren = false,
+        bool $withForceChildren = false,
+        ?string $queue = null,
     ): ?PendingDispatch {
         if (
             $force === false &&
@@ -267,9 +269,11 @@ class Media extends Model
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            $converter = ($definition->converter)($this->withoutRelations());
+            $converter = ($definition->converter)($this->withoutRelations())
+                ->conversion($conversion)
+                ->withChildren($withChildren, $withForceChildren);
 
-            $job = dispatch($converter->conversion($conversion));
+            $job = dispatch($converter);
 
             if ($queue) {
                 $job->onQueue($queue);
@@ -290,7 +294,8 @@ class Media extends Model
     public function executeConversion(
         string $conversion,
         bool $force = true,
-        bool $withChildren = true,
+        bool $withChildren = false,
+        bool $withForceChildren = false,
     ): ?MediaConversion {
 
         if (
@@ -302,11 +307,9 @@ class Media extends Model
 
         if ($definition = $this->getConversionDefinition($conversion)) {
 
-            $converter = ($definition->converter)($this);
-
-            return $converter
+            return ($definition->converter)($this)
                 ->conversion($conversion)
-                ->withChildren($withChildren)
+                ->withChildren($withChildren, $withForceChildren)
                 ->handle();
         }
 
@@ -315,13 +318,19 @@ class Media extends Model
 
     public function getOrExecuteConversion(
         string $name,
-        bool $withChildren = true,
+        bool $withChildren = false,
+        bool $withForceChildren = false,
     ): ?MediaConversion {
         if ($conversion = $this->getConversion($name, [MediaConversionState::Succeeded, MediaConversionState::Pending])) {
             return $conversion;
         }
 
-        return $this->executeConversion($name, withChildren: $withChildren);
+        return $this->executeConversion(
+            conversion: $name,
+            force: true,
+            withChildren: $withChildren,
+            withForceChildren: $withForceChildren
+        );
     }
 
     /**
@@ -498,6 +507,8 @@ class Media extends Model
         ?Closure $filter = null,
         ?bool $queued = null,
         bool $force = false,
+        bool $withChildren = false,
+        bool $withForceChildren = false,
     ): static {
 
         if ($parent) {
@@ -519,6 +530,8 @@ class Media extends Model
                 $job = $this->dispatchConversion(
                     conversion: $conversion,
                     force: $force,
+                    withChildren: $withChildren,
+                    withForceChildren: $withForceChildren,
                 );
 
                 if ($definition->delay !== null) {
@@ -531,7 +544,9 @@ class Media extends Model
                 try {
                     $this->executeConversion(
                         conversion: $conversion,
-                        force: $force
+                        force: $force,
+                        withChildren: $withChildren,
+                        withForceChildren: $withForceChildren,
                     );
                 } catch (\Throwable $th) {
                     report($th);

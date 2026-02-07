@@ -63,11 +63,14 @@ class RetryMediaConversionsCommand extends Command
 
         $query->chunkById(1_000, function ($mediaConversions) use ($progress) {
 
+            /** @var MediaConversion $mediaConversion */
             foreach ($mediaConversions as $mediaConversion) {
 
                 $mediaConversion->media->dispatchConversion(
                     conversion: $mediaConversion->conversion_name,
-                    force: true
+                    force: true,
+                    withChildren: true,
+                    withForceChildren: false,
                 );
 
                 $progress->advance();

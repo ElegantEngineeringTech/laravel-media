@@ -585,13 +585,17 @@ To generate the conversion later, you can use the following methods:
 // Generate the conversion synchronously
 $media->executeConversion(
     conversion: '360',
-    force: false // Skips execution if the conversion already exists
+    force: false, // Skips execution if the conversion already exists
+    withChildren: true, // Generate children conversion
+    withForceChildren: true, // Force children conversion to be re-generated
 );
 
 // Dispatch the conversion as a background job
 $media->dispatchConversion(
     conversion: '360',
-    force: false // Skips execution if the conversion already exists
+    force: false, // Skips execution if the conversion already exists
+    withChildren: true, // Generate children conversion
+    withForceChildren: true, // Force children conversion to be re-generated
 );
 ```
 

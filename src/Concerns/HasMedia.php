@@ -203,6 +203,8 @@ trait HasMedia
         $media->generateConversions(
             filter: fn ($definition) => $definition->immediate,
             force: true,
+            withChildren: true,
+            withForceChildren: true,
         );
 
         if ($onAdded = $collection?->onAdded) {
@@ -259,13 +261,20 @@ trait HasMedia
         bool $force = true,
         ?string $collectionName = null,
         ?string $collectionGroup = null,
+        bool $withChildren = false,
+        bool $withForceChildren = false,
     ): \Illuminate\Support\Collection {
 
         return $this
             ->getMedia($collectionName, $collectionGroup)
             ->toBase()
-            ->map(function ($media) use ($conversionName, $force) {
-                return $media->dispatchConversion($conversionName, $force);
+            ->map(function ($media) use ($conversionName, $force, $withChildren, $withForceChildren) {
+                return $media->dispatchConversion(
+                    conversion: $conversionName,
+                    force: $force,
+                    withChildren: $withChildren,
+                    withForceChildren: $withForceChildren
+                );
             })
             ->filter();
 

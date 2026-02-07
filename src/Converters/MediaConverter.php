@@ -25,7 +25,11 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
     public string $conversion;
 
-    public bool $withChildren = true;
+    /** Generate children */
+    public bool $withChildren = false;
+
+    /** Force children to be re-generated */
+    public bool $withForceChildren = false;
 
     public function __construct(
         public readonly Media $media,
@@ -43,9 +47,12 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
         return $this;
     }
 
-    public function withChildren(bool $value = true): static
-    {
+    public function withChildren(
+        bool $value = true,
+        bool $force = false,
+    ): static {
         $this->withChildren = $value;
+        $this->withForceChildren = $force;
 
         return $this;
     }
@@ -114,7 +121,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             );
 
             /**
-             * Parent conversion failed to execute
+             * Parent conversion skipped or failed to execute
              */
             if ($parent === null || $parent->state !== MediaConversionState::Succeeded) {
                 return null;
@@ -169,7 +176,9 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             $this->media->generateConversions(
                 parent: $mediaConversion,
                 filter: fn ($definition) => $definition->immediate,
-                force: false,
+                force: $this->withForceChildren,
+                withChildren: $this->withChildren,
+                withForceChildren: $this->withForceChildren,
             );
         }
 
