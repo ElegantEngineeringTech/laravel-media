@@ -101,7 +101,7 @@ class Video extends FFMpeg
     public function thumbnail(
         string $input,
         string $output,
-        int $frames = 150,
+        int $frames = 90,
         int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,

@@ -21,7 +21,7 @@ class MediaThumbnailConverter extends MediaConverter
         public readonly Media $media,
         public string $filename,
         public int|float|string $timecode = 0,
-        public int $frames = 150,
+        public int $frames = 90,
         public ?int $width = null,
         public ?int $height = null,
     ) {}
