@@ -43,7 +43,7 @@ jobs:
           coverage: xdebug
 
       - name: Install composer dependencies
-        uses: ramsey/composer-install@v3
+        uses: ramsey/composer-install@v4
 
       - name: Run Pest coverage
         run: ./vendor/bin/pest --coverage --min=50
