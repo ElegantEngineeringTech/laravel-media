@@ -12,6 +12,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
+use Spatie\PdfToImage\Pdf;
 use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaPdfToImageConverter extends MediaConverter
@@ -48,7 +49,7 @@ class MediaPdfToImageConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($this->filename);
 
-        $pdf = new \Spatie\PdfToImage\Pdf($input);
+        $pdf = new Pdf($input);
 
         $pdf->selectPage($this->page)->save($output);
 

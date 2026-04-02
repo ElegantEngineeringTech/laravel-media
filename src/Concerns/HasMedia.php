@@ -14,11 +14,12 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 
 /**
- * @mixin \Illuminate\Database\Eloquent\Model
+ * @mixin Model
  *
  * @template TMedia of Media
  *
@@ -254,7 +255,7 @@ trait HasMedia
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, \Illuminate\Foundation\Bus\PendingDispatch>
+     * @return \Illuminate\Support\Collection<int, PendingDispatch>
      */
     public function dispatchMediaConversion(
         string $conversionName,
