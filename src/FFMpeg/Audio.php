@@ -10,9 +10,16 @@ class Audio extends FFMpeg
 {
     public function metadata(string $input): array
     {
-        [$code, $output] = $this->ffprobe("-v error -select_streams a:0 -show_format -show_streams -print_format json {$input}");
+        $output = $this->ffprobe([
+            '-v', 'error',
+            '-select_streams', 'a:0',
+            '-show_format',
+            '-show_streams',
+            '-print_format', 'json',
+            $input,
+        ]);
 
-        $metadata = json_decode(implode('', $output), true);
+        $metadata = json_decode($output, true);
 
         // @phpstan-ignore-next-line
         return is_array($metadata) ? $metadata : [];
@@ -36,24 +43,31 @@ class Audio extends FFMpeg
         throw AudioStreamNotFoundException::atPath($input);
     }
 
-    /**
-     * @return array{0: int, 1: string[]}
-     */
     public function mp3(
         string $input,
         string $output,
-    ): array {
-        return $this->ffmpeg("-i {$input} -vn -acodec libmp3lame -b:a 128k {$output}");
+    ): string {
+        return $this->ffmpeg([
+            '-i', $input,
+            '-vn',
+            '-acodec', 'libmp3lame',
+            '-b:a', '128k',
+            $output,
+        ]);
     }
 
-    /**
-     * @return array{0: int, 1: string[]}
-     */
     public function wav(
         string $input,
         string $output,
-    ): array {
-        return $this->ffmpeg("-i {$input} -vn -acodec pcm_s16le -ar 44100 -ac 2 {$output}");
+    ): string {
+        return $this->ffmpeg([
+            '-i', $input,
+            '-vn',
+            '-acodec', 'pcm_s16le',
+            '-ar', '44100',
+            '-ac', '2',
+            $output,
+        ]);
     }
 
     /**
@@ -71,24 +85,27 @@ class Audio extends FFMpeg
      *                         - 4 : Quad — four-channel audio (rare, surround setups).
      *                         - 6 : 5.1 Surround — six channels (home theater, cinema).
      *                         - 8 : 7.1 Surround — eight channels (high-end surround systems).
-     * @return array{0: int, 1: string[]}
      */
     public function aac(
         string $input,
         string $output,
         string $bitrate = '64k',
         int $channels = 2,
-    ): array {
-        return $this->ffmpeg("-i {$input} -vn -c:a aac -b:a {$bitrate} -ac {$channels} {$output}");
+    ): string {
+        return $this->ffmpeg([
+            '-i', $input,
+            '-vn',
+            '-c:a', 'aac',
+            '-b:a', $bitrate,
+            '-ac', (string) $channels,
+            $output,
+        ]);
     }
 
-    /**
-     * @return array{0: int, 1: string[]}
-     */
     public function save(
         string $input,
         string $output,
-    ): array {
+    ): string {
         $extension = pathinfo($output, PATHINFO_EXTENSION);
 
         return match ($extension) {

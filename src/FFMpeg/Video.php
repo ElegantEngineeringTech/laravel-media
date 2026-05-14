@@ -10,9 +10,16 @@ class Video extends FFMpeg
 {
     public function metadata(string $input): array
     {
-        [$code, $output] = $this->ffprobe("-v error -select_streams v:0 -show_format -show_streams -print_format json {$input}");
+        $output = $this->ffprobe([
+            '-v', 'error',
+            '-select_streams', 'v:0',
+            '-show_format',
+            '-show_streams',
+            '-print_format', 'json',
+            $input,
+        ]);
 
-        $metadata = json_decode(implode('', $output), true);
+        $metadata = json_decode($output, true);
 
         // @phpstan-ignore-next-line
         return is_array($metadata) ? $metadata : [];
@@ -58,7 +65,6 @@ class Video extends FFMpeg
     /**
      * @param  int|float|string  $timecode  in seconds (SS.xxx) or formatted (HH:MM:SS.xx)
      * @param  string[]  $filters  Additional ffmpeg filters
-     * @return array{0: int, 1: string[]}
      */
     public function frame(
         string $input,
@@ -67,7 +73,7 @@ class Video extends FFMpeg
         ?int $width = null,
         ?int $height = null,
         array $filters = []
-    ): array {
+    ): string {
 
         $filters = implode(',', [
             ...$filters,
@@ -75,14 +81,19 @@ class Video extends FFMpeg
             $this->getScale($width, $height),
         ]);
 
-        return $this->ffmpeg("-ss {$timecode} -i {$input} -vframes 1 -vf \"{$filters}\" {$output}");
+        return $this->ffmpeg([
+            '-ss', (string) $timecode,
+            '-i', $input,
+            '-vframes', '1',
+            '-vf', $filters,
+            $output,
+        ]);
     }
 
     /**
      * Extract a representative thumbnail using FFmpeg's thumbnail filter.
      *
      * @param  int  $frames  Number of frames to analyze per batch
-     * @return array{0: int, 1: string[]}
      */
     public function thumbnail(
         string $input,
@@ -91,7 +102,7 @@ class Video extends FFMpeg
         int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,
-    ): array {
+    ): string {
         return $this->frame(
             input: $input,
             output: $output,
@@ -117,7 +128,6 @@ class Video extends FFMpeg
      *                    higher is lower quality.
      * @param  string  $preset  The compression speed (e.g., 'ultrafast', 'medium', 'veryslow').
      *                          Slower presets result in better compression/smaller files.
-     * @return array{0: int, 1: string[]} Returns an array where index 0 is the exit code and index 1 is the output log.
      */
     public function mp4(
         string $input,
@@ -127,7 +137,7 @@ class Video extends FFMpeg
         ?int $fps = null,
         int $crf = 18,
         string $preset = 'veryslow'
-    ): array {
+    ): string {
 
         $filters = implode(',', [
             'format=yuv420p', // Fix Invalid color space caused by HDR
@@ -135,7 +145,18 @@ class Video extends FFMpeg
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
 
-        return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libx264 -crf {$crf} -preset {$preset} -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart {$output}");
+        return $this->ffmpeg([
+            '-i', $input,
+            '-vf', $filters,
+            '-c:v', 'libx264',
+            '-crf', (string) $crf,
+            '-preset', $preset,
+            '-pix_fmt', 'yuv420p',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-movflags', '+faststart',
+            $output,
+        ]);
     }
 
     /**
@@ -156,7 +177,6 @@ class Video extends FFMpeg
      * @param  string  $deadline  The quality/speed tradeoff: 'realtime', 'good', or 'best'.
      *                            'good' is the recommended balance.
      * @param  int  $cpuUsed  Encoding efficiency (0–8). Higher values speed up encoding at a slight cost to quality.
-     * @return array{0: int, 1: string[]} Returns an array where index 0 is the exit code and index 1 is the output log.
      */
     public function webm(
         string $input,
@@ -167,13 +187,26 @@ class Video extends FFMpeg
         int $crf = 32,
         string $deadline = 'good',
         int $cpuUsed = 3,
-    ): array {
+    ): string {
 
         $filters = implode(',', [
             $this->getScale($width, $height),
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
 
-        return $this->ffmpeg("-i {$input} -vf \"{$filters}\" -c:v libvpx-vp9 -crf {$crf} -b:v 0 -row-mt 1 -deadline {$deadline} -cpu-used {$cpuUsed} -c:a libopus -b:a 96k -movflags +faststart {$output}");
+        return $this->ffmpeg([
+            '-i', $input,
+            '-vf', $filters,
+            '-c:v', 'libvpx-vp9',
+            '-crf', (string) $crf,
+            '-b:v', '0',
+            '-row-mt', '1',
+            '-deadline', $deadline,
+            '-cpu-used', (string) $cpuUsed,
+            '-c:a', 'libopus',
+            '-b:a', '96k',
+            '-movflags', '+faststart',
+            $output,
+        ]);
     }
 }

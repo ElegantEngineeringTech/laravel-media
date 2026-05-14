@@ -6,6 +6,7 @@ namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
 
 class FFMpeg
 {
@@ -75,59 +76,80 @@ class FFMpeg
      */
     public function metadata(string $input): array
     {
-        [$code, $output] = $this->ffprobe("-v error -show_format -show_streams -print_format json {$input}");
+        $output = $this->ffprobe([
+            '-v', 'error',
+            '-show_format',
+            '-show_streams',
+            '-print_format', 'json',
+            $input,
+        ]);
 
-        $metadata = json_decode(implode('', $output), true);
+        $metadata = json_decode($output, true);
 
         // @phpstan-ignore-next-line
         return is_array($metadata) ? $metadata : [];
     }
 
-    /**
-     * @return array{0: int, 1: string[]}
-     */
     public function stripMetadata(
         string $input,
         string $output,
-    ): array {
-        return $this->ffmpeg("-i {$input} -map_metadata -1 -c copy {$output}");
+    ): string {
+        return $this->ffmpeg([
+            '-i', $input,
+            '-map_metadata', '-1',
+            '-c', 'copy',
+            $output,
+        ]);
     }
 
     /**
-     * @return array{0: int, 1: string[]}
+     * @param  string[]  $arguments
+     * @return string Command output
      */
-    protected function execute(string $command, bool $throw = true): array
+    protected function execute(string $binary, array $arguments): string
     {
+        $command = array_merge([$binary], $arguments);
 
         if ($this->logChannel) {
-            Log::channel($this->logChannel)->info("ffmpeg: {$command}");
-        }
-        exec("{$command} 2>&1", $output, $code);
-
-        if ($throw && $code !== 0) {
-            throw new FFMpegException(implode("\n", [
-                "Error {$code} Executing ffmpeg: {$command}",
-                ...$output,
-            ]), 500);
+            Log::channel($this->logChannel)->info('ffmpeg: '.implode(' ', $command));
         }
 
-        return [$code, $output];
+        $process = new Process($command);
+        $process->setTimeout(null);
+        $process->run();
+
+        if ($process->isSuccessful()) {
+            return $process->getOutput();
+        }
+
+        $code = $process->getExitCode();
+        $error = $process->getErrorOutput();
+
+        throw new FFMpegException(implode("\n", [
+            "Error {$code} Executing ffmpeg: ",
+            '---',
+            implode(' ', $command),
+            '---',
+            $error,
+        ]), 500);
     }
 
     /**
-     * @return array{0: int, 1: string[]}
+     * @param  string[]  $arguments
+     * @return string Command output
      */
-    public function ffmpeg(string $command): array
+    public function ffmpeg(array $arguments): string
     {
-        return $this->execute("{$this->ffmpeg} {$command}");
+        return $this->execute($this->ffmpeg, $arguments);
     }
 
     /**
-     * @return array{0: int, 1: string[]}
+     * @param  string[]  $arguments
+     * @return string Command output
      */
-    public function ffprobe(string $command): array
+    public function ffprobe(array $arguments): string
     {
-        return $this->execute("{$this->ffprobe} {$command}");
+        return $this->execute($this->ffprobe, $arguments);
     }
 
     /**
