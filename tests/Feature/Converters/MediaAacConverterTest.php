@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\Tests\Models\TestConverters;
 use Illuminate\Support\Facades\Storage;
@@ -39,6 +40,7 @@ it('extracts an audio from a mp4 into a aac', function () {
     $conversion = $media->executeConversion('aac');
 
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
+    expect($conversion->state)->toBe(MediaConversionState::Succeeded);
     expect($conversion->mime_type)->toBe('audio/x-m4a');
     expect($conversion->extension)->toBe('m4a');
 

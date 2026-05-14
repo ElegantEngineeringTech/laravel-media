@@ -15,6 +15,24 @@ it('get the correct name from Uploaded file', function () {
     expect($name)->toBe('foo');
 });
 
+it('identity a mp4 video as a Video', function () {
+
+    $file = $this->getTestFile('videos/horizontal.mp4');
+
+    $type = File::type($file);
+
+    expect($type)->toBe(MediaType::Video);
+});
+
+it('identity a mp3 file without video as an Audio', function () {
+
+    $file = $this->getTestFile('audios/bipbip.mp3');
+
+    $type = File::type($file);
+
+    expect($type)->toBe(MediaType::Audio);
+});
+
 it('identity a mov file without video as an Audio', function () {
 
     $file = $this->getTestFile('audios/audio-only.mov');

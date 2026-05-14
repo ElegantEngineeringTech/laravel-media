@@ -1,10 +1,10 @@
 # Extremely powerful media library for Laravel 🖼️
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Coverage Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/coverage.yml?branch=main&label=coverage&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3Acoverage+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/ElegantEngineeringTech/laravel-media/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/ElegantEngineeringTech/laravel-media/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/elegantly/laravel-media.svg?style=flat-square)](https://packagist.org/packages/elegantly/laravel-media)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/elegantly/laravel-media.svg)](https://packagist.org/packages/elegantly/laravel-media)
+[![Total Downloads](https://img.shields.io/packagist/dt/elegantly/laravel-media.svg)](https://packagist.org/packages/elegantly/laravel-media)
+[![Tests](https://github.com/ElegantEngineeringTech/laravel-media/actions/workflows/run-tests.yml/badge.svg)](https://github.com/ElegantEngineeringTech/laravel-media/actions/workflows/run-tests.yml)
+[![Laravel Pint](https://github.com/ElegantEngineeringTech/laravel-media/actions/workflows/pint.yml/badge.svg)](https://github.com/ElegantEngineeringTech/laravel-media/actions/workflows/pint.yml)
+[![PHPStan](https://github.com/ElegantEngineeringTech/laravel-media/actions/workflows/phpstan.yml/badge.svg)](https://github.com/ElegantEngineeringTech/laravel-media/actions/workflows/phpstan.yml)
 
 This package offers an extremely flexible media library, enabling you to store any type of file along with their conversions.
 

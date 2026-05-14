@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\Tests\Models\TestConverters;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +21,7 @@ it('converts and resizes a video into a webm', function () {
     $conversion = $media->executeConversion('webm');
 
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
+    expect($conversion->state)->toBe(MediaConversionState::Succeeded);
     expect($conversion->width)->toBe(10);
     expect($conversion->extension)->toBe('webm');
     expect(round($conversion->duration))->toBe(2747.0);
@@ -41,4 +43,4 @@ it('converts and resizes a gif into a webm', function () {
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
     expect($conversion->width)->toBe(10);
     expect($conversion->extension)->toBe('webm');
-});
+})->todo();

@@ -48,11 +48,11 @@ enum MediaType: string
 
             $ffmpeg = new FFMpeg;
 
-            if ($ffmpeg->video()->hasVideo($path)) {
+            if ($ffmpeg->hasVideo($path)) {
                 return self::Video;
             }
 
-            if ($ffmpeg->video()->hasAudio($path)) {
+            if ($ffmpeg->hasAudio($path)) {
                 return self::Audio;
             }
 

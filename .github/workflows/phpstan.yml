@@ -1,18 +1,18 @@
 name: PHPStan
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - "**.php"
       - "phpstan.neon.dist"
       - ".github/workflows/phpstan.yml"
-      - "composer.json"
-      - "composer.lock"
 
 jobs:
   phpstan:
     name: phpstan
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
 

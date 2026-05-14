@@ -67,7 +67,7 @@ class MediaFrameConverter extends MediaConverter
 
         $ffmpeg = new FFMpeg;
 
-        if (! $ffmpeg->video()->hasVideo($input)) {
+        if (! $ffmpeg->hasVideo($input)) {
             return $this->skipConversion();
         }
 

@@ -1,6 +1,7 @@
 name: coverage
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - "**.php"

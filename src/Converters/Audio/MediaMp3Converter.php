@@ -43,7 +43,7 @@ class MediaMp3Converter extends MediaConverter
 
         $ffmpeg = new FFMpeg;
 
-        if (! $ffmpeg->video()->hasAudio($input)) {
+        if (! $ffmpeg->hasAudio($input)) {
             return $this->skipConversion();
         }
 

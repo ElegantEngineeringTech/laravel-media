@@ -61,7 +61,7 @@ class MediaAacConverter extends MediaConverter
 
         $ffmpeg = new FFMpeg;
 
-        if (! $ffmpeg->video()->hasAudio($input)) {
+        if (! $ffmpeg->hasAudio($input)) {
             return $this->skipConversion();
         }
 

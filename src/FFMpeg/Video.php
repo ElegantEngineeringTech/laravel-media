@@ -18,20 +18,6 @@ class Video extends FFMpeg
         return is_array($metadata) ? $metadata : [];
     }
 
-    public function hasAudio(string $input): bool
-    {
-        [$code, $output] = $this->ffprobe("-v error -select_streams a -show_entries stream=index -of csv=p=0 {$input}");
-
-        return ! empty($output);
-    }
-
-    public function hasVideo(string $input): bool
-    {
-        [$code, $output] = $this->ffprobe("-v error -select_streams v -show_entries stream=index -of csv=p=0 {$input}");
-
-        return ! empty($output);
-    }
-
     /**
      * @return array{0: int, 1: int, 2: int}
      */
