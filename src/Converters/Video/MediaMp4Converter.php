@@ -18,14 +18,16 @@ class MediaMp4Converter extends MediaConverter
     use HasDimensions;
 
     public function __construct(
-        public readonly Media $media,
+        Media $media,
         public string $filename,
         public ?int $width = null,
         public ?int $height = null,
         public ?int $fps = null,
         public int $crf = 18,
         public string $preset = 'veryslow',
-    ) {}
+    ) {
+        parent::__construct($media);
+    }
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {

@@ -15,9 +15,11 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class MediaMp3Converter extends MediaConverter
 {
     public function __construct(
-        public readonly Media $media,
+        Media $media,
         public string $filename,
-    ) {}
+    ) {
+        parent::__construct($media);
+    }
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {

@@ -18,12 +18,14 @@ class MediaFrameConverter extends MediaConverter
     use HasDimensions;
 
     public function __construct(
-        public readonly Media $media,
+        Media $media,
         public string $filename,
         public int|float|string $timecode = 0,
         public ?int $width = null,
         public ?int $height = null,
-    ) {}
+    ) {
+        parent::__construct($media);
+    }
 
     protected function getTimecode(Media $media, ?MediaConversion $parent): int|float|string
     {

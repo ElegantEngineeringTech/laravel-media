@@ -21,9 +21,11 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
-    public bool $deleteWhenMissingModels = true;
+    public readonly Media $media;
 
     public string $conversion;
+
+    public bool $deleteWhenMissingModels = true;
 
     /** Generate children */
     public bool $withChildren = false;
@@ -31,9 +33,10 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
     /** Force children to be re-generated */
     public bool $withForceChildren = false;
 
-    public function __construct(
-        public readonly Media $media,
-    ) {
+    public function __construct(Media $media)
+    {
+        $this->media = $media;
+
         /** @var ?string */
         $queue = config('media.queue');
 

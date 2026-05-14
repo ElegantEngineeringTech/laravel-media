@@ -17,13 +17,15 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class MediaImageConverter extends MediaConverter
 {
     public function __construct(
-        public readonly Media $media,
+        Media $media,
         public string $filename,
         public ?int $width = null,
         public ?int $height = null,
         public Fit $fit = Fit::Max,
         public ?OptimizerChain $optimizerChain = null,
-    ) {}
+    ) {
+        parent::__construct($media);
+    }
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {

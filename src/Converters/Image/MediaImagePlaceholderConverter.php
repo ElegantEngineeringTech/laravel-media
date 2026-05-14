@@ -18,11 +18,13 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class MediaImagePlaceholderConverter extends MediaConverter
 {
     public function __construct(
-        public readonly Media $media,
+        Media $media,
         public int $blur = 20,
         public int $width = 20,
         public ?int $height = 20,
-    ) {}
+    ) {
+        parent::__construct($media);
+    }
 
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {
