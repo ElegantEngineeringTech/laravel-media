@@ -128,12 +128,16 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
                 return null;
             }
 
-            if ($parent->state === MediaConversionState::Failed) {
-                return $this->failConversion();
+            if ($parent->state === MediaConversionState::Pending) {
+                return null;
             }
 
             if ($parent->state === MediaConversionState::Skipped) {
                 return $this->skipConversion();
+            }
+
+            if ($parent->state === MediaConversionState::Failed) {
+                return $this->failConversion();
             }
 
         } else {
