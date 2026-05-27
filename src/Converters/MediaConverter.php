@@ -119,15 +119,21 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             $parentConversion = str($this->conversion)->beforeLast('.')->value();
 
             $parent = $this->media->getOrExecuteConversion(
-                $parentConversion,
+                name: $parentConversion,
                 withChildren: false
             );
 
-            /**
-             * Parent conversion skipped or failed to execute
-             */
-            if ($parent === null || $parent->state !== MediaConversionState::Succeeded) {
+            /** Parent definition doesn't exist */
+            if ($parent === null) {
                 return null;
+            }
+
+            if ($parent->state === MediaConversionState::Failed) {
+                return $this->failConversion();
+            }
+
+            if ($parent->state === MediaConversionState::Skipped) {
+                return $this->skipConversion();
             }
 
         } else {

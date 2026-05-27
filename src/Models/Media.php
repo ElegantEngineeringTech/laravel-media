@@ -262,7 +262,7 @@ class Media extends Model
     ): ?PendingDispatch {
         if (
             $force === false &&
-            $this->hasConversion($conversion, [MediaConversionState::Succeeded, MediaConversionState::Pending])
+            $this->hasConversion($conversion, MediaConversionState::Succeeded)
         ) {
             return null;
         }
@@ -319,17 +319,14 @@ class Media extends Model
     public function getOrExecuteConversion(
         string $name,
         bool $withChildren = false,
-        bool $withForceChildren = false,
     ): ?MediaConversion {
-        if ($conversion = $this->getConversion($name, [MediaConversionState::Succeeded, MediaConversionState::Pending])) {
+        if ($conversion = $this->getConversion($name, MediaConversionState::Succeeded)) {
             return $conversion;
         }
 
         return $this->executeConversion(
             conversion: $name,
-            force: true,
             withChildren: $withChildren,
-            withForceChildren: $withForceChildren
         );
     }
 
