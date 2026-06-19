@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
+use Elegantly\Media\Helpers\Bitrate;
+use Elegantly\Media\Helpers\HlsVariant;
+use Elegantly\Media\Helpers\Video as HelpersVideo;
 use Illuminate\Support\Facades\File;
 
 class Video extends FFMpeg
@@ -282,25 +285,38 @@ class Video extends FFMpeg
             ['name' => '240p', 'height' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '96k'],
         ];
 
-        [$width, $height, $rotation] = $this->dimensions($input);
-        $sourceHeight = abs($rotation) % 90 === 0 && abs($rotation) % 180 !== 0 ? $width : $height;
+        $dimension = HelpersVideo::dimension($input);
 
-        $selectedVariants = array_values(array_filter(
-            $variantsOptions,
-            function ($variant) use ($sourceHeight, $variants) {
-                if ($variants && ! in_array($variant['name'], $variants)) {
-                    return false;
-                }
+        $selectedVariants = collect($variantsOptions)
+            ->mapInto(HlsVariant::class)
+            ->when(
+                $variants,
+                fn ($items) => $items->whereIn('name', $variants)
+            )
+            ->where('height', '<=', $dimension->height)
+            ->values();
 
-                return $sourceHeight >= $variant['height'];
-            })
-        );
-
-        if (empty($selectedVariants)) {
+        if ($selectedVariants->isEmpty()) {
             return false;
         }
 
-        $hasAudio = $this->hasAudio($input);
+        $metadata = parent::metadata($input);
+        $hasAudio = false;
+        $sourceVideoBitrate = null;
+        $sourceAudioBitrate = null;
+
+        foreach ($metadata['streams'] ?? [] as $stream) {
+            $codecType = $stream['codec_type'] ?? null;
+
+            if ($codecType === 'video') {
+                $sourceVideoBitrate ??= Bitrate::parse(data_get($stream, 'bit_rate'));
+            }
+
+            if ($codecType === 'audio') {
+                $sourceAudioBitrate ??= Bitrate::parse(data_get($stream, 'bit_rate'));
+                $hasAudio = true;
+            }
+        }
 
         if (! File::isDirectory($output)) {
             File::makeDirectory($output, recursive: true);
@@ -311,7 +327,7 @@ class Video extends FFMpeg
 
         foreach ($selectedVariants as $index => $variant) {
             $splitLabels[] = "[v{$index}]";
-            $filters[] = implode(':', ["[v{$index}]scale=w=-2", "h={$variant['height']}", "flags=lanczos,format=yuv420p[v{$index}out]"]);
+            $filters[] = implode(':', ["[v{$index}]scale=w=-2", "h={$variant->height}", "flags=lanczos,format=yuv420p[v{$index}out]"]);
         }
 
         $filterComplex = '[0:v:0]split='.count($selectedVariants).implode('', $splitLabels).';'.implode(';', $filters);
@@ -342,11 +358,15 @@ class Video extends FFMpeg
         ];
 
         foreach ($selectedVariants as $index => $variant) {
+            $bitrate = $variant->bitrate->max($sourceVideoBitrate);
+            $maxrate = $variant->maxrate->max($sourceVideoBitrate);
+            $bufsize = $variant->bufsize->max($bitrate->value * 1.5);
+
             $arguments = [
                 ...$arguments,
-                "-b:v:{$index}", $variant['bitrate'],
-                "-maxrate:v:{$index}", $variant['maxrate'],
-                "-bufsize:v:{$index}", $variant['bufsize'],
+                "-b:v:{$index}", $bitrate->format(),
+                "-maxrate:v:{$index}", $maxrate->format(),
+                "-bufsize:v:{$index}", $bufsize->format(),
             ];
         }
 
@@ -361,7 +381,7 @@ class Video extends FFMpeg
             foreach ($selectedVariants as $index => $variant) {
                 $arguments = [
                     ...$arguments,
-                    "-b:a:{$index}", $variant['audioBitrate'],
+                    "-b:a:{$index}", $variant->audioBitrate->max($sourceAudioBitrate)->format(),
                 ];
             }
         } else {
@@ -372,9 +392,9 @@ class Video extends FFMpeg
 
         foreach ($selectedVariants as $index => $variant) {
             if ($hasAudio) {
-                $variantStreamMap[] = "v:{$index},a:{$index},name:{$variant['name']}";
+                $variantStreamMap[] = "v:{$index},a:{$index},name:{$variant->name}";
             } else {
-                $variantStreamMap[] = "v:{$index},name:{$variant['name']}";
+                $variantStreamMap[] = "v:{$index},name:{$variant->name}";
             }
         }
 
