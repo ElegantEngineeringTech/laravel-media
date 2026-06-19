@@ -14,7 +14,7 @@ use Elegantly\Media\Helpers\File;
 use Elegantly\Media\PathGenerators\AbstractPathGenerator;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
-use Exception;
+use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\File as HttpFile;
@@ -204,7 +204,7 @@ trait HasFile
         $path = Storage::disk($disk)->putFileAs($destination, $file, $fileName);
 
         if (! $path) {
-            throw new Exception("Storing Media File '{$file->getPath()}' to disk '{$disk}' at '{$destination}' failed.");
+            throw MediaFileStorageException::storeFailed($file->getPath(), $disk, $destination);
         }
 
         $this->type = $type;

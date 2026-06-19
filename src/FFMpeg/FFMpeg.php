@@ -125,13 +125,7 @@ class FFMpeg
         $code = $process->getExitCode();
         $error = $process->getErrorOutput();
 
-        throw new FFMpegException(implode("\n", [
-            "Error {$code} Executing ffmpeg: ",
-            '---',
-            implode(' ', $command),
-            '---',
-            $error,
-        ]), 500);
+        throw FFMpegException::executionFailed($code, implode(' ', $command), $error);
     }
 
     /**

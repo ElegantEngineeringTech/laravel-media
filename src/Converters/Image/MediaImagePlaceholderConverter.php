@@ -9,7 +9,7 @@ use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
-use Exception;
+use Elegantly\Media\Exceptions\FileContentNotFoundException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
@@ -57,7 +57,7 @@ class MediaImagePlaceholderConverter extends MediaConverter
         $content = file_get_contents($output);
 
         if ($content === false) {
-            throw new Exception("Can't get file content at {$output}");
+            throw FileContentNotFoundException::atPath($output);
         }
 
         return $media->replaceConversion(new MediaConversion([

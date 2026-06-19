@@ -8,5 +8,14 @@ use Exception;
 
 class FFMpegException extends Exception
 {
-    //
+    public static function executionFailed(int $code, string $command, string $error): self
+    {
+        return new self(implode("\n", [
+            "Error {$code} Executing ffmpeg: ",
+            '---',
+            $command,
+            '---',
+            $error,
+        ]), 500);
+    }
 }

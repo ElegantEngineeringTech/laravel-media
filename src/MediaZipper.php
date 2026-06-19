@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Elegantly\Media;
 
 use Elegantly\Media\Models\Media;
-use Exception;
+use Elegantly\Media\Exceptions\MediaStreamNotReadableException;
+use Elegantly\Media\Exceptions\StreamCreationException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Support\Collection;
@@ -38,7 +39,7 @@ class MediaZipper implements Responsable
         $temporaryStream = fopen('php://memory', 'w+');
 
         if ($temporaryStream === false) {
-            throw new Exception('PHP Stream creation failed.');
+            throw StreamCreationException::memoryStreamFailed();
         }
 
         $zip = $this->getZipStream([
@@ -71,7 +72,7 @@ class MediaZipper implements Responsable
             $stream = $item->readStream();
 
             if ($stream === null) {
-                throw new Exception("[Media:{$item->id}] Can't read stream at {$item->path} and disk {$item->disk}.");
+                throw MediaStreamNotReadableException::forMedia($item);
             }
 
             $zip->addFileFromStream(
