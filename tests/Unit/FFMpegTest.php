@@ -75,7 +75,7 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
     $output = $temporaryDirectory->path();
     $playlist = 'master.m3u8';
 
-    Video::make()->m3u8($file, $output, $playlist);
+    Video::make()->hls($file, $output, $playlist);
 
     $filesystem->assertExists($playlist);
     $filesystem->assertExists('720p_segment_00000.ts');

@@ -63,6 +63,47 @@ class Video extends FFMpeg
         return $duration * 1_000;
     }
 
+    public function isHdr(string $input): bool
+    {
+        $metadata = $this->metadata($input);
+
+        if (! $stream = $metadata['streams'][0] ?? null) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
+
+        $colorTransfer = data_get($stream, 'color_transfer');
+
+        if (in_array($colorTransfer, ['smpte2084', 'arib-std-b67'], true)) {
+            return true;
+        }
+
+        $colorPrimaries = data_get($stream, 'color_primaries');
+
+        if (in_array($colorPrimaries, ['bt2020'], true)) {
+            return true;
+        }
+
+        $colorSpace = data_get($stream, 'color_space');
+
+        if (in_array($colorSpace, ['bt2020nc', 'bt2020c'], true)) {
+            return true;
+        }
+
+        $pixFmt = data_get($stream, 'pix_fmt');
+
+        if (is_string($pixFmt) && str_contains($pixFmt, '10le')) {
+            return true;
+        }
+
+        foreach ($stream['side_data_list'] ?? [] as $sideData) {
+            if (isset($sideData['Mastering display metadata']) || isset($sideData['Content light level metadata'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @param  int|float|string  $timecode  in seconds (SS.xxx) or formatted (HH:MM:SS.xx)
      * @param  string[]  $filters  Additional ffmpeg filters
@@ -225,14 +266,16 @@ class Video extends FFMpeg
      * @param  list<array{name: string, height: int, bitrate: string, maxrate: string, bufsize: string}>  $options
      * @return false|string Command output
      */
-    public function m3u8(
+    public function hls(
         string $input,
         string $output,
         string $playlist = 'master.m3u8',
         int $segmentLength = 6,
-        string $preset = 'medium',
+        string $preset = 'veryslow',
         ?array $options = null,
     ): false|string {
+        $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
+
         $options ??= [
             ['name' => '1080p', 'height' => 1080, 'bitrate' => '5000k', 'maxrate' => '5350k', 'bufsize' => '7500k'],
             ['name' => '720p', 'height' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k'],
@@ -240,14 +283,12 @@ class Video extends FFMpeg
             ['name' => '360p', 'height' => 360, 'bitrate' => '800k', 'maxrate' => '856k', 'bufsize' => '1200k'],
         ];
 
-        $output = rtrim($output, '/\\');
-
         $hasAudio = $this->hasAudio($input);
 
         [$width, $height, $rotation] = $this->dimensions($input);
         $sourceHeight = abs($rotation) % 90 === 0 && abs($rotation) % 180 !== 0 ? $width : $height;
 
-        $variants = array_values(array_filter($options, fn ($option) => $sourceHeight >= $option['height']));
+        $variants = array_values(array_filter($options, fn ($o) => $sourceHeight >= $o['height']));
 
         if (empty($variants)) {
             return false;
@@ -262,11 +303,7 @@ class Video extends FFMpeg
 
         foreach ($variants as $index => $variant) {
             $splitLabels[] = "[v{$index}]";
-            $filters[] = implode(':', [
-                "[v{$index}]scale=w=-2",
-                "h={$variant['height']}",
-                "flags=lanczos,format=yuv420p[v{$index}out]",
-            ]);
+            $filters[] = implode(':', ["[v{$index}]scale=w=-2", "h={$variant['height']}", "flags=lanczos,format=yuv420p[v{$index}out]"]);
         }
 
         $filterComplex = '[0:v:0]split='.count($variants).implode('', $splitLabels).';'.implode(';', $filters);
