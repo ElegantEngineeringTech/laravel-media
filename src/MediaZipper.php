@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Elegantly\Media;
 
-use Elegantly\Media\Models\Media;
 use Elegantly\Media\Exceptions\MediaStreamNotReadableException;
 use Elegantly\Media\Exceptions\StreamCreationException;
+use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Support\Collection;

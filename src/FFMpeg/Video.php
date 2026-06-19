@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
+use Illuminate\Support\Facades\File;
 
 class Video extends FFMpeg
 {
@@ -207,6 +208,136 @@ class Video extends FFMpeg
             '-b:a', '96k',
             '-movflags', '+faststart',
             $output,
+        ]);
+    }
+
+    /**
+     * Generate a production-ready HLS VOD playlist with adaptive m3u8 variants.
+     *
+     * The output directory will contain a master playlist and one media playlist per generated resolution.
+     * Renditions are only generated when the source display height is at least as large as the target height.
+     *
+     * @param  string  $input  The absolute path to the source video file.
+     * @param  string  $output  The directory where HLS playlists and segments should be written.
+     * @param  string  $playlist  The master playlist filename.
+     * @param  int  $segmentLength  HLS segment length in seconds.
+     * @param  string  $preset  The x264 compression speed preset.
+     * @param  list<array{name: string, height: int, bitrate: string, maxrate: string, bufsize: string}>  $options
+     * @return false|string Command output
+     */
+    public function m3u8(
+        string $input,
+        string $output,
+        string $playlist = 'master.m3u8',
+        int $segmentLength = 6,
+        string $preset = 'medium',
+        ?array $options = null,
+    ): false|string {
+        $options ??= [
+            ['name' => '1080p', 'height' => 1080, 'bitrate' => '5000k', 'maxrate' => '5350k', 'bufsize' => '7500k'],
+            ['name' => '720p', 'height' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k'],
+            ['name' => '480p', 'height' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k'],
+            ['name' => '360p', 'height' => 360, 'bitrate' => '800k', 'maxrate' => '856k', 'bufsize' => '1200k'],
+        ];
+
+        $output = rtrim($output, '/\\');
+
+        $hasAudio = $this->hasAudio($input);
+
+        [$width, $height, $rotation] = $this->dimensions($input);
+        $sourceHeight = abs($rotation) % 90 === 0 && abs($rotation) % 180 !== 0 ? $width : $height;
+
+        $variants = array_values(array_filter($options, fn ($option) => $sourceHeight >= $option['height']));
+
+        if (empty($variants)) {
+            return false;
+        }
+
+        if (! File::isDirectory($output)) {
+            File::makeDirectory($output, recursive: true);
+        }
+
+        $splitLabels = [];
+        $filters = [];
+
+        foreach ($variants as $index => $variant) {
+            $splitLabels[] = "[v{$index}]";
+            $filters[] = implode(':', [
+                "[v{$index}]scale=w=-2",
+                "h={$variant['height']}",
+                "flags=lanczos,format=yuv420p[v{$index}out]",
+            ]);
+        }
+
+        $filterComplex = '[0:v:0]split='.count($variants).implode('', $splitLabels).';'.implode(';', $filters);
+
+        $arguments = [
+            '-i', $input,
+            '-filter_complex', $filterComplex,
+        ];
+
+        foreach ($variants as $index => $variant) {
+            $arguments[] = '-map';
+            $arguments[] = "[v{$index}out]";
+
+            if ($hasAudio) {
+                $arguments[] = '-map';
+                $arguments[] = '0:a:0';
+            }
+        }
+
+        $arguments = [
+            ...$arguments,
+            '-c:v', 'libx264',
+            '-preset', $preset,
+            '-profile:v', 'main',
+            '-pix_fmt', 'yuv420p',
+            '-sc_threshold', '0',
+            '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength})",
+        ];
+
+        foreach ($variants as $index => $variant) {
+            $arguments = [
+                ...$arguments,
+                "-b:v:{$index}", $variant['bitrate'],
+                "-maxrate:v:{$index}", $variant['maxrate'],
+                "-bufsize:v:{$index}", $variant['bufsize'],
+            ];
+        }
+
+        if ($hasAudio) {
+            $arguments = [
+                ...$arguments,
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-ac', '2',
+                '-ar', '48000',
+            ];
+        } else {
+            $arguments[] = '-an';
+        }
+
+        $variantStreamMap = [];
+
+        foreach ($variants as $index => $variant) {
+            if ($hasAudio) {
+                $variantStreamMap[] = "v:{$index},a:{$index},name:{$variant['name']}";
+            } else {
+                $variantStreamMap[] = "v:{$index},name:{$variant['name']}";
+            }
+        }
+
+        return $this->ffmpeg([
+            ...$arguments,
+            '-f', 'hls',
+            '-hls_time', (string) $segmentLength,
+            '-hls_playlist_type', 'vod',
+            '-hls_flags', 'independent_segments',
+            '-start_number', '0',
+            '-master_pl_name', $playlist,
+            '-var_stream_map', implode(' ', $variantStreamMap),
+            '-hls_segment_filename', "{$output}/%v_segment_%05d.ts",
+            "{$output}/%v_playlist.m3u8",
         ]);
     }
 }

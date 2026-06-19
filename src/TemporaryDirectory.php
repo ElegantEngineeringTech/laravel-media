@@ -48,4 +48,12 @@ class TemporaryDirectory extends SpatieTemporaryDirectory
             'root' => $temporaryDirectory->path(),
         ]);
     }
+
+    public function toFilesystem(): Filesystem
+    {
+        return Storage::build([
+            'driver' => 'local',
+            'root' => $this->path(),
+        ]);
+    }
 }

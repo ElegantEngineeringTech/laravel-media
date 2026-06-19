@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Exceptions;
 
-use Exception;
 use Elegantly\Media\Models\Media;
+use Exception;
 
 class MediaStreamNotReadableException extends Exception
 {

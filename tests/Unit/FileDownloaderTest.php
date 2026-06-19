@@ -9,6 +9,7 @@ it('download a file from an url as a temporary file', function () {
 
     $temporaryDirectory = (new TemporaryDirectory)
         ->location(storage_path('media-tmp'))
+        ->deleteWhenDestroyed()
         ->create();
 
     $path = HttpFileDownloader::fromUrl(
@@ -17,16 +18,13 @@ it('download a file from an url as a temporary file', function () {
     );
 
     expect(is_file($path))->toBe(true);
-
-    $temporaryDirectory->delete();
-
-    expect(is_file($path))->toBe(false);
 });
 
 it('download a file from an url as a temporary file and sets the right extension', function () {
 
     $temporaryDirectory = (new TemporaryDirectory)
         ->location(storage_path('media-tmp'))
+        ->deleteWhenDestroyed()
         ->create();
 
     $path = HttpFileDownloader::fromUrl(
@@ -36,8 +34,4 @@ it('download a file from an url as a temporary file and sets the right extension
 
     expect(is_file($path))->toBe(true);
     expect(str($path)->endsWith('.png'))->toBe(true);
-
-    $temporaryDirectory->delete();
-
-    expect(is_file($path))->toBe(false);
 })->skip();

@@ -122,7 +122,7 @@ class FFMpeg
             return $process->getOutput();
         }
 
-        $code = $process->getExitCode();
+        $code = $process->getExitCode() ?? 1;
         $error = $process->getErrorOutput();
 
         throw FFMpegException::executionFailed($code, implode(' ', $command), $error);
