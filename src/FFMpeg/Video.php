@@ -291,7 +291,7 @@ class Video extends FFMpeg
             ->mapInto(HlsVariant::class)
             ->when(
                 $variants,
-                fn ($items) => $items->whereIn('name', $variants)
+                fn ($items) => $items->whereIn('name', $variants ?? [])
             )
             ->where('height', '<=', $dimension->height)
             ->values();
@@ -309,11 +309,11 @@ class Video extends FFMpeg
             $codecType = $stream['codec_type'] ?? null;
 
             if ($codecType === 'video') {
-                $sourceVideoBitrate ??= Bitrate::parse(data_get($stream, 'bit_rate'));
+                $sourceVideoBitrate ??= Bitrate::parse($stream['bit_rate'] ?? null);
             }
 
             if ($codecType === 'audio') {
-                $sourceAudioBitrate ??= Bitrate::parse(data_get($stream, 'bit_rate'));
+                $sourceAudioBitrate ??= Bitrate::parse($stream['bit_rate'] ?? null);
                 $hasAudio = true;
             }
         }

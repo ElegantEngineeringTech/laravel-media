@@ -43,7 +43,7 @@ class Bitrate implements Stringable
             };
         }
 
-        return $value;
+        return new static($value->value);
     }
 
     public function format(): string
