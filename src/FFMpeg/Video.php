@@ -95,12 +95,6 @@ class Video extends FFMpeg
             return true;
         }
 
-        foreach ($stream['side_data_list'] ?? [] as $sideData) {
-            if (isset($sideData['Mastering display metadata']) || isset($sideData['Content light level metadata'])) {
-                return true;
-            }
-        }
-
         return false;
     }
 
@@ -263,7 +257,8 @@ class Video extends FFMpeg
      * @param  string  $playlist  The master playlist filename.
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  string  $preset  The x264 compression speed preset.
-     * @param  list<array{name: string, height: int, bitrate: string, maxrate: string, bufsize: string}>  $options
+     * @param  null|string[]  $variants
+     * @param  list<array{name: string, height: int, bitrate: string, maxrate: string, bufsize: string, audioBitrate: string}>  $variantsOptions
      * @return false|string Command output
      */
     public function hls(
@@ -272,27 +267,40 @@ class Video extends FFMpeg
         string $playlist = 'master.m3u8',
         int $segmentLength = 6,
         string $preset = 'veryslow',
-        ?array $options = null,
+        ?array $variants = null,
+        ?array $variantsOptions = null,
     ): false|string {
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
 
-        $options ??= [
-            ['name' => '1080p', 'height' => 1080, 'bitrate' => '5000k', 'maxrate' => '5350k', 'bufsize' => '7500k'],
-            ['name' => '720p', 'height' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k'],
-            ['name' => '480p', 'height' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k'],
-            ['name' => '360p', 'height' => 360, 'bitrate' => '800k', 'maxrate' => '856k', 'bufsize' => '1200k'],
+        $variantsOptions ??= [
+            ['name' => '2160p', 'height' => 2160, 'bitrate' => '25000k', 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '256k'],
+            ['name' => '1440p', 'height' => 1440, 'bitrate' => '8000k', 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '256k'],
+            ['name' => '1080p', 'height' => 1080, 'bitrate' => '5000k', 'maxrate' => '5350k', 'bufsize' => '7500k', 'audioBitrate' => '256k'],
+            ['name' => '720p', 'height' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '256k'],
+            ['name' => '480p', 'height' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '192k'],
+            ['name' => '360p', 'height' => 360, 'bitrate' => '800k', 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k'],
+            ['name' => '240p', 'height' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '96k'],
         ];
-
-        $hasAudio = $this->hasAudio($input);
 
         [$width, $height, $rotation] = $this->dimensions($input);
         $sourceHeight = abs($rotation) % 90 === 0 && abs($rotation) % 180 !== 0 ? $width : $height;
 
-        $variants = array_values(array_filter($options, fn ($o) => $sourceHeight >= $o['height']));
+        $selectedVariants = array_values(array_filter(
+            $variantsOptions,
+            function ($variant) use ($sourceHeight, $variants) {
+                if ($variants && ! in_array($variant['name'], $variants)) {
+                    return false;
+                }
 
-        if (empty($variants)) {
+                return $sourceHeight >= $variant['height'];
+            })
+        );
+
+        if (empty($selectedVariants)) {
             return false;
         }
+
+        $hasAudio = $this->hasAudio($input);
 
         if (! File::isDirectory($output)) {
             File::makeDirectory($output, recursive: true);
@@ -301,19 +309,19 @@ class Video extends FFMpeg
         $splitLabels = [];
         $filters = [];
 
-        foreach ($variants as $index => $variant) {
+        foreach ($selectedVariants as $index => $variant) {
             $splitLabels[] = "[v{$index}]";
             $filters[] = implode(':', ["[v{$index}]scale=w=-2", "h={$variant['height']}", "flags=lanczos,format=yuv420p[v{$index}out]"]);
         }
 
-        $filterComplex = '[0:v:0]split='.count($variants).implode('', $splitLabels).';'.implode(';', $filters);
+        $filterComplex = '[0:v:0]split='.count($selectedVariants).implode('', $splitLabels).';'.implode(';', $filters);
 
         $arguments = [
             '-i', $input,
             '-filter_complex', $filterComplex,
         ];
 
-        foreach ($variants as $index => $variant) {
+        foreach ($selectedVariants as $index => $variant) {
             $arguments[] = '-map';
             $arguments[] = "[v{$index}out]";
 
@@ -333,7 +341,7 @@ class Video extends FFMpeg
             '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength})",
         ];
 
-        foreach ($variants as $index => $variant) {
+        foreach ($selectedVariants as $index => $variant) {
             $arguments = [
                 ...$arguments,
                 "-b:v:{$index}", $variant['bitrate'],
@@ -346,17 +354,23 @@ class Video extends FFMpeg
             $arguments = [
                 ...$arguments,
                 '-c:a', 'aac',
-                '-b:a', '128k',
                 '-ac', '2',
                 '-ar', '48000',
             ];
+
+            foreach ($selectedVariants as $index => $variant) {
+                $arguments = [
+                    ...$arguments,
+                    "-b:a:{$index}", $variant['audioBitrate'],
+                ];
+            }
         } else {
             $arguments[] = '-an';
         }
 
         $variantStreamMap = [];
 
-        foreach ($variants as $index => $variant) {
+        foreach ($selectedVariants as $index => $variant) {
             if ($hasAudio) {
                 $variantStreamMap[] = "v:{$index},a:{$index},name:{$variant['name']}";
             } else {

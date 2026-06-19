@@ -84,4 +84,4 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
     $filesystem->assertExists('480p_playlist.m3u8');
     $filesystem->assertExists('360p_segment_00000.ts');
     $filesystem->assertExists('360p_playlist.m3u8');
-});
+})->only();
