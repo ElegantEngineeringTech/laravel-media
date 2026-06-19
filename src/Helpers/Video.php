@@ -30,8 +30,6 @@ class Video implements HasDimension, HasDuration
 
     public static function duration(string $path): ?float
     {
-        $duration = FFMpeg::make()->video()->duration($path);
-
-        return $duration;
+        return FFMpeg::make()->video()->duration($path);
     }
 }

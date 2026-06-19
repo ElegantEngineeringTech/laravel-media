@@ -139,6 +139,7 @@ trait HasMedia
      * @param  string|resource|UploadedFile|File  $file
      * @param  array<array-key, mixed>  $metadata
      * @param  array<array-key, mixed>  $attributes
+     * @param  array<array-key, string|resource|UploadedFile|File>  $additionalFiles
      * @return TMedia
      */
     public function addMedia(
@@ -150,35 +151,35 @@ trait HasMedia
         ?int $order = null,
         ?array $metadata = null,
         array $attributes = [],
+        array $additionalFiles = [],
     ): Media {
         $collectionName ??= config('media.default_collection_name');
+        $collection = $collectionName ? $this->getMediaCollection($collectionName) : null;
+        $disk ??= $collection?->disk;
 
         /** @var class-string<TMedia> */
         $model = config('media.model');
 
-        $media = new $model;
-        $media->fill($attributes);
-        $media->model()->associate($this);
-        $media->collection_name = $collectionName;
-        $media->collection_group = $collectionGroup;
-        $media->order_column = $order;
-        $media->metadata = $metadata;
+        $media = new $model([
+            ...$attributes,
+            'collection_name' => $collectionName,
+            'collection_group' => $collectionGroup,
+            'order_column' => $order,
+            'metadata' => $metadata,
+        ]);
 
-        $collection = $collectionName ? $this->getMediaCollection($collectionName) : null;
+        $media->model()->associate($this);
 
         $media->storeFile(
             file: $file,
             name: $name,
-            disk: $disk ?? $collection?->disk,
+            disk: $disk,
             before: function ($file, $temporaryDirectory) use ($collection) {
                 if ($acceptedMimeTypes = $collection?->acceptedMimeTypes) {
                     $mime = HelpersFile::mimeType($file);
 
                     if (! in_array($mime, $acceptedMimeTypes)) {
-                        throw InvalidMimeTypeException::notAccepted(
-                            $mime,
-                            $acceptedMimeTypes
-                        );
+                        throw InvalidMimeTypeException::notAccepted($mime, $acceptedMimeTypes);
                     }
                 }
 
@@ -189,6 +190,10 @@ trait HasMedia
                 return $file;
             }
         );
+
+        foreach ($additionalFiles as $additionalFile) {
+            $media->storeAdditionalFile($additionalFile);
+        }
 
         if ($this->relationLoaded('media')) {
             $this->media->push($media);

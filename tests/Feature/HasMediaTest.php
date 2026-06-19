@@ -65,6 +65,41 @@ it('adds a new media to the default collection', function () {
     Storage::disk('media')->assertExists($media->path);
 });
 
+it('adds a new media with additional files to the default collection', function () {
+    Storage::fake('media');
+    $model = new TestCollections;
+    $model->save();
+
+    $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
+
+    $additionalFiles = [
+        UploadedFile::fake()->image('1.jpg', width: 16, height: 9),
+        UploadedFile::fake()->image('2.jpg', width: 16, height: 9),
+    ];
+
+    $media = $model->addMedia(
+        file: $file,
+        disk: 'media',
+        additionalFiles: $additionalFiles,
+    );
+
+    expect($media->model_id)->toBe($model->id);
+    expect($media->model_type)->toBe(get_class($model));
+    expect($media->exists)->toBe(true);
+    expect($media->name)->toBe('foo');
+    expect($media->extension)->toBe('jpg');
+    expect($media->file_name)->toBe('foo.jpg');
+
+    Storage::disk('media')->assertExists($media->path);
+
+    expect($media->additional_files)->toHaveLength(2);
+
+    expect($media->additional_files[0]->name)->toBe('1');
+    expect($media->additional_files[0]->extension)->toBe('jpg');
+    expect($media->additional_files[1]->name)->toBe('2');
+    expect($media->additional_files[1]->extension)->toBe('jpg');
+});
+
 it('adds a new media to the specified collection', function () {
     Storage::fake('media');
     $model = new TestCollections;

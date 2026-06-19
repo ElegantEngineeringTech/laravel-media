@@ -8,9 +8,13 @@ use Carbon\CarbonInterval;
 use Closure;
 use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Events\MediaFileStoredEvent;
+use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\PathGenerators\AbstractPathGenerator;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
+use Exception;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\File as HttpFile;
@@ -18,6 +22,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
+use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 /**
  * @property ?MediaType $type
@@ -35,12 +40,12 @@ use Illuminate\Support\Str;
  *
  * @mixin Model
  */
-trait InteractWithFiles
+trait HasFile
 {
     /**
      * @return class-string<AbstractUrlFormatter>
      */
-    public function getDefaultUrlFormatter(): string
+    protected function getDefaultUrlFormatter(): string
     {
         /** @var class-string<AbstractUrlFormatter> */
         $formatter = config()->string('media.default_url_formatter');
@@ -50,21 +55,12 @@ trait InteractWithFiles
 
     public function dirname(): ?string
     {
-
-        if ($this->path) {
-            return dirname($this->path);
-        }
-
-        return null;
+        return $this->path ? dirname($this->path) : null;
     }
 
     public function getDisk(): ?Filesystem
     {
-        if (! $this->disk) {
-            return null;
-        }
-
-        return Storage::disk($this->disk);
+        return $this->disk ? Storage::disk($this->disk) : null;
     }
 
     /**
@@ -136,11 +132,7 @@ trait InteractWithFiles
 
         $filesystem = $this->getDisk();
 
-        if ($filesystem?->exists($this->path)) {
-            return (bool) $filesystem->delete($this->path);
-        }
-
-        return true;
+        return (bool) $filesystem?->delete($this->path);
     }
 
     public function deleteDirectory(): bool
@@ -160,59 +152,141 @@ trait InteractWithFiles
         return $filesystem->deleteDirectory($dirname);
     }
 
+    public function rename(string $name): static
+    {
+        if (! $this->path) {
+            return $this;
+        }
+
+        $name = str($name)->slug()->value();
+        $fileName = "{$name}.{$this->extension}";
+
+        $to = str($this->path)->dirname()->finish('/')->append($fileName)->value();
+
+        if ($this->path === $to) {
+            return $this;
+        }
+
+        if ($moved = $this->getDisk()?->move($this->path, $to)) {
+            $this->name = $name;
+            $this->file_name = $fileName;
+            $this->path = $to;
+
+            $this->save();
+        }
+
+        return $this;
+
+    }
+
     /**
-     * @return ?string The new file path on success, null on failure
+     * @return string The new file path
      */
     public function putFile(
         string $disk,
         string $destination,
         UploadedFile|HttpFile $file,
         string $name,
-    ): string|null|false {
-        $this->disk = $disk;
+    ): string {
+        $pathname = $file->getPathname();
 
         $destination = Str::rtrim($destination, '/');
         $extension = File::extension($file);
-
         $name = File::sanitizeFilename($name);
-
-        $pathname = $file->getPathname();
+        $size = $file->getSize();
+        $mimeType = File::mimeType($file);
+        $type = rescue(fn () => File::type($pathname), MediaType::Other);
+        $duration = rescue(fn () => $type->duration($pathname));
+        $dimension = rescue(fn () => $type->dimension($pathname));
 
         $fileName = $extension ? "{$name}.{$extension}" : $name;
 
-        $path = $this->getDisk()?->putFileAs(
-            $destination,
-            $file,
-            $fileName,
-        ) ?: null;
+        $path = Storage::disk($disk)->putFileAs($destination, $file, $fileName);
 
+        if (! $path) {
+            throw new Exception("Storing Media File '{$file->getPath()}' to disk '{$disk}' at '{$destination}' failed.");
+        }
+
+        $this->type = $type;
+        $this->disk = $disk;
         $this->path = $path;
         $this->name = $name;
         $this->extension = $extension;
         $this->file_name = $fileName;
+        $this->mime_type = $mimeType;
+        $this->size = $size;
+        $this->duration = $duration;
 
-        $this->mime_type = File::mimeType($file);
-        $this->size = $file->getSize();
-
-        try {
-            if ($dimension = File::dimension($pathname)) {
-                $this->height = (int) $dimension->height;
-                $this->width = (int) $dimension->width;
-                $this->aspect_ratio = $dimension->getAspectRatio()->value;
-            }
-
-            $this->duration = File::duration($pathname);
-        } catch (\Throwable $th) {
-            report($th);
-        }
-
-        try {
-            $this->type = File::type($pathname);
-        } catch (\Throwable $th) {
-            $this->type = MediaType::Other;
+        if ($dimension) {
+            $this->height = (int) $dimension->height;
+            $this->width = (int) $dimension->width;
+            $this->aspect_ratio = $dimension->getAspectRatio()->value;
         }
 
         return $path;
+    }
+
+    /**
+     * @param  string|UploadedFile|HttpFile|resource  $file
+     * @param  null|(Closure(UploadedFile|HttpFile $file, SpatieTemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
+     */
+    public function storeFile(
+        mixed $file,
+        ?string $destination = null,
+        ?string $name = null,
+        ?string $disk = null,
+        ?Closure $before = null,
+    ): static {
+        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
+            return $this->storeFileFromHttpFile($file, $destination, $name, $disk, $before);
+        }
+
+        if (! is_string($file) || filter_var($file, FILTER_VALIDATE_URL)) {
+            return TemporaryDirectory::callback(function ($tmp) use ($before, $file, $destination, $name, $disk) {
+                $path = HttpFileDownloader::download($file, $tmp->path());
+
+                return $this->storeFileFromHttpFile(new HttpFile($path), $destination, $name, $disk, $before);
+            });
+        }
+
+        return $this->storeFileFromHttpFile(new HttpFile($file), $destination, $name, $disk, $before);
+    }
+
+    /**
+     * @param  null|(Closure(UploadedFile|HttpFile $file, SpatieTemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
+     */
+    public function storeFileFromHttpFile(
+        UploadedFile|HttpFile $file,
+        ?string $destination = null,
+        ?string $name = null,
+        ?string $disk = null,
+        ?Closure $before = null,
+    ): static {
+        /** @var class-string<AbstractPathGenerator> */
+        $pathGenerator = config('media.default_path_generator');
+
+        $destination ??= (new $pathGenerator)->source($this)->value();
+        $name ??= File::name($file) ?? Str::random(6);
+        $disk ??= $this->disk ?? config()->string('media.disk', config()->string('filesystems.default', 'local'));
+        $before ??= fn (UploadedFile|HttpFile $file, SpatieTemporaryDirectory $tmp) => $file;
+
+        TemporaryDirectory::callback(function ($tmp) use ($before, $destination, $disk, $file, $name) {
+            $file = $before($file, $tmp);
+
+            $this->putFile(
+                disk: $disk,
+                destination: $destination,
+                file: $file,
+                name: $name,
+            );
+
+            $this->save();
+
+        });
+
+        event(new MediaFileStoredEvent($this));
+
+        return $this;
     }
 
     /**
@@ -230,10 +304,7 @@ trait InteractWithFiles
             return null;
         }
 
-        $result = $filesystem->writeStream(
-            $path,
-            $stream
-        );
+        $result = $filesystem->writeStream($path, $stream);
 
         return $result ? $path : null;
     }
@@ -271,7 +342,7 @@ trait InteractWithFiles
      * Transform the media file inside a temporary directory while keeping the same Model
      * Usefull to optimize or convert the media file afterwards
      *
-     * @param  Closure(HttpFile $copy, \Spatie\TemporaryDirectory\TemporaryDirectory $temporaryDirectory): HttpFile  $transform
+     * @param  Closure(HttpFile $copy, SpatieTemporaryDirectory $temporaryDirectory): HttpFile  $transform
      * @return $this
      */
     public function transformFile(Closure $transform): static
@@ -300,10 +371,7 @@ trait InteractWithFiles
                 return;
             }
 
-            $file = $transform(
-                new HttpFile($storage->path($copy)),
-                $temporaryDirectory
-            );
+            $file = $transform(new HttpFile($storage->path($copy)), $temporaryDirectory);
 
             $result = $this->putFile(
                 disk: $disk,
@@ -312,10 +380,7 @@ trait InteractWithFiles
                 name: $name
             );
 
-            if (
-                $result &&
-                $clone->path !== $this->path
-            ) {
+            if ($result && $clone->path !== $this->path) {
                 $clone->deleteFile();
             }
 
@@ -330,11 +395,7 @@ trait InteractWithFiles
         int $precision = 0,
         ?int $maxPrecision = null
     ): ?string {
-        if (! $this->size) {
-            return null;
-        }
-
-        return Number::fileSize($this->size, $precision, $maxPrecision);
+        return $this->size ? Number::fileSize($this->size, $precision, $maxPrecision) : null;
     }
 
     public function humanReadableDuration(

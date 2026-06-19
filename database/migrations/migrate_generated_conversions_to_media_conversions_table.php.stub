@@ -45,7 +45,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('media', function (Blueprint $table) {
-            $table->json('generated_conversions')->nullable();
+            $table->jsonb('generated_conversions')->nullable();
         });
     }
 

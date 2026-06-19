@@ -31,12 +31,9 @@ class UuidPathGenerator extends AbstractPathGenerator
      * @example {prefix}/{uuid}/conversions/poster/{uuid}/
      * @example {prefix}/{uuid}/conversions/poster/conversions/360/{uuid}
      */
-    public function conversion(
-        Media $media,
-        MediaConversion $mediaConversion,
-    ): Stringable {
-
-        return $this->media($media)
+    public function conversion(MediaConversion $mediaConversion): Stringable
+    {
+        return $this->media($mediaConversion->media)
             ->append('conversions/')
             ->append(str_replace('.', '/conversions/', $mediaConversion->conversion_name))
             ->finish('/')

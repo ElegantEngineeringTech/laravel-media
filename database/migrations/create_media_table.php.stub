@@ -30,9 +30,9 @@ return new class extends Migration
             $table->decimal('duration', 19, 2, true)->nullable();
 
             $table->unsignedBigInteger('order_column')->nullable()->index();
-            $table->json('metadata')->nullable();
+            $table->jsonb('metadata')->nullable();
 
-            $table->json('generated_conversions')->nullable();
+            $table->jsonb('generated_conversions')->nullable();
 
             $table->nullableMorphs('model');
 

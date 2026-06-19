@@ -10,11 +10,10 @@ it('generates a media path', function ($prefix, $uuid, $fileName, $path) {
 
     $generator = new UuidPathGenerator($prefix);
 
-    $media = new Media(['uuid' => $uuid]);
+    $media = new Media()->forceFill(['uuid' => $uuid]);
 
     $path = $generator->generate(
-        media: $media,
-        mediaConversion: null,
+        source: $media,
         fileName: $fileName
     );
 
@@ -36,13 +35,14 @@ it('generates a media conversion path', function (
 
     $generator = new UuidPathGenerator($prefix);
 
-    $media = new Media($media);
+    $media = new Media()->forceFill($media);
 
-    $mediaConversion = new MediaConversion($mediaConversion);
+    $mediaConversion = new MediaConversion()->forceFill($mediaConversion);
+
+    $mediaConversion->media()->associate($media);
 
     $path = $generator->generate(
-        media: $media,
-        mediaConversion: $mediaConversion,
+        source: $mediaConversion,
         fileName: $fileName
     );
 

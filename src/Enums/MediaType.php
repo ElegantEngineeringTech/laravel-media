@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Elegantly\Media\Enums;
 
 use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Helpers\Audio;
+use Elegantly\Media\Helpers\Dimension;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\Helpers\Image;
+use Elegantly\Media\Helpers\Video;
 
 enum MediaType: string
 {
@@ -60,5 +64,23 @@ enum MediaType: string
         }
 
         return $type;
+    }
+
+    public function duration(string $path): ?float
+    {
+        return match ($this) {
+            MediaType::Video => Video::duration($path),
+            MediaType::Audio => Audio::duration($path),
+            default => null,
+        };
+    }
+
+    public function dimension(string $path): ?Dimension
+    {
+        return match ($this) {
+            MediaType::Video => Video::dimension($path),
+            MediaType::Image => Image::dimension($path),
+            default => null
+        };
     }
 }

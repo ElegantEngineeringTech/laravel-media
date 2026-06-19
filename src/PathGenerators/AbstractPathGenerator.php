@@ -22,23 +22,21 @@ abstract class AbstractPathGenerator
 
     abstract public function media(Media $media): Stringable;
 
-    abstract public function conversion(Media $media, MediaConversion $mediaConversion): Stringable;
+    abstract public function conversion(MediaConversion $mediaConversion): Stringable;
 
-    public function generate(
-        Media $media,
-        ?MediaConversion $mediaConversion,
-        string $fileName,
-    ): string {
-        if ($mediaConversion) {
-            return $this
-                ->conversion($media, $mediaConversion)
-                ->append($fileName)
-                ->value();
+    public function source(Media|MediaConversion $source): Stringable
+    {
+        if ($source instanceof Media) {
+            return $this->media($source);
         }
 
-        return $this
-            ->media($media)
-            ->append($fileName)
-            ->value();
+        return $this->conversion($source);
+    }
+
+    public function generate(
+        Media|MediaConversion $source,
+        string $fileName,
+    ): string {
+        return $this->source($source)->append($fileName)->value();
     }
 }

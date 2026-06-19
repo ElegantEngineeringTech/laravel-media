@@ -6,21 +6,19 @@ namespace Elegantly\Media\Models;
 
 use Carbon\Carbon;
 use Closure;
-use Elegantly\Media\Concerns\InteractWithFiles;
+use Elegantly\Media\Concerns\HasAdditionalFiles;
+use Elegantly\Media\Concerns\HasFile;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
-use Elegantly\Media\Events\MediaFileStoredEvent;
-use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaConversionDefinition;
-use Elegantly\Media\PathGenerators\AbstractPathGenerator;
-use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
-use Exception;
+use Elegantly\Media\ValueObjects\AdditionalFile;
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -31,7 +29,6 @@ use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -51,19 +48,21 @@ use Illuminate\Support\Str;
  */
 class Media extends Model
 {
+    use HasAdditionalFiles;
+
     /** @use HasFactory<MediaFactory> */
     use HasFactory;
 
-    use HasUuid;
-    use InteractWithFiles {
-        getUrl as traitGetUrl;
-        getTemporaryUrl as traitGetTemporaryUrl;
+    use HasFile {
+        getUrl as hasFileGetUrl;
+        getTemporaryUrl as hasFileGetTemporaryUrl;
     }
+    use HasUuid;
 
     /**
      * @var array<int, string>
      */
-    protected $guarded = [];
+    protected $guarded = ['id', 'uuid'];
 
     protected $appends = ['url'];
 
@@ -77,6 +76,7 @@ class Media extends Model
             'metadata' => 'array',
             'duration' => 'float',
             'aspect_ratio' => 'float',
+            'additional_files' => AsCollection::of(AdditionalFile::class),
         ];
     }
 
@@ -86,6 +86,7 @@ class Media extends Model
 
             $media->conversions->each(fn ($conversion) => $conversion->delete());
 
+            $media->deleteAdditionalFiles();
             $media->deleteFile();
         });
     }
@@ -116,87 +117,6 @@ class Media extends Model
 
         return $this->hasMany($mediaConversionModel)->chaperone();
     }
-
-    // Storing File ----------------------------------------------------------
-
-    /**
-     * @param  string|UploadedFile|HttpFile|resource  $file
-     * @param  null|(Closure(UploadedFile|HttpFile $file):(UploadedFile|HttpFile))  $before
-     */
-    public function storeFile(
-        mixed $file,
-        ?string $destination = null,
-        ?string $name = null,
-        ?string $disk = null,
-        ?Closure $before = null,
-    ): static {
-
-        if ($file instanceof UploadedFile || $file instanceof HttpFile) {
-            return $this->storeFileFromHttpFile($file, $destination, $name, $disk, $before);
-        }
-
-        if (! is_string($file) || filter_var($file, FILTER_VALIDATE_URL)) {
-            /** @var static $value */
-            $value = TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
-
-                $path = HttpFileDownloader::download(
-                    file: $file,
-                    destination: $temporaryDirectory->path()
-                );
-
-                return $this->storeFileFromHttpFile(new HttpFile($path), $destination, $name, $disk, $before);
-            });
-
-            return $value;
-        }
-
-        return $this->storeFileFromHttpFile(new HttpFile($file), $destination, $name, $disk, $before);
-    }
-
-    /**
-     * @param  null|(Closure(UploadedFile|HttpFile $file, \Spatie\TemporaryDirectory\TemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
-     */
-    public function storeFileFromHttpFile(
-        UploadedFile|HttpFile $file,
-        ?string $destination = null,
-        ?string $name = null,
-        ?string $disk = null,
-        ?Closure $before = null,
-    ): static {
-
-        /** @var class-string<AbstractPathGenerator> */
-        $pathGenerator = config('media.default_path_generator');
-
-        $destination ??= (new $pathGenerator)->media($this)->value();
-        $name ??= File::name($file) ?? Str::random(6);
-        $disk ??= config()->string('media.disk', config()->string('filesystems.default', 'local'));
-
-        TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk, $before) {
-            if ($before) {
-                $file = $before($file, $temporaryDirectory);
-            }
-
-            $path = $this->putFile(
-                disk: $disk,
-                destination: $destination,
-                file: $file,
-                name: $name,
-            );
-
-            if (! $path) {
-                throw new Exception("Storing Media File '{$file->getPath()}' to disk '{$disk}' at '{$destination}' failed.");
-            }
-
-            $this->save();
-
-        });
-
-        event(new MediaFileStoredEvent($this));
-
-        return $this;
-    }
-
-    // \ Storing File ----------------------------------------------------------
 
     // Managing Conversions ----------------------------------------------------------
 
@@ -443,9 +363,7 @@ class Media extends Model
         array $attributes = [],
         bool $deleteChildren = false
     ): MediaConversion {
-
-        /** @var class-string<AbstractPathGenerator> */
-        $pathGenerator = config('media.default_path_generator');
+        $disk ??= $this->disk;
 
         /**
          * Prefix name with parent if not already done
@@ -454,6 +372,9 @@ class Media extends Model
             $conversionName = "{$parent->conversion_name}.{$conversionName}";
         }
 
+        /**
+         * Delete existing conversion
+         */
         if ($existingConversion = $this->getConversion($conversionName)) {
             $existingConversion->delete();
             $this->setRelation(
@@ -465,20 +386,20 @@ class Media extends Model
         /** @var class-string<MediaConversion> */
         $mediaConversionModel = config()->string('media.media_conversion_model');
 
-        $conversion = new $mediaConversionModel;
+        $conversion = new $mediaConversionModel([
+            ...$attributes,
+            'conversion_name' => $conversionName,
+            'state' => MediaConversionState::Succeeded,
+            'metadata' => $metadata,
+        ]);
 
-        $conversion->media_id = $this->id;
-        $conversion->conversion_name = $conversionName;
-        $conversion->state = MediaConversionState::Succeeded;
-
-        $conversion->metadata = $metadata;
-        $conversion->fill($attributes);
+        $conversion->media()->associate($this);
 
         $conversion->storeFile(
             file: $file,
-            destination: $destination ?? (new $pathGenerator)->conversion($this, $conversion)->value(),
+            destination: $destination,
             name: $name,
-            disk: $disk ?? $this->disk
+            disk: $disk,
         );
 
         $this->conversions->push($conversion);
@@ -697,7 +618,7 @@ class Media extends Model
 
         } elseif ($this->path) {
             /** @var null|string $url */
-            $url = $this->traitGetUrl(
+            $url = $this->hasFileGetUrl(
                 parameters: $parameters,
                 formatter: $formatter
             );
@@ -762,7 +683,7 @@ class Media extends Model
             $url = $this->getConversion($conversion, MediaConversionState::Succeeded)?->getTemporaryUrl($expiration, $options, $parameters, $formatter);
         } elseif ($this->path) {
             /** @var null|string $url */
-            $url = $this->traitGetTemporaryUrl($expiration, $options, $parameters, $formatter);
+            $url = $this->hasFileGetTemporaryUrl($expiration, $options, $parameters, $formatter);
         }
 
         if ($url) {
