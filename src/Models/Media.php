@@ -636,8 +636,10 @@ class Media extends Model
                 }
 
                 return null;
-
             }
+
+            return null;
+
         }
 
         return $this;
