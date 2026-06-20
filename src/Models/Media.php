@@ -351,6 +351,7 @@ class Media extends Model
      * @param  string|resource|UploadedFile|HttpFile  $file
      * @param  array<array-key, mixed>  $metadata
      * @param  array<array-key, mixed>  $attributes
+     * @param  array<array-key, string|resource|UploadedFile|HttpFile>  $additionalFiles
      */
     public function addConversion(
         $file,
@@ -361,6 +362,7 @@ class Media extends Model
         ?string $disk = null,
         ?array $metadata = null,
         array $attributes = [],
+        array $additionalFiles = [],
         bool $deleteChildren = false
     ): MediaConversion {
         $disk ??= $this->disk;
@@ -401,6 +403,10 @@ class Media extends Model
             name: $name,
             disk: $disk,
         );
+
+        foreach ($additionalFiles as $additionalFile) {
+            $conversion->storeAdditionalFile($additionalFile);
+        }
 
         $this->conversions->push($conversion);
 

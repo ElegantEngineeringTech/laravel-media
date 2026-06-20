@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Tests\Models;
 
 use Elegantly\Media\Concerns\HasMedia;
+use Elegantly\Media\Converters\Video\MediaHlsConverter;
 use Elegantly\Media\Converters\Video\MediaMp4Converter;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\MediaConversionDefinition;
@@ -46,6 +47,19 @@ class TestVideo extends Model
                             media: $media,
                             filename: "{$media->name}.mp4",
                             width: 100,
+                        )
+                    ),
+                ]
+            ),
+            new MediaCollection(
+                name: 'hls',
+                conversions: [
+                    new MediaConversionDefinition(
+                        name: 'hls',
+                        immediate: false,
+                        queued: false,
+                        converter: fn ($media) => new MediaHlsConverter(
+                            media: $media,
                         )
                     ),
                 ]

@@ -27,32 +27,36 @@ class File
 
     public static function mimeType(string|HttpFile|UploadedFile $file): ?string
     {
-        if ($file instanceof UploadedFile) {
-            return $file->getMimeType() ?? $file->getClientMimeType();
-        }
-        if ($file instanceof HttpFile) {
-            return $file->getMimeType();
+        $mimeType = match (true) {
+            $file instanceof UploadedFile => $file->getMimeType() ?? $file->getClientMimeType(),
+            $file instanceof HttpFile => $file->getMimeType(),
+            default => SupportFile::mimeType($file) ?: null
+        };
+
+        if ($mimeType === 'text/plain') {
+
+            return match (static::extension($file)) {
+                'm3u8' => 'application/vnd.apple.mpegurl',
+                default => $mimeType,
+            };
         }
 
-        return SupportFile::mimeType($file) ?: null;
+        return $mimeType;
+
     }
 
     public static function extension(string|HttpFile|UploadedFile $file): ?string
     {
-        if ($file instanceof UploadedFile) {
-            return $file->guessExtension() ?? $file->getClientOriginalExtension();
-        }
-
-        if ($file instanceof HttpFile) {
-            return $file->guessExtension() ?? $file->getExtension();
-        }
-
-        return SupportFile::extension($file) ?: SupportFile::guessExtension($file);
+        return match (true) {
+            $file instanceof UploadedFile => $file->getClientOriginalExtension() ?: $file->guessExtension(),
+            $file instanceof HttpFile => $file->getExtension() ?: $file->guessExtension(),
+            default => SupportFile::extension($file) ?: SupportFile::guessExtension($file),
+        };
     }
 
     public static function type(string $path): MediaType
     {
-        return MediaType::tryFromStreams($path);
+        return MediaType::guess($path);
     }
 
     /**
@@ -87,15 +91,5 @@ class File
             $fileName,
             dictionary: ['@' => 'at', '+' => '-']
         );
-    }
-
-    public static function extractFilename(string|HttpFile $file, ?string $name = null): string
-    {
-        $file = $file instanceof HttpFile ? $file : new HttpFile($file);
-
-        $name = static::sanitizeFilename($name ?? SupportFile::name($file->getPathname()));
-        $extension = $file->guessExtension();
-
-        return "{$name}.{$extension}";
     }
 }

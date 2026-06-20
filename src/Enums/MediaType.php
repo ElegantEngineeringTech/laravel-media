@@ -29,7 +29,10 @@ enum MediaType: string
             return self::Audio;
         }
 
-        if (str_starts_with($mimeType, 'video/')) {
+        if (
+            in_array($mimeType, ['application/vnd.apple.mpegurl']) ||
+            str_starts_with($mimeType, 'video/')
+        ) {
             return self::Video;
         }
 
@@ -44,11 +47,21 @@ enum MediaType: string
      * Some codec like 3GPP or MOV files can contain either audios or videos
      * To determine the true type, we need to check which stream is defined
      */
-    public static function tryFromStreams(string $path): self
+    public static function guess(string $path): self
     {
-        $type = self::tryFromMimeType(File::mimeType($path) ?? '');
+        $mimeType = File::mimeType($path);
 
-        if ($type === self::Video || $type === self::Audio) {
+        if ($mimeType === null) {
+            return self::Other;
+        }
+
+        if (in_array($mimeType, ['application/vnd.apple.mpegurl'])) {
+            return self::Video;
+        }
+
+        $guessed = self::tryFromMimeType($mimeType);
+
+        if (in_array($guessed, [self::Video, self::Audio])) {
 
             $ffmpeg = new FFMpeg;
 
@@ -63,7 +76,7 @@ enum MediaType: string
             return self::Other;
         }
 
-        return $type;
+        return $guessed;
     }
 
     public function duration(string $path): ?float
