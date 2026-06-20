@@ -396,6 +396,15 @@ trait HasFile
         return $this->size ? Number::fileSize($this->size, $precision, $maxPrecision) : null;
     }
 
+    public function durationInSeconds(): ?float
+    {
+        if ($this->duration) {
+            return $this->duration / 1_000;
+        }
+
+        return null;
+    }
+
     public function humanReadableDuration(
         ?int $syntax = null,
         bool $short = false,

@@ -20,6 +20,7 @@ class MediaHlsConverter extends MediaConverter
         Media $media,
         public ?int $fps = 60,
         public ?HlsVariants $variants = null,
+        public int $segmentLength = 6,
         public string $preset = 'veryslow',
         public string $playlist = 'master.m3u8',
     ) {
@@ -29,6 +30,12 @@ class MediaHlsConverter extends MediaConverter
     public function shouldExecute(Media $media, ?MediaConversion $parent): bool
     {
         $source = $parent ?? $media;
+
+        $duration = $source->durationInSeconds();
+
+        if ($duration && $duration <= $this->segmentLength) {
+            return false;
+        }
 
         return $source->type === MediaType::Video;
     }
@@ -57,6 +64,7 @@ class MediaHlsConverter extends MediaConverter
             output: $output,
             playlist: $this->playlist,
             fps: $this->fps,
+            segmentLength: $this->segmentLength,
             preset: $this->preset,
             variants: $this->variants,
         );
