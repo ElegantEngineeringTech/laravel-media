@@ -617,7 +617,7 @@ class Media extends Model
             }
 
             if ($fallback === true) {
-                return $this->getMediaOrConversion(fallback: true);
+                return $this;
             }
 
             if (is_string($fallback)) {
@@ -628,21 +628,19 @@ class Media extends Model
                 $fallbackValue = array_shift($fallback);
 
                 if ($fallbackValue === true) {
-                    return $this->getMediaOrConversion(fallback: true);
+                    return $this;
                 }
 
                 if (is_string($fallbackValue)) {
                     return $this->getMediaOrConversion($fallbackValue, $fallback);
                 }
 
+                return null;
+
             }
         }
 
-        if ($fallback === true) {
-            return $this;
-        }
-
-        return null;
+        return $this;
     }
 
     /**
