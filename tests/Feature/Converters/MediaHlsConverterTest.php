@@ -29,4 +29,4 @@ it('converts an mp4 video into a hls playlist', function () {
 
     expect($conversion->additional_files)->toHaveLength(4 * 2);
 
-})->only();
+});

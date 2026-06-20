@@ -89,7 +89,8 @@ class File
     {
         return Str::slug(
             $fileName,
-            dictionary: ['@' => 'at', '+' => '-']
+            separator: '_',
+            dictionary: ['@' => 'at', '+' => '_']
         );
     }
 }
