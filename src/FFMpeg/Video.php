@@ -279,6 +279,7 @@ class Video extends FFMpeg
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The directory where HLS playlists and segments should be written.
      * @param  string  $playlist  The master playlist filename.
+     * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  string  $preset  The x264 compression speed preset.
      * @return false|string Command output
@@ -287,6 +288,7 @@ class Video extends FFMpeg
         string $input,
         string $output,
         string $playlist = 'master.m3u8',
+        ?int $fps = null,
         int $segmentLength = 6,
         string $preset = 'veryslow',
         ?HlsVariants $variants = null,
@@ -340,7 +342,16 @@ class Video extends FFMpeg
 
         foreach ($variants as $index => $variant) {
             $splitLabels[] = "[v{$index}]";
-            $filters[] = implode(':', ["[v{$index}]scale=w=-2", "h={$variant->height}", "flags=lanczos,format=yuv420p[v{$index}out]"]);
+
+            $filters[] = implode(':', [
+                "[v{$index}]scale=w=-2",
+                "h={$variant->height}",
+                implode(',', [
+                    'flags=lanczos',
+                    $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
+                    "format=yuv420p[v{$index}out]",
+                ]),
+            ]);
         }
 
         $filterComplex = '[0:v:0]split='.count($variants).implode('', $splitLabels).';'.implode(';', $filters);

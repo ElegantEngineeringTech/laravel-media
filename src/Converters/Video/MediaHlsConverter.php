@@ -21,6 +21,7 @@ class MediaHlsConverter extends MediaConverter
         public string $playlist = 'master.m3u8',
         public ?HlsVariants $variants = null,
         public string $preset = 'veryslow',
+        public ?int $fps = null,
     ) {
         parent::__construct($media);
     }
@@ -55,6 +56,7 @@ class MediaHlsConverter extends MediaConverter
             input: $input,
             output: $output,
             playlist: $this->playlist,
+            fps: $this->fps,
             preset: $this->preset,
             variants: $this->variants,
         );
