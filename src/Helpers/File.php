@@ -12,46 +12,67 @@ use Illuminate\Support\Str;
 
 class File
 {
+    /**
+     * @return ($path is UploadedFile ? UploadedFile : HttpFile)
+     */
+    public static function asFile(string|HttpFile|UploadedFile $path): HttpFile|UploadedFile
+    {
+        if ($path instanceof HttpFile) {
+            return $path;
+        }
+
+        if ($path instanceof UploadedFile) {
+            return $path;
+        }
+
+        return new HttpFile($path, false);
+    }
+
     public static function name(string|HttpFile|UploadedFile $file): ?string
     {
+        $file = static::asFile($file);
+
         if ($file instanceof UploadedFile) {
             return SupportFile::name($file->getClientOriginalName());
         }
 
-        if ($file instanceof HttpFile) {
-            return SupportFile::name($file->getPathname());
-        }
-
-        return SupportFile::name($file);
+        return SupportFile::name($file->getPathname());
     }
 
+    /**
+     * Depending on the operating system, the guessed mimType for m3u8 files
+     * can be unrelable (audio/x-mpegurl, text/plain...)
+     */
     public static function mimeType(string|HttpFile|UploadedFile $file): ?string
     {
-        $mimeType = match (true) {
-            $file instanceof UploadedFile => $file->getMimeType() ?? $file->getClientMimeType(),
-            $file instanceof HttpFile => $file->getMimeType(),
-            default => SupportFile::mimeType($file) ?: null
-        };
+        $file = static::asFile($file);
 
-        if ($mimeType === 'text/plain') {
+        $extension = static::extension($file);
 
-            return match (static::extension($file)) {
-                'm3u8' => 'application/vnd.apple.mpegurl',
-                default => $mimeType,
-            };
+        if ($extension === 'm3u8') {
+            $lines = SupportFile::lines($file->getPathname());
+            $isHls = (bool) $lines->first(fn ($line) => is_string($line) && str_starts_with($line, '#EXT-X-'));
+
+            return $isHls ? 'application/vnd.apple.mpegurl' : 'audio/x-mpegurl';
         }
 
-        return $mimeType;
+        if ($file instanceof UploadedFile) {
+            return $file->getMimeType() ?? $file->getClientMimeType();
+        }
+
+        return $file->getMimeType();
 
     }
 
     public static function extension(string|HttpFile|UploadedFile $file): ?string
     {
-        return match (true) {
-            $file instanceof UploadedFile => $file->getClientOriginalExtension() ?: $file->guessExtension(),
-            $file instanceof HttpFile => $file->getExtension() ?: $file->guessExtension(),
-            default => SupportFile::extension($file) ?: SupportFile::guessExtension($file),
-        };
+        $file = static::asFile($file);
+
+        if ($file instanceof UploadedFile) {
+            return $file->getClientOriginalExtension() ?: $file->guessExtension();
+        }
+
+        return $file->getExtension() ?: $file->guessExtension();
     }
 
     public static function type(string $path): MediaType

@@ -103,7 +103,7 @@ trait HasAdditionalFiles
                     destination: $temporaryDirectory->path()
                 );
 
-                return $this->storeAdditionalFileFromHttpFile(new HttpFile($path), $destination, $name, $disk);
+                return $this->storeAdditionalFileFromHttpFile(new HttpFile($path, false), $destination, $name, $disk);
             });
         }
 

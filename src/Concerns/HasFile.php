@@ -245,7 +245,7 @@ trait HasFile
             return TemporaryDirectory::callback(function ($tmp) use ($before, $file, $destination, $name, $disk) {
                 $path = HttpFileDownloader::download($file, $tmp->path());
 
-                return $this->storeFileFromHttpFile(new HttpFile($path), $destination, $name, $disk, $before);
+                return $this->storeFileFromHttpFile(new HttpFile($path, false), $destination, $name, $disk, $before);
             });
         }
 
@@ -362,16 +362,14 @@ trait HasFile
 
             $storage = TemporaryDirectory::storage($temporaryDirectory);
 
-            $copy = $this->copyFileTo(
-                disk: $storage,
-                path: $path
-            );
+            $copy = $this->copyFileTo($storage, $path);
 
             if (! $copy) {
                 return;
             }
 
-            $file = $transform(new HttpFile($storage->path($copy)), $temporaryDirectory);
+            $file = new HttpFile($storage->path($copy), false);
+            $file = $transform($file, $temporaryDirectory);
 
             $result = $this->putFile(
                 disk: $disk,
