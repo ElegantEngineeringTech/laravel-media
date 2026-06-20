@@ -31,12 +31,6 @@ class MediaHlsConverter extends MediaConverter
     {
         $source = $parent ?? $media;
 
-        $duration = $source->durationInSeconds();
-
-        if ($duration && $duration <= $this->segmentLength) {
-            return false;
-        }
-
         return $source->type === MediaType::Video;
     }
 
