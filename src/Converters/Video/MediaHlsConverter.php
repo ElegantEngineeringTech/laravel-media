@@ -7,6 +7,7 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Helpers\HlsVariants;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -15,13 +16,10 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaHlsConverter extends MediaConverter
 {
-    /**
-     * @param  null|array<int, string>  $variants
-     */
     public function __construct(
         Media $media,
         public string $playlist = 'master.m3u8',
-        public ?array $variants = null,
+        public ?HlsVariants $variants = null,
         public string $preset = 'veryslow',
     ) {
         parent::__construct($media);

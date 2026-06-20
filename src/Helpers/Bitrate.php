@@ -14,10 +14,13 @@ class Bitrate implements Stringable
         //
     }
 
-    public static function parse(null|string|float|int|self $value): static
+    /**
+     * @return ($value is null ? null : static)
+     */
+    public static function parse(null|string|float|int|self $value): ?static
     {
         if ($value === null) {
-            return new static(0);
+            return null;
         }
 
         if (is_int($value) || is_float($value)) {
@@ -56,22 +59,21 @@ class Bitrate implements Stringable
         return $this->format();
     }
 
-    public function clamp(
-        null|string|float|int|self $min,
-        null|string|float|int|self $max
-    ): static {
-        return new static(max(static::parse($min)->value, min(static::parse($max)->value, $this->value)));
+    public function max(null|string|float|int|self $max): static
+    {
+        if ($max = static::parse($max)) {
+            return new static(min($max->value, $this->value));
+        }
+
+        return new static($this->value);
     }
 
-    public function max(
-        null|string|float|int|self $max,
-    ): static {
-        return new static(min(static::parse($max)->value, $this->value));
-    }
+    public function min(null|string|float|int|self $min): static
+    {
+        if ($min = static::parse($min)) {
+            return new static(max($min->value, $this->value));
+        }
 
-    public function min(
-        null|string|float|int|self $min,
-    ): static {
-        return new static(max(static::parse($min)->value, $this->value));
+        return new static($this->value);
     }
 }

@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Helpers;
 
-class HlsVariant
+use Illuminate\Contracts\Support\Arrayable;
+
+/**
+ * @implements Arrayable<string, string|int|float|Bitrate>
+ */
+class HlsVariant implements Arrayable
 {
     public readonly string $name;
 
@@ -19,7 +24,7 @@ class HlsVariant
     public readonly Bitrate $audioBitrate;
 
     /**
-     * @param  array{name: string, height: int|float, bitrate: int|float|string, maxrate: int|float|string, bufsize: int|float|string, audioBitrate: int|float|string}  $data
+     * @param  array{name: string, height: int|float, bitrate: int|float|string|Bitrate, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
      */
     final public function __construct(array $data)
     {
@@ -29,5 +34,20 @@ class HlsVariant
         $this->maxrate = Bitrate::parse($data['maxrate']);
         $this->bufsize = Bitrate::parse($data['bufsize']);
         $this->audioBitrate = Bitrate::parse($data['audioBitrate']);
+    }
+
+    /**
+     * @return array{name: string, height: int|float, bitrate: Bitrate, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
+     */
+    public function toArray(): array
+    {
+        return [
+            'name' => $this->name,
+            'height' => $this->height,
+            'bitrate' => $this->bitrate,
+            'maxrate' => $this->maxrate,
+            'bufsize' => $this->bufsize,
+            'audioBitrate' => $this->audioBitrate,
+        ];
     }
 }
