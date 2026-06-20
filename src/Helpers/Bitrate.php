@@ -19,7 +19,7 @@ class Bitrate implements Stringable
      */
     public static function parse(null|string|float|int|self $value): ?static
     {
-        if ($value === null) {
+        if ($value === null || $value === '') {
             return null;
         }
 
