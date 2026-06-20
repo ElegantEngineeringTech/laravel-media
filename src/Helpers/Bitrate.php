@@ -19,12 +19,12 @@ class Bitrate implements Stringable
      */
     public static function parse(null|string|float|int|self $value): ?static
     {
-        if ($value === null || $value === '' || $value === 'N/A') {
+        if ($value === null) {
             return null;
         }
 
         if (is_int($value) || is_float($value)) {
-            return new static((int) floor(max(0, $value)));
+            return new static((int) max(0, $value));
         }
 
         if (is_numeric($value)) {
@@ -35,14 +35,8 @@ class Bitrate implements Stringable
 
             preg_match('/^(?<value>\d+(?:\.\d+)?)(?<unit>[kmg])?$/', strtolower(trim($value)), $matches);
 
-            $value = $matches['value'] ?? null;
+            $value = (float) ($matches['value'] ?: 0);
             $unit = $matches['unit'] ?? null;
-
-            if (! $value) {
-                return null;
-            }
-
-            $value = (float) $value;
 
             return match ($unit) {
                 'k' => static::parse($value * 1_000),
@@ -55,14 +49,14 @@ class Bitrate implements Stringable
         return new static($value->value);
     }
 
-    public function format(): string
+    public function isZero(): bool
     {
-        return ((int) floor($this->value / 1_000)).'k';
+        return $this->value === 0;
     }
 
-    public function __toString(): string
+    public function isNotZero(): bool
     {
-        return $this->format();
+        return ! $this->isZero();
     }
 
     public function max(null|string|float|int|self $max): static
@@ -81,5 +75,15 @@ class Bitrate implements Stringable
         }
 
         return new static($this->value);
+    }
+
+    public function format(): string
+    {
+        return ((int) floor($this->value / 1_000)).'k';
+    }
+
+    public function __toString(): string
+    {
+        return $this->format();
     }
 }

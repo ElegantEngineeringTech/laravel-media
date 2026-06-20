@@ -323,9 +323,13 @@ class Video extends FFMpeg
             }
         }
 
-        $variants = $variants
-            ->setMaxBitrate($sourceVideoBitrate)
-            ->setMaxAudioBitrate($sourceAudioBitrate);
+        if ($sourceVideoBitrate?->isNotZero()) {
+            $variants->setMaxBitrate($sourceVideoBitrate);
+        }
+
+        if ($sourceAudioBitrate?->isNotZero()) {
+            $variants->setMaxAudioBitrate($sourceAudioBitrate);
+        }
 
         if (! File::isDirectory($output)) {
             File::makeDirectory($output, recursive: true);
