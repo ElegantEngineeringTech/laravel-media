@@ -13,18 +13,7 @@
 ])
 
 @php
-    if ($conversion) {
-        $source = $media->getConversion(
-            name: $conversion,
-            state: \Elegantly\Media\Enums\MediaConversionState::Succeeded,
-            fallback: is_bool($fallback) ? null : $fallback,
-            dispatch: $dispatch,
-        );
-
-        $source ??= $fallback === true ? $media : null;
-    } else {
-        $source = $media;
-    }
+    $source = $media->getMediaOrConversion(conversion: $conversion, fallback: $fallback, dispatch: $dispatch);
 
     $placeholder = $placeholder === true ? 'placeholder' : $placeholder;
     $placeholderContents = $placeholder ? $media->getConversion($placeholder)?->contents : null;

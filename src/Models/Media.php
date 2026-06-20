@@ -273,8 +273,15 @@ class Media extends Model
 
         if ($conversion) {
             return $conversion;
-        } elseif ($dispatch) {
-            $this->dispatchConversion($name, false);
+        }
+
+        if ($dispatch) {
+            $this->dispatchConversion(
+                conversion: $name,
+                force: false,
+                withChildren: true,
+                withForceChildren: false,
+            );
         }
 
         if (is_string($fallback)) {
@@ -590,6 +597,55 @@ class Media extends Model
     }
 
     /**
+     * @param  null|bool|string|array<int, string|bool>  $fallback
+     * @param  bool  $dispatch  Dispatch not found conversion
+     */
+    public function getMediaOrConversion(
+        ?string $conversion = null,
+        null|bool|string|array $fallback = null,
+        bool $dispatch = false
+    ): null|Media|MediaConversion {
+        if ($conversion) {
+            $mediaConversion = $this->getConversion(
+                name: $conversion,
+                state: MediaConversionState::Succeeded,
+                dispatch: $dispatch,
+            );
+
+            if ($mediaConversion) {
+                return $mediaConversion;
+            }
+
+            if ($fallback === true) {
+                return $this->getMediaOrConversion(fallback: true);
+            }
+
+            if (is_string($fallback)) {
+                return $this->getMediaOrConversion($fallback);
+            }
+
+            if (is_array($fallback)) {
+                $fallbackValue = array_shift($fallback);
+
+                if ($fallbackValue === true) {
+                    return $this->getMediaOrConversion(fallback: true);
+                }
+
+                if (is_string($fallbackValue)) {
+                    return $this->getMediaOrConversion($fallbackValue, $fallback);
+                }
+
+            }
+        }
+
+        if ($fallback === true) {
+            return $this;
+        }
+
+        return null;
+    }
+
+    /**
      * Retreive the url of a conversion or nested conversion
      * Ex: $media->getUrl('poster.480p')
      *
@@ -651,7 +707,9 @@ class Media extends Model
                     parameters: $parameters,
                     formatter: $formatter,
                 );
-            } elseif (is_string($fallbackValue)) {
+            }
+
+            if (is_string($fallbackValue)) {
                 return $this->getUrl(
                     conversion: $fallbackValue,
                     fallback: $fallback,
