@@ -51,13 +51,17 @@ class MediaHlsConverter extends MediaConverter
 
         $ffmpeg = new FFMpeg;
 
-        $ffmpeg->video()->hls(
+        $result = $ffmpeg->video()->hls(
             input: $input,
             output: $output,
             playlist: $this->playlist,
             preset: $this->preset,
             variants: $this->variants,
         );
+
+        if ($result === false) {
+            return $this->skipConversion();
+        }
 
         $master = $outputId.DIRECTORY_SEPARATOR.$this->playlist;
 
