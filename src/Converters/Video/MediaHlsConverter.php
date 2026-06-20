@@ -18,10 +18,10 @@ class MediaHlsConverter extends MediaConverter
 {
     public function __construct(
         Media $media,
-        public string $playlist = 'master.m3u8',
+        public ?int $fps = 60,
         public ?HlsVariants $variants = null,
         public string $preset = 'veryslow',
-        public ?int $fps = null,
+        public string $playlist = 'master.m3u8',
     ) {
         parent::__construct($media);
     }
