@@ -19,7 +19,7 @@ class Bitrate implements Stringable
      */
     public static function parse(null|string|float|int|self $value): ?static
     {
-        if ($value === null || $value === '') {
+        if ($value === null || $value === '' || $value === 'N/A') {
             return null;
         }
 
@@ -35,8 +35,14 @@ class Bitrate implements Stringable
 
             preg_match('/^(?<value>\d+(?:\.\d+)?)(?<unit>[kmg])?$/', strtolower(trim($value)), $matches);
 
-            $value = (float) ($matches['value'] ?? 0);
+            $value = $matches['value'] ?? null;
             $unit = $matches['unit'] ?? null;
+
+            if (! $value) {
+                return null;
+            }
+
+            $value = (float) $value;
 
             return match ($unit) {
                 'k' => static::parse($value * 1_000),
