@@ -634,8 +634,6 @@ class Media extends Model
                 if (is_string($fallbackValue)) {
                     return $this->getMediaOrConversion($fallbackValue, $fallback);
                 }
-
-                return null;
             }
 
             return null;
