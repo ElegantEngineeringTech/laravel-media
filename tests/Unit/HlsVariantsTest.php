@@ -27,8 +27,6 @@ it('cap the audioBitrate to the max value', function ($max) {
     $variants = HlsVariants::defaults()
         ->setMaxAudioBitrate($max);
 
-    $variants->dump();
-
     foreach ($variants as $variant) {
         expect($variant->audioBitrate->value)->toBeLessThanOrEqual($max->value);
     }

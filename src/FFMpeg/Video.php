@@ -7,7 +7,6 @@ namespace Elegantly\Media\FFMpeg;
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\HlsVariants;
-use Elegantly\Media\Helpers\Video as HelpersVideo;
 use Illuminate\Support\Facades\File;
 
 class Video extends FFMpeg
@@ -49,6 +48,28 @@ class Video extends FFMpeg
         }
 
         throw VideoStreamNotFoundException::atPath($input);
+    }
+
+    public function width(string $input, bool $rotate = false): int
+    {
+        [$width, $height, $rotation] = $this->dimensions($input);
+
+        if ($rotate && $rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
+            return $height;
+        }
+
+        return $width;
+    }
+
+    public function height(string $input, bool $rotate = false): int
+    {
+        [$width, $height, $rotation] = $this->dimensions($input);
+
+        if ($rotate && $rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
+            return $width;
+        }
+
+        return $height;
     }
 
     /**
@@ -274,10 +295,10 @@ class Video extends FFMpeg
 
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
 
-        $dimension = HelpersVideo::dimension($input);
+        $height = $this->height($input, true);
 
         $variants = $variants
-            ->where('height', '<=', $dimension->height)
+            ->where('height', '<=', $height)
             ->values();
 
         if ($variants->isEmpty()) {
