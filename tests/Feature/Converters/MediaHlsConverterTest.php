@@ -23,7 +23,7 @@ it('converts an mp4 video into a hls playlist', function () {
     $conversion = $media->executeConversion('hls');
 
     expect($conversion)->toBeInstanceOf(MediaConversion::class);
-    expect($conversion->state)->toBeInstanceOf(MediaConversionState::Succeeded);
+    expect($conversion->state)->toBe(MediaConversionState::Succeeded);
     expect($conversion->name)->toBe('master');
     expect($conversion->extension)->toBe('m3u8');
     expect($conversion->mime_type)->toBe('application/vnd.apple.mpegurl');
