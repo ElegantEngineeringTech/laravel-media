@@ -15,6 +15,10 @@ class Dimension
 
     public function getAspectRatio(): AspectRatio
     {
+        if ($this->height == 0) {
+            return new AspectRatio(0);
+        }
+
         return new AspectRatio($this->width / $this->height);
     }
 }
