@@ -8,12 +8,12 @@ use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
 use Spatie\PdfToImage\Pdf;
-use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaPdfToImageConverter extends MediaConverter
 {
@@ -41,7 +41,7 @@ class MediaPdfToImageConverter extends MediaConverter
         ?MediaConversion $parent,
         ?string $file,
         Filesystem $filesystem,
-        SpatieTemporaryDirectory $temporaryDirectory
+        TemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
 
         if (! $file) {

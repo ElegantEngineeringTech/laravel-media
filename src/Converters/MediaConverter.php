@@ -14,7 +14,6 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 use Throwable;
 
 abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
@@ -103,7 +102,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
         ?MediaConversion $parent,
         ?string $file,
         Filesystem $filesystem,
-        SpatieTemporaryDirectory $temporaryDirectory
+        TemporaryDirectory $temporaryDirectory
     ): ?MediaConversion;
 
     abstract public function shouldExecute(
@@ -165,7 +164,7 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
         $mediaConversion = TemporaryDirectory::callback(function ($temporaryDirectory) use ($parent) {
 
-            $storage = TemporaryDirectory::storage($temporaryDirectory);
+            $storage = $temporaryDirectory->toFilesystem();
 
             $source = $parent ?? $this->media;
 

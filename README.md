@@ -500,7 +500,7 @@ For example, the snippet below shows how you can resize and optimize an uploaded
 
 ```php
 use Illuminate\Http\File;
-use Spatie\TemporaryDirectory\TemporaryDirectory;
+use Elegantly\Media\TemporaryDirectory;
 use Spatie\Image\Image;
 use Spatie\Image\Enums\Fit;
 
@@ -696,7 +696,7 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 use Spatie\ImageOptimizer\OptimizerChain;
-use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
+use Elegantly\Media\TemporaryDirectory;
 
 class MediaImageConverter extends MediaConverter
 {
@@ -723,7 +723,7 @@ class MediaImageConverter extends MediaConverter
         ?MediaConversion $parent,
         ?string $file,
         Filesystem $filesystem,
-        SpatieTemporaryDirectory $temporaryDirectory
+        TemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
 
         if (! $file) {

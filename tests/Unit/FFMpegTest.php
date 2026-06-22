@@ -70,7 +70,7 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
         ->deleteWhenDestroyed()
         ->create();
 
-    $filesystem = TemporaryDirectory::storage($temporaryDirectory);
+    $filesystem = $temporaryDirectory->toFilesystem();
 
     $output = $temporaryDirectory->path();
     $playlist = 'master.m3u8';

@@ -9,8 +9,8 @@ use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaAacConverter extends MediaConverter
 {
@@ -51,7 +51,7 @@ class MediaAacConverter extends MediaConverter
         ?MediaConversion $parent,
         ?string $file,
         Filesystem $filesystem,
-        SpatieTemporaryDirectory $temporaryDirectory
+        TemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
 
         if (! $file) {

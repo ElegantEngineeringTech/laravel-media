@@ -10,9 +10,9 @@ use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Helpers\HlsVariants;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
+use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Str;
-use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 class MediaHlsConverter extends MediaConverter
 {
@@ -39,7 +39,7 @@ class MediaHlsConverter extends MediaConverter
         ?MediaConversion $parent,
         ?string $file,
         Filesystem $filesystem,
-        SpatieTemporaryDirectory $temporaryDirectory
+        TemporaryDirectory $temporaryDirectory
     ): ?MediaConversion {
 
         if (! $file) {

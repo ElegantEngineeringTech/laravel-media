@@ -22,7 +22,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
-use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 
 /**
  * @property ?MediaType $type
@@ -228,7 +227,7 @@ trait HasFile
 
     /**
      * @param  string|UploadedFile|HttpFile|resource  $file
-     * @param  null|(Closure(UploadedFile|HttpFile $file, SpatieTemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
+     * @param  null|(Closure(UploadedFile|HttpFile $file, TemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
      */
     public function storeFile(
         mixed $file,
@@ -253,7 +252,7 @@ trait HasFile
     }
 
     /**
-     * @param  null|(Closure(UploadedFile|HttpFile $file, SpatieTemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
+     * @param  null|(Closure(UploadedFile|HttpFile $file, TemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
      */
     public function storeFileFromHttpFile(
         UploadedFile|HttpFile $file,
@@ -268,7 +267,7 @@ trait HasFile
         $destination ??= (new $pathGenerator)->source($this)->value();
         $name ??= File::name($file) ?? Str::random(6);
         $disk ??= $this->disk ?? config()->string('media.disk', config()->string('filesystems.default', 'local'));
-        $before ??= fn (UploadedFile|HttpFile $file, SpatieTemporaryDirectory $tmp) => $file;
+        $before ??= fn (UploadedFile|HttpFile $file, TemporaryDirectory $tmp) => $file;
 
         TemporaryDirectory::callback(function ($tmp) use ($before, $destination, $disk, $file, $name) {
             $file = $before($file, $tmp);
@@ -342,7 +341,7 @@ trait HasFile
      * Transform the media file inside a temporary directory while keeping the same Model
      * Usefull to optimize or convert the media file afterwards
      *
-     * @param  Closure(HttpFile $copy, SpatieTemporaryDirectory $temporaryDirectory): HttpFile  $transform
+     * @param  Closure(HttpFile $copy, TemporaryDirectory $temporaryDirectory): HttpFile  $transform
      * @return $this
      */
     public function transformFile(Closure $transform): static
@@ -360,7 +359,7 @@ trait HasFile
                 return $this;
             }
 
-            $storage = TemporaryDirectory::storage($temporaryDirectory);
+            $storage = $temporaryDirectory->toFilesystem();
 
             $copy = $this->copyFileTo($storage, $path);
 
