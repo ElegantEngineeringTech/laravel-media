@@ -209,6 +209,52 @@ class Media extends Model
     }
 
     /**
+     * Dispatches the deepest missing conversion.
+     */
+    public function dispatchDeepestConversion(
+        string $conversion,
+        MediaConversionState|array $state = MediaConversionState::Succeeded,
+        bool $withChildren = false,
+        bool $withForceChildren = false,
+        ?string $queue = null,
+    ): ?PendingDispatch {
+
+        if ($this->hasConversion($conversion, $state)) {
+            return null;
+        }
+
+        if (! str_contains($conversion, '.')) {
+            return $this->dispatchConversion(
+                conversion: $conversion,
+                force: false,
+                withChildren: $withChildren,
+                withForceChildren: $withForceChildren,
+                queue: $queue
+            );
+        }
+
+        $parent = str($conversion)->beforeLast('.')->value();
+
+        if ($this->hasConversion($parent, $state)) {
+            return $this->dispatchConversion(
+                conversion: $conversion,
+                force: false,
+                withChildren: $withChildren,
+                withForceChildren: $withForceChildren,
+                queue: $queue
+            );
+        }
+
+        return $this->dispatchFirstConversion(
+            conversion: $parent,
+            state: $state,
+            withChildren: $withChildren,
+            withForceChildren: $withForceChildren,
+            queue: $queue
+        );
+    }
+
+    /**
      * Execute any conversion while generating missing parents.
      */
     public function executeConversion(
