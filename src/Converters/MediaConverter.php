@@ -97,6 +97,11 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
         return null;
     }
 
+    abstract public function shouldExecute(
+        Media $media,
+        ?MediaConversion $parent,
+    ): bool;
+
     abstract public function convert(
         Media $media,
         ?MediaConversion $parent,
@@ -104,11 +109,6 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
         Filesystem $filesystem,
         TemporaryDirectory $temporaryDirectory
     ): ?MediaConversion;
-
-    abstract public function shouldExecute(
-        Media $media,
-        ?MediaConversion $parent,
-    ): bool;
 
     public function handle(): ?MediaConversion
     {
