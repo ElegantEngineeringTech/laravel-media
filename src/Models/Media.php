@@ -211,6 +211,8 @@ class Media extends Model
 
     /**
      * Dispatches the deepest missing conversion.
+     *
+     * @param  MediaConversionState|MediaConversionState[]  $state
      */
     public function dispatchDeepestConversion(
         string $conversion,
@@ -246,7 +248,7 @@ class Media extends Model
             );
         }
 
-        return $this->dispatchFirstConversion(
+        return $this->dispatchDeepestConversion(
             conversion: $parent,
             state: $state,
             withChildren: $withChildren,
