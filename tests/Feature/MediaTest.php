@@ -445,24 +445,7 @@ it('reorder models', function () {
     expect($second_media->refresh()->order_column)->toBe(2);
 });
 
-it('reorder models using uuids', function () {
-
-    $first_media = MediaFactory::new()->create(['order_column' => 0]);
-    $second_media = MediaFactory::new()->create(['order_column' => 1]);
-    $third_media = MediaFactory::new()->create(['order_column' => 2]);
-
-    Media::reorder([
-        $third_media->uuid,
-        $first_media->uuid,
-        $second_media->uuid,
-    ], using: 'uuid');
-
-    expect($third_media->refresh()->order_column)->toBe(0);
-    expect($first_media->refresh()->order_column)->toBe(1);
-    expect($second_media->refresh()->order_column)->toBe(2);
-});
-
-it('reorder models from a custom sequence', function () {
+it('reorder models using a custom sequence', function () {
 
     $first_media = MediaFactory::new()->create(['order_column' => 0]);
     $second_media = MediaFactory::new()->create(['order_column' => 1]);
@@ -472,7 +455,7 @@ it('reorder models from a custom sequence', function () {
         $third_media->getKey(),
         $first_media->getKey(),
         $second_media->getKey(),
-    ], sequence: fn (?int $previous) => ($previous === null ? 0 : ($previous + 2)));
+    ], using: fn (?int $previous) => ($previous === null ? 0 : ($previous + 2)));
 
     expect($third_media->refresh()->order_column)->toBe(0);
     expect($first_media->refresh()->order_column)->toBe(2);

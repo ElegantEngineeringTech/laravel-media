@@ -29,6 +29,7 @@ use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -575,33 +576,38 @@ class Media extends Model
     // \ Managing Conversions ----------------------------------------------------------
 
     /**
-     * @param  array<array-key, float|int|string>  $keys
-     * @param  null|(Closure(null|int $previous): int)  $sequence
+     * @param  array<array-key, int>  $keys
+     * @param  null|(Closure(null|int $previous): int)  $using
      * @return EloquentCollection<int, static>
      */
-    public static function reorder(array $keys, ?Closure $sequence = null, string $using = 'id'): EloquentCollection
-    {
-        /** @var EloquentCollection<int, static> */
+    public static function reorder(
+        array $keys,
+        ?Closure $using = null,
+    ): EloquentCollection {
+        $positions = array_flip($keys);
+
+        /** @var EloquentCollection<int, static> $models */
         $models = static::query()
-            ->whereIn($using, $keys)
-            ->get();
+            ->whereIn('id', $keys)
+            ->get()
+            ->sortBy(fn (Media $model) => $positions[$model->id])
+            ->values();
 
-        $models = $models->sortBy(function (Media $model) use ($keys, $using) {
-            return array_search($model->{$using}, $keys);
-        })->values();
+        return DB::transaction(function () use ($models, $using) {
+            $previous = null;
 
-        $previous = $sequence ? null : -1;
+            foreach ($models as $index => $model) {
 
-        foreach ($models as $model) {
+                $model->order_column = $using ? $using($previous) : $index;
 
-            $model->order_column = $sequence ? $sequence($previous) : ($previous + 1);
+                $model->save();
 
-            $previous = $model->order_column;
+                $previous = $model->order_column;
 
-            $model->save();
-        }
+            }
 
-        return $models;
+            return $models;
+        });
     }
 
     // Attributes Getters ----------------------------------------------------------------------
