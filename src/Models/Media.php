@@ -479,13 +479,13 @@ class Media extends Model
      * Execute or dispatch first level conversions based on their definition
      *
      * @param  null|(Closure(MediaConversionDefinition $definition):bool)  $filter
-     * @param  ?bool  $queued  force queueing the conversions
+     * @param  null|string|bool  $queued  force queueing the conversions
      * @return $this
      */
     public function generateConversions(
         ?MediaConversion $parent = null,
         ?Closure $filter = null,
-        ?bool $queued = null,
+        null|string|bool $queued = null,
         bool $force = false,
         bool $withChildren = false,
         bool $withForceChildren = false,
@@ -512,6 +512,7 @@ class Media extends Model
                     force: $force,
                     withChildren: $withChildren,
                     withForceChildren: $withForceChildren,
+                    queue: is_string($queued) ? $queued : null
                 );
 
                 if ($definition->delay !== null) {

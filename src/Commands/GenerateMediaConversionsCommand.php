@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Commands;
 
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,7 +52,22 @@ class GenerateMediaConversionsCommand extends Command
             ->with(['model', 'conversions'])
             ->when($ids, fn (Builder $query) => $query->whereIn('id', $ids))
             ->when($models, fn (Builder $query) => $query->whereIn('model_type', $models))
-            ->when($collections, fn (Builder $query) => $query->whereIn('collection_name', $collections));
+            ->when($collections, fn (Builder $query) => $query->whereIn('collection_name', $collections))
+            ->when(
+                $conversions && ! $force,
+                fn (Builder $query) => $query->where(function (Builder $query) use ($conversions) {
+                    foreach ($conversions as $conversion) {
+                        $query->orWhereDoesntHave(
+                            'conversions',
+                            fn (Builder $query) => $query
+                                // @phpstan-ignore-next-line
+                                ->where('conversion_name', $conversion)
+                                ->whereIn('state', [MediaConversionState::Succeeded, MediaConversionState::Skipped]),
+                        );
+                    }
+                })
+
+            );
 
         $count = $query->count();
 
@@ -61,7 +77,7 @@ class GenerateMediaConversionsCommand extends Command
 
         $progress = new Progress('Dispatching Media conversions', $count);
 
-        $query->chunkById(1_000, function ($media) use ($progress, $queue, $force, $immediate, $conversions, $withChildren, $withForceChildren) {
+        $query->chunkById(100, function ($media) use ($progress, $queue, $force, $immediate, $conversions, $withChildren, $withForceChildren) {
 
             /** @var Media $medium */
             foreach ($media as $medium) {
@@ -79,7 +95,7 @@ class GenerateMediaConversionsCommand extends Command
                 } else {
                     $medium->generateConversions(
                         filter: fn ($definition) => $immediate ? $definition->immediate : true,
-                        queued: true,
+                        queued: $queue,
                         force: $force,
                         withChildren: $withChildren,
                         withForceChildren: $withForceChildren,
