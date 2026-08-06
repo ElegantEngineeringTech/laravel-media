@@ -39,7 +39,8 @@ class TestCollections extends Test
 
                     if ($type === MediaType::Image) {
 
-                        Image::load($path)
+                        Image::useImageDriver(config('media.images.driver'))
+                            ->loadFile($path)
                             ->fit(Fit::Crop, 500, 500)
                             ->optimize()
                             ->save();

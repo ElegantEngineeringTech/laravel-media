@@ -49,7 +49,8 @@ class MediaImageConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($this->filename);
 
-        Image::load($input)
+        Image::useImageDriver(config('media.images.driver'))
+            ->loadFile($input)
             ->fit($this->fit, $this->width, $this->height)
             ->optimize($this->optimizerChain)
             ->save($output);

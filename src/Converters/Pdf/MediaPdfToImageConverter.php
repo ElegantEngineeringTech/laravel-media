@@ -55,7 +55,8 @@ class MediaPdfToImageConverter extends MediaConverter
 
         $pdf->selectPage($this->page)->save($output);
 
-        Image::load($output)
+        Image::useImageDriver(config('media.images.driver'))
+            ->loadFile($output)
             ->fit($this->fit, $this->width, $this->height)
             ->optimize($this->optimizerChain)
             ->save($output);

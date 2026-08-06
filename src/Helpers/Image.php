@@ -11,7 +11,8 @@ class Image implements HasDimension
 {
     public static function dimension(string $path): Dimension
     {
-        $file = SpatieImage::load($path);
+        $file = SpatieImage::useImageDriver(config('media.images.driver'))
+            ->loadFile($path);
 
         return new Dimension(
             width: $file->getWidth(),

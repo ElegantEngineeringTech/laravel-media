@@ -60,7 +60,8 @@ it('transforms a file and delete the original one', function () {
 
         $new = "{$basename}/{$name}.png";
 
-        Image::load($path)
+        Image::useImageDriver(config('media.images.driver'))
+            ->loadFile($path)
             ->save($new);
 
         return new HttpFile($new);
@@ -75,7 +76,8 @@ it('transforms a file and delete the original one', function () {
     $media->transformFile(function ($file) {
         $path = $file->getRealPath();
 
-        Image::load($path)
+        Image::useImageDriver(config('media.images.driver'))
+            ->loadFile($path)
             ->optimize()
             ->save($path);
 

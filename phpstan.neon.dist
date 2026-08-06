@@ -14,3 +14,4 @@ parameters:
     noEnvCallsOutsideOfConfig: false
     ignoreErrors:
         - '#Trait Elegantly\\Media\\Concerns\\HasMedia is used zero times and is not analysed.#'
+        - '#Parameter \#1 \$imageDriver of static method Spatie\\Image\\Image::useImageDriver\(\) expects Spatie\\Image\\Enums\\ImageDriver\|string, mixed given.#'

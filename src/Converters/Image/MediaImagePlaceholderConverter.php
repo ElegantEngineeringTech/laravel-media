@@ -48,7 +48,8 @@ class MediaImagePlaceholderConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path('tiny.jpg');
 
-        Image::load($input)
+        Image::useImageDriver(config('media.images.driver'))
+            ->loadFile($input)
             ->fit(Fit::Max, $this->width, $this->height)
             ->blur($this->blur)
             ->optimize()

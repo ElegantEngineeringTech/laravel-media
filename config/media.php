@@ -7,6 +7,7 @@ use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\PathGenerators\UuidPathGenerator;
 use Elegantly\Media\UrlFormatters\DefaultUrlFormatter;
+use Spatie\Image\Enums\ImageDriver;
 
 return [
     /**
@@ -84,6 +85,13 @@ return [
      * Set to null to use the default Laravel queue.
      */
     'queue' => null,
+
+    /**
+     * The default image driver used in media conversion jobs
+     */
+    'images' => [
+        'driver' => env('MEDIA_IMAGES_DRIVER', ImageDriver::Imagick),
+    ],
 
     /**
      * Configuration for FFmpeg processing.
