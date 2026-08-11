@@ -377,6 +377,9 @@ class Media extends Model
             ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
     }
 
+    /**
+     * @param  array<string, mixed>|MediaConversion  $conversion
+     */
     public function replaceConversion(array|MediaConversion $conversion): MediaConversion
     {
         /**
