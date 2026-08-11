@@ -13,7 +13,6 @@ use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
-use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -84,7 +83,6 @@ class Media extends Model
     public static function booted()
     {
         static::deleting(function (Media $media) {
-
             $media->conversions->each(fn ($conversion) => $conversion->delete());
 
             $media->deleteAdditionalFiles();

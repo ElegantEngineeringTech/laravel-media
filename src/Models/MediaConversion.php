@@ -82,7 +82,7 @@ class MediaConversion extends Model
         });
 
         static::updating(function (MediaConversion $conversion) {
-            if ($conversion->isDirty('state_set_at')) {
+            if ($conversion->isDirty('state')) {
                 $conversion->state_set_at = now();
             }
         });
