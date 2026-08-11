@@ -377,8 +377,15 @@ class Media extends Model
             ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
     }
 
-    public function replaceConversion(MediaConversion $conversion): MediaConversion
+    public function replaceConversion(array|MediaConversion $conversion): MediaConversion
     {
+        /**
+         * @var class-string<MediaConversion> $model
+         */
+        $model = config()->string('media.media_conversion_model');
+
+        $conversion = is_array($conversion) ? new $model($conversion) : $conversion;
+
         $existingConversion = $this->getConversion($conversion->conversion_name);
 
         if ($existingConversion?->is($conversion)) {

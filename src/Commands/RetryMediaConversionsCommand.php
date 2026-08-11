@@ -29,10 +29,8 @@ class RetryMediaConversionsCommand extends Command
         /** @var string[] $models */
         $models = (array) $this->option('models');
 
-        /**
-         * @var class-string<MediaConversion> $model
-         */
-        $model = config('media.media_conversion_model');
+        /** @var class-string<MediaConversion> */
+        $model = config()->string('media.media_conversion_model');
 
         $query = $model::query()
             ->with(['media.model'])

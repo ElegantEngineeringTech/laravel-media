@@ -71,12 +71,12 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
     protected function skipConversion(): MediaConversion
     {
-        return $this->media->replaceConversion(new MediaConversion([
+        return $this->media->replaceConversion([
             'conversion_name' => $this->conversion,
             'media_id' => $this->media->id,
             'state' => MediaConversionState::Skipped,
             'state_set_at' => now(),
-        ]));
+        ]);
     }
 
     protected function failConversion(?Throwable $exception = null): ?MediaConversion
@@ -84,13 +84,13 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
 
         if (! $this->media->hasConversion($this->conversion)) {
 
-            return $this->media->replaceConversion(new MediaConversion([
+            return $this->media->replaceConversion([
                 'conversion_name' => $this->conversion,
                 'media_id' => $this->media->id,
                 'state' => MediaConversionState::Failed,
                 'state_set_at' => now(),
                 'contents' => $exception ? ($exception->getCode().': '.$exception->getMessage()) : null,
-            ]));
+            ]);
 
         }
 

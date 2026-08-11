@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -57,20 +60,23 @@ return new class extends Migration
         ?string $parent = null,
     ): array {
 
-        return collect($generatedConversions)
-            ->flatMap(function ($generatedConversion, $conversionName) use ($parent) {
+        /** @var class-string<MediaConversion> */
+        $model = config()->string('media.media_conversion_model');
 
-                if(!is_array($generatedConversion)){
+        return collect($generatedConversions)
+            ->flatMap(function ($generatedConversion, $conversionName) use ($model, $parent) {
+
+                if (! is_array($generatedConversion)) {
                     return [];
                 }
 
-                if(empty($generatedConversion)){
+                if (empty($generatedConversion)) {
                     return [];
                 }
 
                 $fullName = $parent ? "{$parent}.{$conversionName}" : $conversionName;
 
-                $root = new MediaConversion([
+                $root = new $model([
                     'conversion_name' => $fullName,
                     ...Arr::only($generatedConversion, [
                         'state',

@@ -61,12 +61,12 @@ class MediaImagePlaceholderConverter extends MediaConverter
             throw FileContentNotFoundException::atPath($output);
         }
 
-        return $media->replaceConversion(new MediaConversion([
+        return $media->replaceConversion([
             'state' => MediaConversionState::Succeeded,
             'conversion_name' => $this->conversion,
             'contents' => base64_encode($content),
             'size' => filesize($output),
-        ]));
+        ]);
 
     }
 }

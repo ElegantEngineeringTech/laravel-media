@@ -33,11 +33,17 @@ it('generates a media conversion path', function (
     $path
 ) {
 
+    /** @var class-string<Media> */
+    $mediaClass = config()->string('media.model');
+
+    /** @var class-string<MediaConversion> */
+    $conversionClass = config()->string('media.media_conversion_model');
+
     $generator = new UuidPathGenerator($prefix);
 
-    $media = new Media()->forceFill($media);
+    $media = new $mediaClass()->forceFill($media);
 
-    $mediaConversion = new MediaConversion()->forceFill($mediaConversion);
+    $mediaConversion = new $conversionClass()->forceFill($mediaConversion);
 
     $mediaConversion->media()->associate($media);
 
