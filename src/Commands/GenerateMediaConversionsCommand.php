@@ -21,6 +21,7 @@ class GenerateMediaConversionsCommand extends Command
                         {--with-children : Generate children conversions}
                         {--with-force-children : Force children to be re-generated}
                         {--immediate : Only generates immediate conversions}
+                        {--types=* : Media Type}
                         {--conversions=* : Conversions names}
                         {--collections=* : Collection names}
                         {--models=* : Models class}';
@@ -36,6 +37,8 @@ class GenerateMediaConversionsCommand extends Command
         $withChildren = (bool) $this->option('with-children');
         $withForceChildren = (bool) $this->option('with-force-children');
         $immediate = (bool) $this->option('immediate');
+        /** @var string[] $types */
+        $types = (array) $this->option('types');
         /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
         /** @var string[] $models */
@@ -53,6 +56,7 @@ class GenerateMediaConversionsCommand extends Command
             ->when($ids, fn (Builder $query) => $query->whereIn('id', $ids))
             ->when($models, fn (Builder $query) => $query->whereIn('model_type', $models))
             ->when($collections, fn (Builder $query) => $query->whereIn('collection_name', $collections))
+            ->when($types, fn (Builder $query) => $query->whereIn('type', $types))
             ->when(
                 $conversions && ! $force,
                 fn (Builder $query) => $query->where(function (Builder $query) use ($conversions) {
