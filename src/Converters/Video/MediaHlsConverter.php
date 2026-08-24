@@ -6,7 +6,7 @@ namespace Elegantly\Media\Converters\Video;
 
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Helpers\HlsVariants;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -51,9 +51,9 @@ class MediaHlsConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($outputId);
 
-        $ffmpeg = new FFMpeg;
+        $ffmpeg = FFMpeg::video();
 
-        $result = $ffmpeg->video()->hls(
+        $result = $ffmpeg->hls(
             input: $input,
             output: $output,
             playlist: $this->playlist,

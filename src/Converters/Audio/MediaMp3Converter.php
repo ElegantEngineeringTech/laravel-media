@@ -6,7 +6,7 @@ namespace Elegantly\Media\Converters\Audio;
 
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -43,13 +43,13 @@ class MediaMp3Converter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($this->filename);
 
-        $ffmpeg = new FFMpeg;
+        $ffmpeg = FFMpeg::audio();
 
         if (! $ffmpeg->hasAudio($input)) {
             return $this->skipConversion();
         }
 
-        $ffmpeg->audio()->mp3(
+        $ffmpeg->mp3(
             input: $input,
             output: $output,
         );

@@ -7,7 +7,7 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\Concerns\HasDimensions;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -68,7 +68,7 @@ class MediaThumbnailConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($this->filename);
 
-        $ffmpeg = new FFMpeg;
+        $ffmpeg = FFMpeg::video();
 
         if (! $ffmpeg->hasVideo($input)) {
             return $this->skipConversion();
@@ -78,7 +78,7 @@ class MediaThumbnailConverter extends MediaConverter
 
         [$width, $height] = $this->getDimensions($source->width, $source->height, 2);
 
-        $ffmpeg->video()->thumbnail(
+        $ffmpeg->thumbnail(
             input: $filesystem->path($file),
             output: $output,
             frames: $this->frames,

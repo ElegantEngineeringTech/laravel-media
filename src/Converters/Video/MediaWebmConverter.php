@@ -7,7 +7,7 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\Concerns\HasDimensions;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -56,13 +56,13 @@ class MediaWebmConverter extends MediaConverter
         $input = $filesystem->path($file);
         $output = $filesystem->path($this->filename);
 
-        $ffmpeg = new FFMpeg;
+        $ffmpeg = FFMpeg::video();
 
         $source = $parent ?? $media;
 
         [$width, $height] = $this->getDimensions($source->width, $source->height, 2);
 
-        $ffmpeg->video()->webm(
+        $ffmpeg->webm(
             input: $input,
             output: $output,
             width: $width,

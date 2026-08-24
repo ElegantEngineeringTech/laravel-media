@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Enums;
 
-use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Helpers\Audio;
 use Elegantly\Media\Helpers\Dimension;
 use Elegantly\Media\Helpers\File;
@@ -63,13 +63,11 @@ enum MediaType: string
 
         if (in_array($guessed, [self::Video, self::Audio])) {
 
-            $ffmpeg = new FFMpeg;
-
-            if ($ffmpeg->hasVideo($path)) {
+            if (FFMpeg::video()->hasVideo($path)) {
                 return self::Video;
             }
 
-            if ($ffmpeg->hasAudio($path)) {
+            if (FFMpeg::audio()->hasAudio($path)) {
                 return self::Audio;
             }
 
