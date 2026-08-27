@@ -6,13 +6,13 @@
     'dispatch' => false,
     'parameters' => null,
     // poster
-    'poster' => null,
     'posterConversion' => 'poster',
-    'posterFallback' => null,
+    'posterFallback' => false,
     'posterDispatch' => false,
     'posterParameters' => null,
     // attributes
     'src' => null,
+    'poster' => null,
     'height' => null,
     'width' => null,
     'alt' => null,
