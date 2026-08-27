@@ -1,16 +1,21 @@
 @props([
     'media',
+    // conversion
     'conversion' => null,
     'fallback' => false,
     'dispatch' => false,
     'parameters' => null,
+    // poster
+    'poster' => null,
+    'posterConversion' => 'poster',
+    'posterFallback' => null,
+    'posterDispatch' => false,
+    'posterParameters' => null,
+    // attributes
     'src' => null,
     'height' => null,
     'width' => null,
     'alt' => null,
-    'poster' => null,
-    'posterConversion' => 'poster',
-    'posterDispatch' => false,
     'autoplay' => false,
     'muted' => false,
     'playsinline' => false,
@@ -18,18 +23,25 @@
 ])
 
 @php
-
     $source = $media->getMediaOrConversion(conversion: $conversion, fallback: $fallback, dispatch: $dispatch);
 
-    if ($posterConversion) {
-        $poster ??= $media->getUrl(conversion: $posterConversion, dispatch: $posterDispatch);
-    }
+    $src ??= $source?->getUrl(parameters: $parameters);
+    $height ??= $source?->height;
+    $width ??= $source?->width;
+
+    $poster ??= $media
+        ->getConversion(
+            name: $posterConversion,
+            state: \Elegantly\Media\Enums\MediaConversionState::Succeeded,
+            fallback: $posterFallback,
+            dispatch: $posterDispatch,
+        )
+        ?->getUrl(parameters: $posterParameters);
 
 @endphp
 
-<video {!! $attributes !!} src="{!! $src ?? $source?->getUrl(parameters: $parameters) !!}" height="{{ $height ?? $source?->height }}"
-    width="{{ $width ?? $source?->width }}" alt="{{ $alt ?? $source?->name }}" poster="{{ $poster }}"
-    {{ when($autoplay, 'autoplay') }} {{ when($muted, 'muted') }} {{ when($playsinline, 'playsinline') }}
-    {{ when($loop, 'loop') }}>
+<video {{ $attributes }} src="{{ $src }}" height="{{ $height }}" width="{{ $width }}"
+    poster="{{ $poster }}" {{ when($autoplay, 'autoplay') }} {{ when($muted, 'muted') }}
+    {{ when($playsinline, 'playsinline') }} {{ when($loop, 'loop') }}>
     {{ $slot }}
 </video>
