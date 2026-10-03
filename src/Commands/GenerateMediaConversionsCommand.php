@@ -66,7 +66,10 @@ class GenerateMediaConversionsCommand extends Command
                             fn (Builder $query) => $query
                                 // @phpstan-ignore-next-line
                                 ->where('conversion_name', $conversion)
-                                ->whereIn('state', [MediaConversionState::Succeeded, MediaConversionState::Skipped]),
+                                ->whereIn('state', [
+                                    MediaConversionState::Succeeded,
+                                    MediaConversionState::Unsupported,
+                                ]),
                         );
                     }
                 })
