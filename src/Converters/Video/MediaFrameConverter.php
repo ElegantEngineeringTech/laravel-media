@@ -45,7 +45,7 @@ class MediaFrameConverter extends MediaConverter
         return $this->timecode;
     }
 
-    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
+    public function canExecute(Media $media, ?MediaConversion $parent): bool
     {
         $source = $parent ?? $media;
 
@@ -70,7 +70,7 @@ class MediaFrameConverter extends MediaConverter
         $ffmpeg = FFMpeg::video();
 
         if (! $ffmpeg->hasVideo($input)) {
-            return $this->skipConversion();
+            return $this->unsupportedConversion();
         }
 
         $source = $parent ?? $media;

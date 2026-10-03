@@ -79,6 +79,16 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
         ]);
     }
 
+    protected function unsupportedConversion(): MediaConversion
+    {
+        return $this->media->replaceConversion([
+            'conversion_name' => $this->conversion,
+            'media_id' => $this->media->id,
+            'state' => MediaConversionState::Unsupported,
+            'state_set_at' => now(),
+        ]);
+    }
+
     protected function failConversion(?Throwable $exception = null): ?MediaConversion
     {
 
@@ -97,10 +107,17 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
         return null;
     }
 
-    abstract public function shouldExecute(
+    abstract public function canExecute(
         Media $media,
         ?MediaConversion $parent,
     ): bool;
+
+    public function shouldExecute(
+        Media $media,
+        ?MediaConversion $parent,
+    ): bool {
+        return true;
+    }
 
     abstract public function convert(
         Media $media,
@@ -131,6 +148,10 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
                 return null;
             }
 
+            if ($parent->state === MediaConversionState::Unsupported) {
+                return $this->unsupportedConversion();
+            }
+
             if ($parent->state === MediaConversionState::Skipped) {
                 return $this->skipConversion();
             }
@@ -154,11 +175,15 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             return null;
         }
 
-        if (! $definition->shouldExecute($this->media, $parent)) {
-            return $this->skipConversion();
+        if (! $this->canExecute($this->media, $parent)) {
+            return $this->unsupportedConversion();
         }
 
         if (! $this->shouldExecute($this->media, $parent)) {
+            return $this->skipConversion();
+        }
+
+        if (! $definition->shouldExecute($this->media, $parent)) {
             return $this->skipConversion();
         }
 

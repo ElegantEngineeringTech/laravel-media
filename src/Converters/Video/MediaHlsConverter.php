@@ -27,7 +27,7 @@ class MediaHlsConverter extends MediaConverter
         parent::__construct($media);
     }
 
-    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
+    public function canExecute(Media $media, ?MediaConversion $parent): bool
     {
         $source = $parent ?? $media;
 
@@ -64,7 +64,7 @@ class MediaHlsConverter extends MediaConverter
         );
 
         if ($result === false) {
-            return $this->skipConversion();
+            return $this->unsupportedConversion();
         }
 
         $master = $outputId.DIRECTORY_SEPARATOR.$this->playlist;

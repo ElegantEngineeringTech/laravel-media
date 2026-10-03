@@ -30,7 +30,7 @@ class MediaWebmConverter extends MediaConverter
         parent::__construct($media);
     }
 
-    public function shouldExecute(Media $media, ?MediaConversion $parent): bool
+    public function canExecute(Media $media, ?MediaConversion $parent): bool
     {
         $source = $parent ?? $media;
 

@@ -10,4 +10,5 @@ enum MediaConversionState: string
     case Skipped = 'skipped';
     case Pending = 'pending';
     case Failed = 'failed';
+    case Unsupported = 'unsupported';
 }
