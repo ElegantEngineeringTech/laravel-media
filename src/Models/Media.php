@@ -207,52 +207,50 @@ class Media extends Model
         return null;
     }
 
-    /**
-     * Dispatches the deepest missing conversion.
-     *
-     * @param  MediaConversionState|MediaConversionState[]  $state
-     */
-    public function dispatchDeepestConversion(
+    public function dispatchFirstMissingConversion(
         string $conversion,
-        MediaConversionState|array $state = MediaConversionState::Succeeded,
+        bool $force = true,
         bool $withChildren = false,
         bool $withForceChildren = false,
         ?string $queue = null,
     ): ?PendingDispatch {
 
-        if ($this->hasConversion($conversion, $state)) {
-            return null;
-        }
-
-        if (! str_contains($conversion, '.')) {
+        /**
+         * If the conversion has no parent or has already succeeded, behave like dispatchConversion
+         */
+        if (
+            ! str_contains($conversion, '.') ||
+            $this->hasConversion($conversion, MediaConversionState::Succeeded)
+        ) {
             return $this->dispatchConversion(
                 conversion: $conversion,
-                force: false,
+                force: $force,
                 withChildren: $withChildren,
                 withForceChildren: $withForceChildren,
                 queue: $queue
             );
         }
 
-        $parent = str($conversion)->beforeLast('.')->value();
+        while (str_contains($conversion, '.')) {
 
-        if ($this->hasConversion($parent, $state)) {
-            return $this->dispatchConversion(
-                conversion: $conversion,
-                force: false,
-                withChildren: $withChildren,
-                withForceChildren: $withForceChildren,
-                queue: $queue
-            );
+            $parent = str($conversion)->beforeLast('.')->value();
+
+            if ($this->hasConversion($parent, MediaConversionState::Succeeded)) {
+                break;
+            }
+
+            $conversion = $parent;
+
         }
 
-        return $this->dispatchDeepestConversion(
-            conversion: $parent,
-            state: $state,
+        return $this->dispatchConversion(
+            conversion: $conversion,
+            force: false,
             withChildren: $withChildren,
             withForceChildren: $withForceChildren,
             queue: $queue
         );
+
     }
 
     /**
