@@ -10,6 +10,14 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 
+/**
+ * @property ?string $disk
+ * @property ?string $path
+ * @property ?string $extension
+ * @property ?string $name
+ * @property ?string $file_name
+ * @property ?string $mime_type
+ */
 interface InteractWithFiles
 {
     public function dirname(): ?string;
