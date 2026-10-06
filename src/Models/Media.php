@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Closure;
 use Elegantly\Media\Concerns\HasAdditionalFiles;
 use Elegantly\Media\Concerns\HasFile;
+use Elegantly\Media\Contracts\InteractWithFiles;
 use Elegantly\Media\Contracts\InteractWithMedia;
 use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\Enums\MediaConversionState;
@@ -46,7 +47,7 @@ use Illuminate\Support\Facades\DB;
  * @property Carbon $updated_at
  * @property-read ?string $url
  */
-class Media extends Model
+class Media extends Model implements InteractWithFiles
 {
     use HasAdditionalFiles;
 

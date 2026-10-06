@@ -7,6 +7,7 @@ namespace Elegantly\Media\Models;
 use Carbon\Carbon;
 use Elegantly\Media\Concerns\HasAdditionalFiles;
 use Elegantly\Media\Concerns\HasFile;
+use Elegantly\Media\Contracts\InteractWithFiles;
 use Elegantly\Media\Database\Factories\MediaConversionFactory;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
@@ -45,7 +46,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property Carbon $updated_at
  * @property-read ?string $url
  */
-class MediaConversion extends Model
+class MediaConversion extends Model implements InteractWithFiles
 {
     use HasAdditionalFiles;
 
