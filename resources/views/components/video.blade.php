@@ -20,6 +20,7 @@
     'muted' => false,
     'playsinline' => false,
     'loop' => false,
+    'disablePictureInPicture' => false,
 ])
 
 @php
@@ -42,6 +43,7 @@
 
 <video {{ $attributes }} src="{{ $src }}" height="{{ $height }}" width="{{ $width }}"
     poster="{{ $poster }}" {{ when($autoplay, 'autoplay') }} {{ when($muted, 'muted') }}
-    {{ when($playsinline, 'playsinline') }} {{ when($loop, 'loop') }}>
+    {{ when($playsinline, 'playsinline') }} {{ when($loop, 'loop') }}
+    {{ when($disablePictureInPicture, 'disablePictureInPicture') }}>
     {{ $slot }}
 </video>
