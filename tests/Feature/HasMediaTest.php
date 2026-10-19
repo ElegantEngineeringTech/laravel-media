@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Elegantly\Media\Jobs\DeleteModelMediaJob;
+use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Tests\Models\TestCollections;
 use Elegantly\Media\Tests\Models\TestSoftDelete;
@@ -184,7 +184,15 @@ it('deletes media and its files with the model when delete_media_with_model is t
 
     $model->delete();
 
-    Queue::assertPushed(DeleteModelMediaJob::class, 1);
+    expect($media->fresh())->toBe(null);
+
+    Storage::disk('media')->assertExists($media->path);
+
+    Queue::assertPushed(DeleteMediaFileJob::class, 1);
+    Queue::assertPushed(
+        DeleteMediaFileJob::class,
+        fn ($job) => $job->disk === $media->disk && $job->path === $media->path
+    );
 
 });
 
@@ -208,7 +216,9 @@ it('does not delete media with the model when delete_media_with_model is false',
 
     $model->delete();
 
-    Queue::assertPushed(DeleteModelMediaJob::class, 0);
+    expect($media->fresh())->not->toBe(null);
+
+    Queue::assertNothingPushed();
 
 });
 
@@ -233,7 +243,9 @@ it('deletes media with the trashed model when delete_media_with_trashed_model is
 
     $model->delete();
 
-    Queue::assertPushed(DeleteModelMediaJob::class, 1);
+    expect($media->fresh())->toBe(null);
+
+    Queue::assertPushed(DeleteMediaFileJob::class, 1);
 });
 
 it('does not delete media with the trashed model when delete_media_with_trashed_model is false', function () {
@@ -257,7 +269,9 @@ it('does not delete media with the trashed model when delete_media_with_trashed_
 
     $model->delete();
 
-    Queue::assertPushed(DeleteModelMediaJob::class, 0);
+    expect($media->fresh())->not->toBe(null);
+
+    Queue::assertNothingPushed();
 });
 
 it('deletes media with the force deleted model when delete_media_with_trashed_model is false', function () {
@@ -281,5 +295,7 @@ it('deletes media with the force deleted model when delete_media_with_trashed_mo
 
     $model->forceDelete();
 
-    Queue::assertPushed(DeleteModelMediaJob::class, 1);
+    expect($media->fresh())->toBe(null);
+
+    Queue::assertPushed(DeleteMediaFileJob::class, 1);
 });

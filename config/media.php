@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Elegantly\Media\Jobs\DeleteModelMediaJob;
+use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\PathGenerators\UuidPathGenerator;
@@ -46,10 +46,10 @@ return [
     'delete_media_with_trashed_model' => false,
 
     /**
-     * Job class responsible for deleting media when the model is deleted.
-     * This helps with performance and monitoring by queuing media deletions.
+     * Job class responsible for deleting each original, conversion, or additional file.
+     * File cleanup is queued after the database transaction commits.
      */
-    'delete_media_with_model_job' => DeleteModelMediaJob::class,
+    'delete_media_file_job' => DeleteMediaFileJob::class,
 
     /**
      * The default collection name assigned media.
@@ -76,12 +76,12 @@ return [
     'generated_path_prefix' => null,
 
     /**
-     * Queue connection name to use when dispatching media conversion jobs.
+     * Queue connection name to use for media conversion and file deletion jobs.
      */
     'queue_connection' => env('QUEUE_CONNECTION', 'sync'),
 
     /**
-     * Queue name to use for media conversion jobs.
+     * Queue name to use for media conversion and file deletion jobs.
      * Set to null to use the default Laravel queue.
      */
     'queue' => null,

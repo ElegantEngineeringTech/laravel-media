@@ -11,6 +11,7 @@ use Elegantly\Media\Contracts\InteractWithFiles;
 use Elegantly\Media\Database\Factories\MediaConversionFactory;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\ValueObjects\AdditionalFile;
 use Illuminate\Database\Eloquent\Casts\AsCollection;
@@ -88,10 +89,34 @@ class MediaConversion extends Model implements InteractWithFiles
             }
         });
 
-        static::deleting(function (MediaConversion $conversion) {
-            $conversion->deleteAdditionalFiles();
-            $conversion->deleteFile();
+        static::deleted(function (MediaConversion $conversion) {
+            $job = MediaServiceProvider::getDeleteMediaFileJob();
+
+            if ($conversion->additional_files) {
+                foreach ($conversion->additional_files as $file) {
+                    dispatch(new $job(
+                        disk: $file->disk,
+                        path: $file->path
+                    ));
+                }
+            }
+
+            if ($conversion->disk && $conversion->path) {
+                dispatch(new $job(
+                    disk: $conversion->disk,
+                    path: $conversion->path
+                ));
+            }
+
         });
+    }
+
+    public function deleteAllFiles(): bool
+    {
+        $additionalFilesDeleted = $this->deleteAdditionalFiles();
+        $fileDeleted = $this->deleteFile();
+
+        return $additionalFilesDeleted && $fileDeleted;
     }
 
     /**

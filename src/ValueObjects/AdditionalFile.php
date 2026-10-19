@@ -50,6 +50,11 @@ class AdditionalFile implements Arrayable, JsonSerializable
         return Storage::disk($this->disk);
     }
 
+    public function delete(): bool
+    {
+        return (bool) $this->getDisk()->delete($this->path);
+    }
+
     /**
      * @return array{disk: string, path: string, name: string, file_name: string, extension: null|string, mime_type: null|string, size: int}
      */

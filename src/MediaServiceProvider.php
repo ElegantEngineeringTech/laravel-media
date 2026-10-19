@@ -7,6 +7,7 @@ namespace Elegantly\Media;
 use Elegantly\Media\Commands\GenerateMediaConversionsCommand;
 use Elegantly\Media\Commands\RetryMediaConversionsCommand;
 use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -47,5 +48,14 @@ class MediaServiceProvider extends PackageServiceProvider
             );
 
         });
+    }
+
+    /**
+     * @return class-string<DeleteMediaFileJob>
+     */
+    public static function getDeleteMediaFileJob(): string
+    {
+        // @phpstan-ignore-next-line
+        return config('media.delete_media_file_job');
     }
 }

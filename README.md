@@ -85,7 +85,7 @@ php artisan vendor:publish --tag="media-config"
 This is the contents of the published config file:
 
 ```php
-use Elegantly\Media\Jobs\DeleteModelMediaJob;
+use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\PathGenerators\UuidPathGenerator;
@@ -128,10 +128,10 @@ return [
     'delete_media_with_trashed_model' => false,
 
     /**
-     * Job class responsible for deleting media when the model is deleted.
-     * This helps with performance and monitoring by queuing media deletions.
+     * Job class responsible for deleting each original, conversion, or additional file.
+     * File cleanup is queued after the database transaction commits.
      */
-    'delete_media_with_model_job' => DeleteModelMediaJob::class,
+    'delete_media_file_job' => DeleteMediaFileJob::class,
 
     /**
      * The default collection name assigned media.
@@ -158,12 +158,12 @@ return [
     'generated_path_prefix' => null,
 
     /**
-     * Queue connection name to use when dispatching media conversion jobs.
+     * Queue connection name to use for media conversion and file deletion jobs.
      */
     'queue_connection' => env('QUEUE_CONNECTION', 'sync'),
 
     /**
-     * Queue name to use for media conversion jobs.
+     * Queue name to use for media conversion and file deletion jobs.
      * Set to null to use the default Laravel queue.
      */
     'queue' => null,
@@ -190,6 +190,10 @@ return [
     ],
 ];
 ```
+
+Media and conversion records are deleted immediately; their files are deleted by `DeleteMediaFileJob` after the surrounding database transaction commits. With an asynchronous queue connection, run a worker for the configured queue to process cleanup. Failed file deletions throw an exception so the queue can retry them according to your worker settings.
+
+When upgrading from `delete_media_with_model_job`, replace that config key with `delete_media_file_job`. Custom deletion jobs now receive `string $disk` and `string $path` instead of a `Media` model; extend `DeleteMediaFileJob` to retain after-commit cleanup and failure handling.
 
 Optionally, you can publish the views using
 

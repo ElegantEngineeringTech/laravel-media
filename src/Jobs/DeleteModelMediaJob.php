@@ -13,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 
 /**
+ * @deprecated
  * This job will take care of deleting Media associated with models
  * Deleting a media can take some time or even fail.
  * To prevent failure when a Model is deleted, the media are individually deleted by this job.

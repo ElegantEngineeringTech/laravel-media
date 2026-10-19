@@ -7,7 +7,6 @@ namespace Elegantly\Media\Concerns;
 use Elegantly\Media\Events\MediaAddedEvent;
 use Elegantly\Media\Exceptions\InvalidMimeTypeException;
 use Elegantly\Media\Helpers\File as HelpersFile;
-use Elegantly\Media\Jobs\DeleteModelMediaJob;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
@@ -29,7 +28,7 @@ trait HasMedia
 {
     public static function bootHasMedia()
     {
-        static::deleting(function (Model $model) {
+        static::deleted(function (Model $model) {
 
             if (! config('media.delete_media_with_model')) {
                 return true;
@@ -44,10 +43,9 @@ trait HasMedia
                 return true;
             }
 
-            /** @var class-string<DeleteModelMediaJob> */
-            $job = config('media.delete_media_with_model_job');
-
-            $model->media->each(fn ($media) => dispatch(new $job($media)));
+            foreach ($model->media as $media) {
+                $media->delete();
+            }
 
         });
     }

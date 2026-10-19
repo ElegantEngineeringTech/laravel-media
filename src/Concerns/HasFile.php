@@ -129,9 +129,11 @@ trait HasFile
             return true;
         }
 
-        $filesystem = $this->getDisk();
+        if ($storage = $this->getDisk()) {
+            return $storage->delete($this->path);
+        }
 
-        return (bool) $filesystem?->delete($this->path);
+        return false;
     }
 
     public function deleteDirectory(): bool
