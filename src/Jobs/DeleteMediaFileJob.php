@@ -17,6 +17,8 @@ class DeleteMediaFileJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public int $tries = 4;
+
     public function __construct(
         public string $disk,
         public string $path,
@@ -35,6 +37,14 @@ class DeleteMediaFileJob implements ShouldBeUnique, ShouldQueue
     public function uniqueId(): string
     {
         return "{$this->disk}:{$this->path}";
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function backoff(): array
+    {
+        return [30, 900, 3_600];
     }
 
     public function handle(): void
