@@ -307,7 +307,8 @@ class Video extends FFMpeg
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  string  $preset  The x264 compression speed preset.
-     * @return false|string Command output
+     * @return false|string Command output, or false when the source can't produce a playable stream
+     *                      (smaller than every variant, or too short to be segmented)
      */
     public function hls(
         string $input,
@@ -479,7 +480,7 @@ class Video extends FFMpeg
 
         $variantStreamMap = [...$audioStreamMap, ...$variantStreamMap];
 
-        return $this->ffmpeg([
+        $result = $this->ffmpeg([
             ...$arguments,
             '-f', 'hls',
             '-hls_time', (string) $segmentLength,
@@ -491,5 +492,18 @@ class Video extends FFMpeg
             '-hls_segment_filename', "{$output}/%v_segment_%05d.ts",
             "{$output}/%v_playlist.m3u8",
         ]);
+
+        // ffmpeg can't measure the bandwidth of sources shorter than ~0.5s
+        // and then silently writes a master playlist without any variant
+        $master = "{$output}/{$playlist}";
+
+        if (
+            ! File::exists($master) ||
+            ! str_contains(File::get($master), '#EXT-X-STREAM-INF')
+        ) {
+            return false;
+        }
+
+        return $result;
     }
 }
