@@ -12,11 +12,7 @@ class Video implements HasDimension, HasDuration
 {
     public static function dimension(string $path): Dimension
     {
-        [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path);
-
-        if ($rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
-            return new Dimension($height, $width);
-        }
+        [$width, $height, $rotation] = FFMpeg::make()->video()->dimensions($path, rotate: true);
 
         return new Dimension($width, $height);
     }

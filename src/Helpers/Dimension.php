@@ -21,4 +21,9 @@ class Dimension
 
         return new AspectRatio($this->width / $this->height);
     }
+
+    public function isPortrait(): bool
+    {
+        return $this->height > $this->width;
+    }
 }

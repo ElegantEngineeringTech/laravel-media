@@ -31,8 +31,10 @@ class Video extends FFMpeg
     /**
      * @return array{0: int, 1: int, 2: int}
      */
-    public function dimensions(string $input): array
-    {
+    public function dimensions(
+        string $input,
+        bool $rotate = false
+    ): array {
         $metadata = $this->metadata($input);
 
         if ($stream = $metadata['streams'][0] ?? null) {
@@ -41,8 +43,34 @@ class Video extends FFMpeg
             $width = (int) data_get($stream, 'width');
             // @phpstan-ignore-next-line
             $height = (int) data_get($stream, 'height');
+
+            $rotation = 0;
+
+            $sideDataList = data_get($stream, 'side_data_list', []);
+
+            // The rotation is in the Display Matrix entry, which isn't always the first one
             // @phpstan-ignore-next-line
-            $rotation = (int) data_get($stream, 'side_data_list.0.rotation', 0);
+            foreach ($sideDataList as $data) {
+
+                $type = data_get($data, 'side_data_type');
+
+                if ($type === 'Display Matrix') {
+                    // @phpstan-ignore-next-line
+                    $rotation = (int) data_get($data, 'rotation', 0);
+
+                    break;
+                }
+
+            }
+
+            if (
+                $rotate &&
+                $rotation &&
+                $rotation % 90 === 0 &&
+                $rotation % 180 !== 0
+            ) {
+                [$width, $height] = [$height, $width];
+            }
 
             return [$width, $height, $rotation];
         }
@@ -52,22 +80,14 @@ class Video extends FFMpeg
 
     public function width(string $input, bool $rotate = false): int
     {
-        [$width, $height, $rotation] = $this->dimensions($input);
-
-        if ($rotate && $rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
-            return $height;
-        }
+        [$width, $height, $rotation] = $this->dimensions($input, $rotate);
 
         return $width;
     }
 
     public function height(string $input, bool $rotate = false): int
     {
-        [$width, $height, $rotation] = $this->dimensions($input);
-
-        if ($rotate && $rotation && $rotation % 90 === 0 && $rotation % 180 !== 0) {
-            return $width;
-        }
+        [$width, $height, $rotation] = $this->dimensions($input, $rotate);
 
         return $height;
     }
@@ -273,8 +293,13 @@ class Video extends FFMpeg
     /**
      * Generate a production-ready HLS VOD playlist with adaptive m3u8 variants.
      *
-     * The output directory will contain a master playlist and one media playlist per generated resolution.
-     * Renditions are only generated when the source display height is at least as large as the target height.
+     * The output directory will contain a master playlist, one media playlist per generated resolution
+     * and, when the source has audio, one audio-only rendition per distinct variant audio bitrate,
+     * shared by every video rendition using that bitrate (a single one with the default variants).
+     *
+     * Each variant describes a 16:9 bounding box (e.g. 1080p is 1920x1080, or 1080x1920 for portrait sources).
+     * The video is scaled to fit inside the box while keeping its aspect ratio, and a variant is only generated
+     * when the source fills at least one side of the box, so the video is never upscaled.
      *
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The directory where HLS playlists and segments should be written.
@@ -290,18 +315,18 @@ class Video extends FFMpeg
         string $playlist = 'master.m3u8',
         ?int $fps = null,
         int $segmentLength = 6,
-        string $preset = 'veryslow',
+        string $preset = 'slow',
         ?HlsVariants $variants = null,
     ): false|string {
         $variants ??= HlsVariants::defaults();
 
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
 
-        $height = $this->height($input, true);
+        [$width, $height] = $this->dimensions($input, rotate: true);
 
-        $variants = $variants
-            ->where('height', '<=', $height)
-            ->values();
+        $isPortrait = $height > $width;
+
+        $variants = $variants->maxDimension($width, $height);
 
         if ($variants->isEmpty()) {
             return false;
@@ -343,15 +368,20 @@ class Video extends FFMpeg
         foreach ($variants as $index => $variant) {
             $splitLabels[] = "[v{$index}]";
 
-            $filters[] = implode(':', [
-                "[v{$index}]scale=w=-2",
-                "h={$variant->height}",
-                implode(',', [
-                    'flags=lanczos',
-                    $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
-                    "format=yuv420p[v{$index}out]",
-                ]),
+            $maxDimension = $variant->maxDimension(portrait: $isPortrait);
+
+            $scaleFilter = 'scale='.implode(':', [
+                "w={$maxDimension->width}",
+                "h={$maxDimension->height}",
+                'force_original_aspect_ratio=decrease',
+                'force_divisible_by=2',
+                'flags=lanczos',
             ]);
+
+            $fpsFilter = $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null';
+
+            $filters[] = "[v{$index}]{$scaleFilter},{$fpsFilter}[v{$index}out]";
+
         }
 
         $filterComplex = '[0:v:0]split='.count($variants).implode('', $splitLabels).';'.implode(';', $filters);
@@ -364,21 +394,33 @@ class Video extends FFMpeg
         foreach ($variants as $index => $variant) {
             $arguments[] = '-map';
             $arguments[] = "[v{$index}out]";
-
-            if ($hasAudio) {
-                $arguments[] = '-map';
-                $arguments[] = '0:a:0';
-            }
         }
+
+        // Variants sharing the same audio bitrate share a single audio rendition
+        $audioBitrates = $hasAudio
+            ? $variants->toBase()->map(fn ($variant) => $variant->audioBitrate->format())->unique()->values()->all()
+            : [];
+
+        foreach ($audioBitrates as $audioBitrate) {
+            $arguments[] = '-map';
+            $arguments[] = '0:a:0';
+        }
+
+        // Keyframes every 2s at most (Apple recommendation) for faster seeking,
+        // always landing on segment boundaries so renditions stay aligned.
+        $keyframesPerSegment = (int) ceil($segmentLength / 2);
 
         $arguments = [
             ...$arguments,
             '-c:v', 'libx264',
             '-preset', $preset,
-            '-profile:v', 'main',
+            '-profile:v', 'high',
             '-pix_fmt', 'yuv420p',
             '-sc_threshold', '0',
-            '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength})",
+            '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength}/{$keyframesPerSegment})",
+            '-forced-idr', '1',
+            // Prevent x264 from inserting its own keyframes (every 250 frames by default)
+            '-x264-params', 'keyint=infinite',
         ];
 
         foreach ($variants as $index => $variant) {
@@ -398,25 +440,44 @@ class Video extends FFMpeg
                 '-ar', '48000',
             ];
 
-            foreach ($variants as $index => $variant) {
+            foreach ($audioBitrates as $index => $audioBitrate) {
                 $arguments = [
                     ...$arguments,
-                    "-b:a:{$index}", $variant->audioBitrate->format(),
+                    "-b:a:{$index}", $audioBitrate,
                 ];
             }
         } else {
             $arguments[] = '-an';
         }
 
+        // Apple players start playback on the first variant of the master playlist,
+        // so the one closest to 720p is listed first for a fast startup.
+        $startingVariant = array_key_first(
+            $variants->sortBy(fn ($variant) => abs($variant->height - 720))->all()
+        );
+
         $variantStreamMap = [];
 
         foreach ($variants as $index => $variant) {
-            if ($hasAudio) {
-                $variantStreamMap[] = "v:{$index},a:{$index},name:{$variant->name}";
+            $entry = $hasAudio
+                ? "v:{$index},agroup:audio_{$variant->audioBitrate->format()},name:{$variant->name}"
+                : "v:{$index},name:{$variant->name}";
+
+            if ($index === $startingVariant) {
+                array_unshift($variantStreamMap, $entry);
             } else {
-                $variantStreamMap[] = "v:{$index},name:{$variant->name}";
+                $variantStreamMap[] = $entry;
             }
         }
+
+        $audioStreamMap = [];
+
+        foreach ($audioBitrates as $index => $audioBitrate) {
+            // default:yes prevents ffmpeg from also listing the audio as a standalone variant
+            $audioStreamMap[] = "a:{$index},agroup:audio_{$audioBitrate},name:audio_{$audioBitrate},default:yes";
+        }
+
+        $variantStreamMap = [...$audioStreamMap, ...$variantStreamMap];
 
         return $this->ffmpeg([
             ...$arguments,

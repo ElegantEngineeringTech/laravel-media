@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\FFMpeg\Video;
+use Elegantly\Media\Helpers\HlsVariant;
+use Elegantly\Media\Helpers\HlsVariants;
 use Elegantly\Media\TemporaryDirectory;
 
 it('detects audio and video stream in a mp4.', function () {
@@ -87,8 +89,65 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
     $filesystem->assertExists('240p_segment_00000.ts');
     $filesystem->assertExists('240p_playlist.m3u8');
 
+    // A single audio rendition at the default 128k, capped to the source's 72.5 kb/s
+    $filesystem->assertExists('audio_72k_segment_00000.ts');
+    $filesystem->assertExists('audio_72k_playlist.m3u8');
+
     $filesystem->assertMissing('1080p_playlist.m3u8');
     $filesystem->assertMissing('1440p_playlist.m3u8');
     $filesystem->assertMissing('2160p_playlist.m3u8');
+
+});
+
+it('generates m3u8 hls renditions for a portrait video', function () {
+    $file = $this->getTestFile('videos/90rotation.mp4');
+
+    $temporaryDirectory = (new TemporaryDirectory)
+        ->location(storage_path('media-tmp'))
+        ->deleteWhenDestroyed()
+        ->create();
+
+    $filesystem = $temporaryDirectory->toFilesystem();
+
+    $output = $temporaryDirectory->path();
+    $playlist = 'master.m3u8';
+
+    Video::make()->hls($file, $output, $playlist);
+
+    $filesystem->assertExists('1080p_playlist.m3u8');
+    $filesystem->assertExists('720p_playlist.m3u8');
+    $filesystem->assertExists('240p_playlist.m3u8');
+
+    $filesystem->assertMissing('1440p_playlist.m3u8');
+    $filesystem->assertMissing('2160p_playlist.m3u8');
+
+    expect(Video::make()->dimensions($filesystem->path('1080p_segment_00000.ts')))->toBe([1080, 1920, 0]);
+    expect(Video::make()->dimensions($filesystem->path('720p_segment_00000.ts')))->toBe([720, 1280, 0]);
+
+});
+
+it('generates one audio rendition per distinct variant audio bitrate', function () {
+    $file = $this->getTestFile('videos/horizontal.mp4');
+
+    $temporaryDirectory = (new TemporaryDirectory)
+        ->location(storage_path('media-tmp'))
+        ->deleteWhenDestroyed()
+        ->create();
+
+    $filesystem = $temporaryDirectory->toFilesystem();
+
+    $output = $temporaryDirectory->path();
+    $playlist = 'master.m3u8';
+
+    $variants = new HlsVariants([
+        new HlsVariant(['name' => '720p', 'height' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '64k']),
+        new HlsVariant(['name' => '480p', 'height' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '64k']),
+        new HlsVariant(['name' => '240p', 'height' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '48k']),
+    ]);
+
+    Video::make()->hls($file, $output, $playlist, variants: $variants);
+
+    $filesystem->assertExists('audio_64k_playlist.m3u8');
+    $filesystem->assertExists('audio_48k_playlist.m3u8');
 
 });

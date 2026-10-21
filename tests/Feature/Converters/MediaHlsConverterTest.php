@@ -29,6 +29,6 @@ it('converts an mp4 video into a hls playlist', function () {
     expect($conversion->mime_type)->toBe('application/vnd.apple.mpegurl');
     expect($conversion->type)->toBe(MediaType::Video);
 
-    expect($conversion->additional_files)->toHaveLength(4 * 2);
+    expect($conversion->additional_files)->toHaveLength((4 + 1) * 2);
 
 });

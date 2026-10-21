@@ -37,6 +37,18 @@ class HlsVariant implements Arrayable
     }
 
     /**
+     * The largest 16:9 dimension a rendition of this variant can have
+     * (e.g. 1920x1080 for 1080p, or 1080x1920 when portrait).
+     */
+    public function maxDimension(bool $portrait = false): Dimension
+    {
+        $short = (int) $this->height;
+        $long = (int) (2 * round($short * 16 / 9 / 2));
+
+        return $portrait ? new Dimension($short, $long) : new Dimension($long, $short);
+    }
+
+    /**
      * @return array{name: string, height: int|float, bitrate: Bitrate, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
      */
     public function toArray(): array

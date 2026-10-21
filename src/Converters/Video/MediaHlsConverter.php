@@ -21,7 +21,7 @@ class MediaHlsConverter extends MediaConverter
         public ?int $fps = 60,
         public ?HlsVariants $variants = null,
         public int $segmentLength = 6,
-        public string $preset = 'veryslow',
+        public string $preset = 'slow',
         public string $playlist = 'master.m3u8',
     ) {
         parent::__construct($media);
