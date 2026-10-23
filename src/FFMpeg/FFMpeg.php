@@ -190,9 +190,7 @@ class FFMpeg
      */
     public function duration(string $input): float
     {
-        $duration = $this->metadata($input)->duration();
-
-        if ($duration !== null) {
+        if ($duration = $this->metadata($input)->duration()) {
             return $duration;
         }
 

@@ -7,6 +7,7 @@ namespace Elegantly\Media\FFMpeg;
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\Helpers\Dimension;
 use Elegantly\Media\Helpers\HlsVariants;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 
 class Video extends FFMpeg
@@ -255,24 +256,59 @@ class Video extends FFMpeg
 
         $audioStream = $streams->defaultAudio();
 
-        $sourceVideoBitrate = $videoStream->bitrate();
-        $sourceAudioBitrate = $audioStream?->bitrate();
+        $variants = $variants
+            ->setMaxBitrate($videoStream->bitrate())
+            ->setMaxAudioBitrate($audioStream?->bitrate());
 
-        if ($sourceVideoBitrate?->isNotZero()) {
-            $variants = $variants->setMaxBitrate($sourceVideoBitrate);
+        // Variants sharing the same audio bitrate share a single audio rendition.
+        // Without audio, the list is empty so no audio rendition is mapped nor listed.
+        $audioBitrates = $audioStream ? $variants->audioBitrates()->unique()->values()->all() : [];
+
+        $audioGroup = fn (string $audioBitrate) => "audio_{$audioBitrate}";
+
+        // Apple players start playback on the first variant of the master playlist.
+        // Variants can't be empty here, the fallback only satisfies the nullable return type.
+        $startingVariantKey = $variants->getKeyClosestTo($startingSize) ?? 0;
+
+        // Keyframes at most every $keyframeInterval seconds for faster seeking,
+        // always landing on segment boundaries so renditions stay aligned.
+        $keyframesPerSegment = (int) ceil($segmentLength / $keyframeInterval);
+
+        $arguments = [
+            '-c:v', 'libx264',
+            '-preset', $preset,
+            '-profile:v', 'high',
+            '-pix_fmt', 'yuv420p',
+            '-sc_threshold', '0',
+            '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength}/{$keyframesPerSegment})",
+            '-forced-idr', '1',
+            // Prevent x264 from inserting its own keyframes (every 250 frames by default)
+            '-x264-params', 'keyint=infinite',
+        ];
+
+        if ($audioStream) {
+            array_push(
+                $arguments,
+                '-c:a', 'aac',
+                '-ac', '2', // Stereo, supported by every player
+                '-ar', '48000', // Standard rate for video, used by most sources
+            );
+        } else {
+            array_push(
+                $arguments,
+                '-an'
+            );
         }
-
-        if ($sourceAudioBitrate?->isNotZero()) {
-            $variants = $variants->setMaxAudioBitrate($sourceAudioBitrate);
-        }
-
-        $splitLabels = [];
-        $filters = [];
 
         $fpsFilter = $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null';
 
+        $splitLabels = [];
+        $filters = [];
+        $variantStreamMap = [];
+
+        // Each rendition's filter, output options and playlist entry are built together.
+        // Options apply to the whole output, only the order of the -map options defines the output stream indexes.
         foreach ($variants as $index => $variant) {
-            $splitLabels[] = "[v{$index}]";
 
             $variantDimension = $variant->dimension(portrait: $sourceDimension->isPortrait());
 
@@ -284,36 +320,9 @@ class Video extends FFMpeg
                 'flags=lanczos',
             ]);
 
-            $filters[] = "[v{$index}]".implode(',', [
-                $scaleFilter,
-                $fpsFilter,
-            ])."[v{$index}out]";
+            $splitLabels[] = "[v{$index}]";
+            $filters[] = "[v{$index}]{$scaleFilter},{$fpsFilter}[v{$index}out]";
 
-        }
-
-        $splitFilter = 'split='.count($splitLabels).implode('', $splitLabels);
-
-        $filterComplex = "[0:{$videoStream->index()}]".implode(';', [
-            $splitFilter,
-            ...$filters,
-        ]);
-
-        $arguments = [
-            '-i', $input,
-            '-filter_complex', $filterComplex,
-        ];
-
-        // Variants sharing the same audio bitrate share a single audio rendition.
-        // Without audio, the list is empty so no audio rendition is mapped nor listed.
-        $audioBitrates = $audioStream
-            ? $variants->audioBitrates()->unique()->values()->all()
-            : [];
-
-        $audioGroup = fn (string $audioBitrate) => "audio_{$audioBitrate}";
-
-        // Each rendition's settings are grouped together; options apply to the whole output,
-        // only the order of the -map options defines the output stream indexes
-        foreach ($variants as $index => $variant) {
             array_push(
                 $arguments,
                 '-map', "[v{$index}out]",
@@ -321,7 +330,16 @@ class Video extends FFMpeg
                 "-maxrate:v:{$index}", $variant->maxrate->format(),
                 "-bufsize:v:{$index}", $variant->bufsize->format(),
             );
+
+            $variantStreamMap[$index] = implode(',', array_filter([
+                "v:{$index}",
+                $audioStream ? 'agroup:'.$audioGroup($variant->audioBitrate->format()) : null,
+                "name:{$variant->name}",
+            ]));
+
         }
+
+        $audioStreamMap = [];
 
         foreach ($audioBitrates as $index => $audioBitrate) {
             array_push(
@@ -329,65 +347,27 @@ class Video extends FFMpeg
                 '-map', "0:{$audioStream->index()}",
                 "-b:a:{$index}", $audioBitrate,
             );
-        }
 
-        // Keyframes at most every $keyframeInterval seconds for faster seeking,
-        // always landing on segment boundaries so renditions stay aligned.
-        $keyframesPerSegment = (int) ceil($segmentLength / $keyframeInterval);
-
-        array_push(
-            $arguments,
-            '-c:v', 'libx264',
-            '-preset', $preset,
-            '-profile:v', 'high',
-            '-pix_fmt', 'yuv420p',
-            '-sc_threshold', '0',
-            '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength}/{$keyframesPerSegment})",
-            '-forced-idr', '1',
-            // Prevent x264 from inserting its own keyframes (every 250 frames by default)
-            '-x264-params', 'keyint=infinite',
-        );
-
-        if ($audioStream) {
-            array_push(
-                $arguments,
-                '-c:a', 'aac',
-                '-ac', '2', // Stereo, supported by every player
-                '-ar', '48000', // Standard rate for video, used by most sources
-            );
-        } else {
-            $arguments[] = '-an';
-        }
-
-        // Apple players start playback on the first variant of the master playlist
-        $startingVariantKey = $variants->getKeyClosestTo($startingSize);
-
-        $variantStreamMap = [];
-
-        foreach ($variants as $index => $variant) {
-            $entry = $audioStream
-                ? "v:{$index},agroup:{$audioGroup($variant->audioBitrate->format())},name:{$variant->name}"
-                : "v:{$index},name:{$variant->name}";
-
-            if ($index === $startingVariantKey) {
-                array_unshift($variantStreamMap, $entry);
-            } else {
-                $variantStreamMap[] = $entry;
-            }
-        }
-
-        $audioStreamMap = [];
-
-        foreach ($audioBitrates as $index => $audioBitrate) {
             // default:yes prevents ffmpeg from also listing the audio as a standalone variant
             $audioStreamMap[] = "a:{$index},agroup:{$audioGroup($audioBitrate)},name:{$audioGroup($audioBitrate)},default:yes";
         }
 
-        $variantStreamMap = [...$audioStreamMap, ...$variantStreamMap];
+        $filterComplex = "[0:{$videoStream->index()}]".implode(';', [
+            'split='.count($splitLabels).implode('', $splitLabels),
+            ...$filters,
+        ]);
+
+        $variantStreamMap = [
+            ...$audioStreamMap,
+            $variantStreamMap[$startingVariantKey],
+            ...Arr::except($variantStreamMap, $startingVariantKey),
+        ];
 
         File::ensureDirectoryExists($output);
 
         $result = $this->ffmpeg([
+            '-i', $input,
+            '-filter_complex', $filterComplex,
             ...$arguments,
             '-f', 'hls',
             '-hls_time', (string) $segmentLength,

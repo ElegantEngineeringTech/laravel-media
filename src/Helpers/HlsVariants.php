@@ -64,7 +64,9 @@ class HlsVariants extends Collection
 
     public function setMaxBitrate(null|string|float|int|Bitrate $value): static
     {
-        if ($value === null) {
+        $value = Bitrate::parse($value);
+
+        if ($value === null || $value->isZero()) {
             return $this;
         }
 
@@ -87,7 +89,9 @@ class HlsVariants extends Collection
 
     public function setMaxAudioBitrate(null|string|float|int|Bitrate $value): static
     {
-        if ($value === null) {
+        $value = Bitrate::parse($value);
+
+        if ($value === null || $value->isZero()) {
             return $this;
         }
 
