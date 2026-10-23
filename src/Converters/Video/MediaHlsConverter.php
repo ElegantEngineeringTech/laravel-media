@@ -23,6 +23,7 @@ class MediaHlsConverter extends MediaConverter
         public int $segmentLength = 6,
         public string $preset = 'slow',
         public string $playlist = 'master.m3u8',
+        public int|float $startingSize = 720,
     ) {
         parent::__construct($media);
     }
@@ -61,6 +62,7 @@ class MediaHlsConverter extends MediaConverter
             segmentLength: $this->segmentLength,
             preset: $this->preset,
             variants: $this->variants,
+            startingSize: $this->startingSize,
         );
 
         if ($result === false) {

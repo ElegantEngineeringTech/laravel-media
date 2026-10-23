@@ -212,6 +212,13 @@ class Video extends FFMpeg
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  string  $preset  The x264 compression speed preset.
+     * @param  HlsVariants|null  $variants  The renditions to generate, among those the source supports.
+     *                                      Their bitrates are capped to the source bitrates.
+     * @param  int|float  $startingSize  Size of the variant listed first in the master playlist (e.g. 720 for 720p).
+     *                                   Apple players start playback on it, so a mid-quality one gives a fast startup.
+     * @param  int|float  $keyframeInterval  Maximum time between keyframes in seconds (Apple recommends 2).
+     *                                       Shorter intervals make seeking faster at a small bitrate cost.
+     *                                       Keyframes always land on segment boundaries.
      * @return false|string Command output, or false when the source can't produce a playable stream
      *                      (smaller than every variant, or too short to be segmented)
      */
@@ -223,6 +230,8 @@ class Video extends FFMpeg
         int $segmentLength = 6,
         string $preset = 'slow',
         ?HlsVariants $variants = null,
+        int|float $startingSize = 720,
+        int|float $keyframeInterval = 2,
     ): false|string {
         $variants ??= HlsVariants::defaults();
 
@@ -322,9 +331,9 @@ class Video extends FFMpeg
             );
         }
 
-        // Keyframes every 2s at most (Apple recommendation) for faster seeking,
+        // Keyframes at most every $keyframeInterval seconds for faster seeking,
         // always landing on segment boundaries so renditions stay aligned.
-        $keyframesPerSegment = (int) ceil($segmentLength / 2);
+        $keyframesPerSegment = (int) ceil($segmentLength / $keyframeInterval);
 
         array_push(
             $arguments,
@@ -343,16 +352,15 @@ class Video extends FFMpeg
             array_push(
                 $arguments,
                 '-c:a', 'aac',
-                '-ac', '2',
-                '-ar', '48000',
+                '-ac', '2', // Stereo, supported by every player
+                '-ar', '48000', // Standard rate for video, used by most sources
             );
         } else {
             $arguments[] = '-an';
         }
 
-        // Apple players start playback on the first variant of the master playlist,
-        // so the one closest to 720p is listed first for a fast startup.
-        $startingVariantKey = $variants->getKeyClosestTo(720);
+        // Apple players start playback on the first variant of the master playlist
+        $startingVariantKey = $variants->getKeyClosestTo($startingSize);
 
         $variantStreamMap = [];
 
