@@ -81,11 +81,15 @@ class Stream
     }
 
     /**
-     * @return float|null The duration in seconds
+     * @return float|null The duration in milliseconds
      */
     public function duration(): ?float
     {
-        return $this->getFloat('duration');
+        if ($duration = $this->getFloat('duration')) {
+            return $duration * 1_000;
+        }
+
+        return null;
     }
 
     public function width(): int

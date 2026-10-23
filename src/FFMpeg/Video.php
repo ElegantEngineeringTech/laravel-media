@@ -236,19 +236,25 @@ class Video extends FFMpeg
             throw VideoStreamNotFoundException::atPath($input);
         }
 
+        $videoIndex = $defaultVideoStream->index();
         $dimension = $defaultVideoStream->dimension(rotate: true);
 
-        $isPortrait = $dimension->isPortrait();
-
-        $variants = $variants->maxDimension($dimension->width, $dimension->height);
+        $variants = $variants->supportedBy($dimension);
 
         if ($variants->isEmpty()) {
             return false;
         }
 
-        $defaultAudioStream = $streams->defaultAudio();
+        // Apple players start playback on the first variant of the master playlist,
+        // so the one closest to 720p is listed first for a fast startup.
+        $startingVariantIndex = array_key_first(
+            $variants->sortBy(fn ($variant) => abs($variant->size - 720))->all()
+        );
 
+        $defaultAudioStream = $streams->defaultAudio();
         $hasAudio = $defaultAudioStream !== null;
+
+        $audioIndex = $defaultAudioStream?->index() ?? 0;
         $sourceVideoBitrate = $defaultVideoStream->bitrate();
         $sourceAudioBitrate = $defaultAudioStream?->bitrate();
 
@@ -260,21 +266,17 @@ class Video extends FFMpeg
             $variants = $variants->setMaxAudioBitrate($sourceAudioBitrate);
         }
 
-        if (! File::isDirectory($output)) {
-            File::makeDirectory($output, recursive: true);
-        }
-
         $splitLabels = [];
         $filters = [];
 
         foreach ($variants as $index => $variant) {
             $splitLabels[] = "[v{$index}]";
 
-            $maxDimension = $variant->maxDimension(portrait: $isPortrait);
+            $variantDimension = $variant->dimension(portrait: $dimension->isPortrait());
 
             $scaleFilter = 'scale='.implode(':', [
-                "w={$maxDimension->width}",
-                "h={$maxDimension->height}",
+                "w={$variantDimension->width}",
+                "h={$variantDimension->height}",
                 'force_original_aspect_ratio=decrease',
                 'force_divisible_by=2',
                 'flags=lanczos',
@@ -282,11 +284,19 @@ class Video extends FFMpeg
 
             $fpsFilter = $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null';
 
-            $filters[] = "[v{$index}]{$scaleFilter},{$fpsFilter}[v{$index}out]";
+            $filters[] = "[v{$index}]".implode(',', [
+                $scaleFilter,
+                $fpsFilter,
+            ])."[v{$index}out]";
 
         }
 
-        $filterComplex = "[0:{$defaultVideoStream->index()}]split=".count($variants).implode('', $splitLabels).';'.implode(';', $filters);
+        $splitFilter = 'split='.count($splitLabels).implode('', $splitLabels);
+
+        $filterComplex = "[0:{$videoIndex}]".implode(';', [
+            $splitFilter,
+            ...$filters,
+        ]);
 
         $arguments = [
             '-i', $input,
@@ -299,9 +309,7 @@ class Video extends FFMpeg
         }
 
         // Variants sharing the same audio bitrate share a single audio rendition
-        $audioBitrates = $variants->audioBitrates()->unique()->values()->all();
-
-        $audioIndex = $defaultAudioStream?->index() ?? 0;
+        $audioBitrates = $variants->audioBitrates()->unique()->values();
 
         if ($hasAudio) {
             foreach ($audioBitrates as $audioBitrate) {
@@ -354,12 +362,6 @@ class Video extends FFMpeg
             $arguments[] = '-an';
         }
 
-        // Apple players start playback on the first variant of the master playlist,
-        // so the one closest to 720p is listed first for a fast startup.
-        $startingVariant = array_key_first(
-            $variants->sortBy(fn ($variant) => abs($variant->height - 720))->all()
-        );
-
         $variantStreamMap = [];
 
         foreach ($variants as $index => $variant) {
@@ -367,7 +369,7 @@ class Video extends FFMpeg
                 ? "v:{$index},agroup:audio_{$variant->audioBitrate->format()},name:{$variant->name}"
                 : "v:{$index},name:{$variant->name}";
 
-            if ($index === $startingVariant) {
+            if ($index === $startingVariantIndex) {
                 array_unshift($variantStreamMap, $entry);
             } else {
                 $variantStreamMap[] = $entry;
@@ -376,12 +378,18 @@ class Video extends FFMpeg
 
         $audioStreamMap = [];
 
-        foreach ($audioBitrates as $index => $audioBitrate) {
-            // default:yes prevents ffmpeg from also listing the audio as a standalone variant
-            $audioStreamMap[] = "a:{$index},agroup:audio_{$audioBitrate},name:audio_{$audioBitrate},default:yes";
+        if ($hasAudio) {
+            foreach ($audioBitrates as $index => $audioBitrate) {
+                // default:yes prevents ffmpeg from also listing the audio as a standalone variant
+                $audioStreamMap[] = "a:{$index},agroup:audio_{$audioBitrate},name:audio_{$audioBitrate},default:yes";
+            }
         }
 
         $variantStreamMap = [...$audioStreamMap, ...$variantStreamMap];
+
+        if (! File::isDirectory($output)) {
+            File::makeDirectory($output, recursive: true);
+        }
 
         $result = $this->ffmpeg([
             ...$arguments,

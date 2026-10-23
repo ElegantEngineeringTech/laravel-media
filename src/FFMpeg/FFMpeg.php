@@ -42,12 +42,12 @@ class FFMpeg
 
     public function video(): Video
     {
-        return new Video($this->ffmpeg, $this->ffprobe);
+        return new Video($this->ffmpeg, $this->ffprobe, $this->logChannel);
     }
 
     public function audio(): Audio
     {
-        return new Audio($this->ffmpeg, $this->ffprobe);
+        return new Audio($this->ffmpeg, $this->ffprobe, $this->logChannel);
     }
 
     public function metadata(string $input): Metadata

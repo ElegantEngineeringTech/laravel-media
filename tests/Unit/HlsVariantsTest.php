@@ -35,13 +35,13 @@ it('cap the audioBitrate to the max value', function ($max) {
     ['1k'], ['96k'], ['192k'],
 ]);
 
-it('computes the max 16:9 dimension of a variant', function (string $name, array $landscape, array $portrait) {
+it('computes the 16:9 dimension of a variant', function (string $name, array $landscape, array $portrait) {
     $variant = HlsVariants::defaults()->firstWhere('name', $name);
 
-    $dimension = $variant->maxDimension();
+    $dimension = $variant->dimension();
     expect([$dimension->width, $dimension->height])->toBe($landscape);
 
-    $dimension = $variant->maxDimension(portrait: true);
+    $dimension = $variant->dimension(portrait: true);
     expect([$dimension->width, $dimension->height])->toBe($portrait);
 })->with([
     ['2160p', [3840, 2160], [2160, 3840]],

@@ -114,15 +114,30 @@ it('generates m3u8 hls renditions for a portrait video', function () {
 
     Video::make()->hls($file, $output, $playlist);
 
+    $filesystem->assertMissing('1440p_playlist.m3u8');
+    $filesystem->assertMissing('2160p_playlist.m3u8');
+
     $filesystem->assertExists('1080p_playlist.m3u8');
     $filesystem->assertExists('720p_playlist.m3u8');
     $filesystem->assertExists('240p_playlist.m3u8');
 
-    $filesystem->assertMissing('1440p_playlist.m3u8');
-    $filesystem->assertMissing('2160p_playlist.m3u8');
+    expect(
+        Video::make()
+            ->dimension($filesystem->path('1080p_segment_00000.ts'))
+            ->toArray()
+    )->toBe([
+        'width' => 1080,
+        'height' => 1920,
+    ]);
 
-    expect(Video::make()->dimensions($filesystem->path('1080p_segment_00000.ts')))->toBe([1080, 1920, 0]);
-    expect(Video::make()->dimensions($filesystem->path('720p_segment_00000.ts')))->toBe([720, 1280, 0]);
+    expect(
+        Video::make()
+            ->dimension($filesystem->path('720p_segment_00000.ts'))
+            ->toArray()
+    )->toBe([
+        'width' => 720,
+        'height' => 1280,
+    ]);
 
 });
 
@@ -140,9 +155,9 @@ it('generates one audio rendition per distinct variant audio bitrate', function 
     $playlist = 'master.m3u8';
 
     $variants = new HlsVariants([
-        new HlsVariant(['name' => '720p', 'height' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '64k']),
-        new HlsVariant(['name' => '480p', 'height' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '64k']),
-        new HlsVariant(['name' => '240p', 'height' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '48k']),
+        new HlsVariant(['name' => '720p', 'size' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '64k']),
+        new HlsVariant(['name' => '480p', 'size' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '64k']),
+        new HlsVariant(['name' => '240p', 'size' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '48k']),
     ]);
 
     Video::make()->hls($file, $output, $playlist, variants: $variants);
