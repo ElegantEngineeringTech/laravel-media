@@ -52,6 +52,16 @@ class HlsVariants extends Collection
             ->values();
     }
 
+    /**
+     * The key of the variant whose size is the closest to the given one.
+     */
+    public function getKeyClosestTo(int|float $size): ?int
+    {
+        return array_key_first(
+            $this->sortBy(fn ($variant) => abs($variant->size - $size))->all()
+        );
+    }
+
     public function setMaxBitrate(null|string|float|int|Bitrate $value): static
     {
         if ($value === null) {
