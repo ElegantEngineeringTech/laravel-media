@@ -6,7 +6,7 @@ namespace Elegantly\Media\Helpers;
 
 class Dimension
 {
-    public function __construct(
+    final public function __construct(
         public readonly float|int $width,
         public readonly float|int $height
     ) {
@@ -25,5 +25,10 @@ class Dimension
     public function isPortrait(): bool
     {
         return $this->height > $this->width;
+    }
+
+    public function flip(): static
+    {
+        return new static($this->height, $this->width);
     }
 }

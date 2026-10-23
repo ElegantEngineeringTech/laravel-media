@@ -25,7 +25,27 @@ class HlsVariants extends Collection
         ]);
     }
 
-    public function maxDimension(int $width, int $height): static
+    /**
+     * @return Collection<int, string>
+     */
+    public function audioBitrates(): Collection
+    {
+        return $this
+            ->toBase()
+            ->map(fn ($variant) => $variant->audioBitrate->format());
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function bitrates(): Collection
+    {
+        return $this
+            ->toBase()
+            ->map(fn ($variant) => $variant->bitrate->format());
+    }
+
+    public function maxDimension(float|int $width, float|int $height): static
     {
         return $this
             ->filter(function ($variant) use ($height, $width) {

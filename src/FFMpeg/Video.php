@@ -5,141 +5,41 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
-use Elegantly\Media\Helpers\Bitrate;
+use Elegantly\Media\Helpers\Dimension;
 use Elegantly\Media\Helpers\HlsVariants;
 use Illuminate\Support\Facades\File;
 
 class Video extends FFMpeg
 {
-    public function metadata(string $input): array
+    public function dimension(string $input, bool $rotate = true): Dimension
     {
-        $output = $this->ffprobe([
-            '-v', 'error',
-            '-select_streams', 'v:0',
-            '-show_format',
-            '-show_streams',
-            '-print_format', 'json',
-            $input,
-        ]);
+        $stream = $this->metadata($input)->streams()->videos()->defaultVideo();
 
-        $metadata = json_decode($output, true);
-
-        // @phpstan-ignore-next-line
-        return is_array($metadata) ? $metadata : [];
-    }
-
-    /**
-     * @return array{0: int, 1: int, 2: int}
-     */
-    public function dimensions(
-        string $input,
-        bool $rotate = false
-    ): array {
-        $metadata = $this->metadata($input);
-
-        if ($stream = $metadata['streams'][0] ?? null) {
-
-            // @phpstan-ignore-next-line
-            $width = (int) data_get($stream, 'width');
-            // @phpstan-ignore-next-line
-            $height = (int) data_get($stream, 'height');
-
-            $rotation = 0;
-
-            $sideDataList = data_get($stream, 'side_data_list', []);
-
-            // The rotation is in the Display Matrix entry, which isn't always the first one
-            // @phpstan-ignore-next-line
-            foreach ($sideDataList as $data) {
-
-                $type = data_get($data, 'side_data_type');
-
-                if ($type === 'Display Matrix') {
-                    // @phpstan-ignore-next-line
-                    $rotation = (int) data_get($data, 'rotation', 0);
-
-                    break;
-                }
-
-            }
-
-            if (
-                $rotate &&
-                $rotation &&
-                $rotation % 90 === 0 &&
-                $rotation % 180 !== 0
-            ) {
-                [$width, $height] = [$height, $width];
-            }
-
-            return [$width, $height, $rotation];
+        if (! $stream) {
+            throw VideoStreamNotFoundException::atPath($input);
         }
 
-        throw VideoStreamNotFoundException::atPath($input);
+        return $stream->dimension($rotate);
     }
 
-    public function width(string $input, bool $rotate = false): int
+    public function rotation(string $input): int
     {
-        [$width, $height, $rotation] = $this->dimensions($input, $rotate);
+        $stream = $this->metadata($input)->streams()->videos()->defaultVideo();
 
-        return $width;
-    }
+        if (! $stream) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
 
-    public function height(string $input, bool $rotate = false): int
-    {
-        [$width, $height, $rotation] = $this->dimensions($input, $rotate);
-
-        return $height;
-    }
-
-    /**
-     * @return float The duration in milliseconds
-     */
-    public function duration(string $input): float
-    {
-        $metadata = $this->metadata($input);
-
-        /** @var float|int|string */
-        $duration = data_get($metadata, 'format.duration');
-
-        $duration = (float) $duration;
-
-        return $duration * 1_000;
+        return $stream->rotation();
     }
 
     public function isHdr(string $input): bool
     {
-        $metadata = $this->metadata($input);
-
-        if (! $stream = $metadata['streams'][0] ?? null) {
-            throw VideoStreamNotFoundException::atPath($input);
-        }
-
-        $colorTransfer = data_get($stream, 'color_transfer');
-
-        if (in_array($colorTransfer, ['smpte2084', 'arib-std-b67'], true)) {
-            return true;
-        }
-
-        $colorPrimaries = data_get($stream, 'color_primaries');
-
-        if (in_array($colorPrimaries, ['bt2020'], true)) {
-            return true;
-        }
-
-        $colorSpace = data_get($stream, 'color_space');
-
-        if (in_array($colorSpace, ['bt2020nc', 'bt2020c'], true)) {
-            return true;
-        }
-
-        $pixFmt = data_get($stream, 'pix_fmt');
-
-        if (is_string($pixFmt) && str_contains($pixFmt, '10le')) {
-            return true;
-        }
-
-        return false;
+        return $this
+            ->metadata($input)
+            ->streams()
+            ->videos()
+            ->contains(fn ($stream) => $stream->isHdr());
     }
 
     /**
@@ -174,6 +74,7 @@ class Video extends FFMpeg
      * Extract a representative thumbnail using FFmpeg's thumbnail filter.
      *
      * @param  int  $frames  Number of frames to analyze per batch
+     * @param  string[]  $filters  Additional ffmpeg filters
      */
     public function thumbnail(
         string $input,
@@ -182,6 +83,7 @@ class Video extends FFMpeg
         int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,
+        array $filters = [],
     ): string {
         return $this->frame(
             input: $input,
@@ -189,7 +91,10 @@ class Video extends FFMpeg
             timecode: $timecode,
             width: $width,
             height: $height,
-            filters: ["thumbnail={$frames}"],
+            filters: [
+                "thumbnail={$frames}",
+                ...$filters,
+            ],
         );
     }
 
@@ -216,7 +121,7 @@ class Video extends FFMpeg
         ?int $height = null,
         ?int $fps = null,
         int $crf = 18,
-        string $preset = 'veryslow'
+        string $preset = 'slow'
     ): string {
 
         $filters = implode(',', [
@@ -323,33 +228,29 @@ class Video extends FFMpeg
 
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
 
-        [$width, $height] = $this->dimensions($input, rotate: true);
+        $streams = $this->metadata($input)->streams();
 
-        $isPortrait = $height > $width;
+        $defaultVideoStream = $streams->defaultVideo();
 
-        $variants = $variants->maxDimension($width, $height);
+        if (! $defaultVideoStream) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
+
+        $dimension = $defaultVideoStream->dimension(rotate: true);
+
+        $isPortrait = $dimension->isPortrait();
+
+        $variants = $variants->maxDimension($dimension->width, $dimension->height);
 
         if ($variants->isEmpty()) {
             return false;
         }
 
-        $streams = parent::metadata($input)['streams'] ?? [];
-        $hasAudio = false;
-        $sourceVideoBitrate = null;
-        $sourceAudioBitrate = null;
+        $defaultAudioStream = $streams->defaultAudio();
 
-        foreach ($streams as $stream) {
-            $codecType = $stream['codec_type'] ?? null;
-
-            if ($codecType === 'video') {
-                $sourceVideoBitrate ??= Bitrate::parse($stream['bit_rate'] ?? null);
-            }
-
-            if ($codecType === 'audio') {
-                $sourceAudioBitrate ??= Bitrate::parse($stream['bit_rate'] ?? null);
-                $hasAudio = true;
-            }
-        }
+        $hasAudio = $defaultAudioStream !== null;
+        $sourceVideoBitrate = $defaultVideoStream->bitrate();
+        $sourceAudioBitrate = $defaultAudioStream?->bitrate();
 
         if ($sourceVideoBitrate?->isNotZero()) {
             $variants = $variants->setMaxBitrate($sourceVideoBitrate);
@@ -385,7 +286,7 @@ class Video extends FFMpeg
 
         }
 
-        $filterComplex = '[0:v:0]split='.count($variants).implode('', $splitLabels).';'.implode(';', $filters);
+        $filterComplex = "[0:{$defaultVideoStream->index()}]split=".count($variants).implode('', $splitLabels).';'.implode(';', $filters);
 
         $arguments = [
             '-i', $input,
@@ -398,13 +299,15 @@ class Video extends FFMpeg
         }
 
         // Variants sharing the same audio bitrate share a single audio rendition
-        $audioBitrates = $hasAudio
-            ? $variants->toBase()->map(fn ($variant) => $variant->audioBitrate->format())->unique()->values()->all()
-            : [];
+        $audioBitrates = $variants->audioBitrates()->unique()->values()->all();
 
-        foreach ($audioBitrates as $audioBitrate) {
-            $arguments[] = '-map';
-            $arguments[] = '0:a:0';
+        $audioIndex = $defaultAudioStream?->index() ?? 0;
+
+        if ($hasAudio) {
+            foreach ($audioBitrates as $audioBitrate) {
+                $arguments[] = '-map';
+                $arguments[] = "0:{$audioIndex}";
+            }
         }
 
         // Keyframes every 2s at most (Apple recommendation) for faster seeking,

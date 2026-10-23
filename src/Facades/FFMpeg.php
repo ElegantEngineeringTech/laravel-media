@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static Video video()
  * @method static Audio audio()
+ * @method static float duration(string $input) The duration in milliseconds
  *
  * @see Elegantly\Media\FFMpeg\FFMpeg
  */

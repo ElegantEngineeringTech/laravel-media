@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
+use Elegantly\Media\FFMpeg\ValueObjects\Metadata;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -49,74 +50,30 @@ class FFMpeg
         return new Audio($this->ffmpeg, $this->ffprobe);
     }
 
-    /**
-     * @return array{
-     *   streams?: array<int, array{
-     *     index?: int,
-     *     codec_name?: string,
-     *     codec_long_name?: string,
-     *     profile?: string,
-     *     codec_type?: string,
-     *     codec_tag_string?: string,
-     *     codec_tag?: string,
-     *     mime_codec_string?: string,
-     *     width?: int,
-     *     height?: int,
-     *     coded_width?: int,
-     *     coded_height?: int,
-     *     has_b_frames?: int,
-     *     sample_aspect_ratio?: string,
-     *     display_aspect_ratio?: string,
-     *     pix_fmt?: string,
-     *     level?: int,
-     *     chroma_location?: string,
-     *     field_order?: string,
-     *     is_avc?: string,
-     *     nal_length_size?: string,
-     *     id?: string,
-     *     r_frame_rate?: string,
-     *     avg_frame_rate?: string,
-     *     time_base?: string,
-     *     start_pts?: int,
-     *     start_time?: string,
-     *     duration_ts?: int,
-     *     duration?: string,
-     *     bit_rate?: string,
-     *     bits_per_raw_sample?: string,
-     *     nb_frames?: string|int,
-     *     extradata_size?: int,
-     *     disposition?: array<string, int>,
-     *     tags?: array<string, mixed>
-     *   }>,
-     *   format?: array{
-     *     filename?: string,
-     *     nb_streams?: int,
-     *     nb_programs?: int,
-     *     nb_stream_groups?: int,
-     *     format_name?: string,
-     *     format_long_name?: string,
-     *     duration?: string,
-     *     size?: string,
-     *     bit_rate?: string,
-     *     probe_score?: int,
-     *     tags?: array<string, mixed>
-     *   }
-     * }
-     */
-    public function metadata(string $input): array
+    public function metadata(string $input): Metadata
     {
+        return $this->probe($input);
+    }
+
+    /**
+     * Probe the media with ffprobe.
+     *
+     * @param  string|null  $select  An ffprobe stream specifier (e.g. "a:0"), every stream when null
+     */
+    protected function probe(
+        string $input,
+        ?string $select = null
+    ): Metadata {
         $output = $this->ffprobe([
             '-v', 'error',
+            ...($select ? ['-select_streams', $select] : []),
             '-show_format',
             '-show_streams',
             '-print_format', 'json',
             $input,
         ]);
 
-        $metadata = json_decode($output, true);
-
-        // @phpstan-ignore-next-line
-        return is_array($metadata) ? $metadata : [];
+        return Metadata::fromJson($output);
     }
 
     public function stripMetadata(
@@ -198,117 +155,47 @@ class FFMpeg
     /**
      * Detect whether the media contains at least one audio stream.
      *
-     * Uses ffprobe `streams[].codec_type`.
-     *
      * Notes:
      * - This detects presence of audio streams, not whether audio is decodable or non-empty.
      * - Commonly used for container inspection (MP4, MKV, MP3, etc.).
      */
     public function hasAudio(string $input): bool
     {
-        $metadata = $this->metadata($input);
-
-        $streams = $metadata['streams'] ?? [];
-
-        foreach ($streams as $stream) {
-
-            $codec_type = $stream['codec_type'] ?? null;
-
-            if ($codec_type !== 'audio') {
-                continue;
-            }
-
-            return true;
-
-        }
-
-        return false;
+        return $this->probe($input)->streams()->hasAudio();
     }
 
     /**
-     * Detect whether the media contains a real video stream.
+     * Detect whether the media contains a real video stream, ignoring embedded cover art.
      *
-     * Uses ffprobe stream metadata:
-     * - `codec_type`
-     * - `disposition.attached_pic`
-     * - `width` and `height`
-     *
-     * Notes:
-     * - Filters out MP3/M4A embedded cover art.
-     * - Attempts to avoid "empty" or metadata-only video streams.
-     * - Does not rely on `nb_frames` because it is inconsistently present across formats,
-     *   especially in WebM/Matroska containers.
+     * @see Stream::isVideo()
      */
     public function hasVideo(string $input): bool
     {
-        $metadata = $this->metadata($input);
-
-        $streams = $metadata['streams'] ?? [];
-
-        foreach ($streams as $stream) {
-
-            $codec_type = $stream['codec_type'] ?? null;
-
-            if ($codec_type !== 'video') {
-                continue;
-            }
-
-            $disposition = $stream['disposition'] ?? [];
-            $attached_pic = $disposition['attached_pic'] ?? 0;
-
-            if ($attached_pic) {
-                continue;
-            }
-
-            $width = $stream['width'] ?? null;
-            $height = $stream['height'] ?? null;
-
-            if (! $width || ! $height) {
-                continue;
-            }
-
-            return true;
-
-        }
-
-        return false;
+        return $this->probe($input)->streams()->hasVideo();
     }
 
     /**
      * Detect whether the media contains embedded artwork (cover image).
-     *
-     * Uses ffprobe stream metadata:
-     * - `codec_type`
-     * - `disposition.attached_pic`
      *
      * Notes:
      * - Common in MP3, M4A, FLAC containers with embedded album art.
      */
     public function hasArtwork(string $input): bool
     {
-        $metadata = $this->metadata($input);
+        return $this->probe($input)->streams()->hasArtwork();
+    }
 
-        $streams = $metadata['streams'] ?? [];
+    /**
+     * @return float The duration in milliseconds
+     */
+    public function duration(string $input): float
+    {
+        $duration = $this->metadata($input)->duration();
 
-        foreach ($streams as $stream) {
-
-            $codec_type = $stream['codec_type'] ?? null;
-
-            if ($codec_type !== 'video') {
-                continue;
-            }
-
-            $disposition = $stream['disposition'] ?? [];
-            $attached_pic = $disposition['attached_pic'] ?? 0;
-
-            if (! $attached_pic) {
-                continue;
-            }
-
-            return true;
-
+        if ($duration !== null) {
+            return $duration;
         }
 
-        return false;
+        return 0.0;
     }
 }

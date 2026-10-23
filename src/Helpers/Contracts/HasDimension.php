@@ -8,5 +8,5 @@ use Elegantly\Media\Helpers\Dimension;
 
 interface HasDimension
 {
-    public static function dimension(string $path): ?Dimension;
+    public static function dimension(string $path): Dimension;
 }

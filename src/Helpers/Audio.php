@@ -4,19 +4,12 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Helpers;
 
-use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
-use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Facades\FFMpeg;
 
 class Audio
 {
-    public static function duration(string $path): ?float
+    public static function duration(string $path): float
     {
-        try {
-            $duration = FFMpeg::make()->audio()->duration($path);
-        } catch (FFMpegException $th) {
-            return null;
-        }
-
-        return $duration;
+        return FFMpeg::audio()->duration($path);
     }
 }
