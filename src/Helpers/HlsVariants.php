@@ -15,13 +15,13 @@ class HlsVariants extends Collection
     {
         // @phpstan-ignore-next-line
         return new static([
-            new HlsVariant(['name' => '2160p', 'size' => 2160, 'bitrate' => '25000k', 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '128k']),
-            new HlsVariant(['name' => '1440p', 'size' => 1440, 'bitrate' => '8000k', 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '128k']),
-            new HlsVariant(['name' => '1080p', 'size' => 1080, 'bitrate' => '5000k', 'maxrate' => '5350k', 'bufsize' => '7500k', 'audioBitrate' => '128k']),
-            new HlsVariant(['name' => '720p', 'size' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '128k']),
-            new HlsVariant(['name' => '480p', 'size' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '128k']),
-            new HlsVariant(['name' => '360p', 'size' => 360, 'bitrate' => '800k', 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k']),
-            new HlsVariant(['name' => '240p', 'size' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '2160p', 'size' => 2160, 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '1440p', 'size' => 1440, 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '1080p', 'size' => 1080, 'maxrate' => '5350k', 'bufsize' => '7500k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '720p', 'size' => 720, 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '480p', 'size' => 480, 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '360p', 'size' => 360, 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k']),
+            new HlsVariant(['name' => '240p', 'size' => 240, 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '128k']),
         ]);
     }
 
@@ -33,16 +33,6 @@ class HlsVariants extends Collection
         return $this
             ->toBase()
             ->map(fn ($variant) => $variant->audioBitrate->format());
-    }
-
-    /**
-     * @return Collection<int, string>
-     */
-    public function bitrates(): Collection
-    {
-        return $this
-            ->toBase()
-            ->map(fn ($variant) => $variant->bitrate->format());
     }
 
     public function supportedBy(Dimension $source): static
@@ -72,9 +62,8 @@ class HlsVariants extends Collection
 
         return $this->map(fn ($variant) => new HlsVariant([
             ...$variant->toArray(),
-            'bitrate' => $bitrate = $variant->bitrate->max($value),
-            'maxrate' => $variant->maxrate->max($value),
-            'bufsize' => $variant->bufsize->max($bitrate->value * 1.5),
+            'maxrate' => $maxrate = $variant->maxrate->max($value),
+            'bufsize' => $variant->bufsize->max($maxrate->value * 1.5),
         ]));
 
     }

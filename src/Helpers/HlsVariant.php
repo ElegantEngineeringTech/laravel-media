@@ -15,22 +15,25 @@ class HlsVariant implements Arrayable
 
     public readonly int|float $size;
 
-    public readonly Bitrate $bitrate;
-
+    /**
+     * The bitrate ceiling of the capped CRF encode.
+     */
     public readonly Bitrate $maxrate;
 
+    /**
+     * The rate control buffer, defining over how long the bitrate is averaged before being capped at maxrate.
+     */
     public readonly Bitrate $bufsize;
 
     public readonly Bitrate $audioBitrate;
 
     /**
-     * @param  array{name: string, size: int|float, bitrate: int|float|string|Bitrate, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
+     * @param  array{name: string, size: int|float, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
      */
     final public function __construct(array $data)
     {
         $this->name = $data['name'];
         $this->size = $data['size'];
-        $this->bitrate = Bitrate::parse($data['bitrate']);
         $this->maxrate = Bitrate::parse($data['maxrate']);
         $this->bufsize = Bitrate::parse($data['bufsize']);
         $this->audioBitrate = Bitrate::parse($data['audioBitrate']);
@@ -57,14 +60,13 @@ class HlsVariant implements Arrayable
     }
 
     /**
-     * @return array{name: string, size: int|float, bitrate: Bitrate, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
+     * @return array{name: string, size: int|float, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
      */
     public function toArray(): array
     {
         return [
             'name' => $this->name,
             'size' => $this->size,
-            'bitrate' => $this->bitrate,
             'maxrate' => $this->maxrate,
             'bufsize' => $this->bufsize,
             'audioBitrate' => $this->audioBitrate,

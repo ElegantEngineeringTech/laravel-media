@@ -50,23 +50,13 @@ class FFMpeg
         return new Audio($this->ffmpeg, $this->ffprobe, $this->logChannel);
     }
 
+    /**
+     * Probe the media format and streams with ffprobe.
+     */
     public function metadata(string $input): Metadata
     {
-        return $this->probe($input);
-    }
-
-    /**
-     * Probe the media with ffprobe.
-     *
-     * @param  string|null  $select  An ffprobe stream specifier (e.g. "a:0"), every stream when null
-     */
-    protected function probe(
-        string $input,
-        ?string $select = null
-    ): Metadata {
         $output = $this->ffprobe([
             '-v', 'error',
-            ...($select ? ['-select_streams', $select] : []),
             '-show_format',
             '-show_streams',
             '-print_format', 'json',
@@ -161,7 +151,7 @@ class FFMpeg
      */
     public function hasAudio(string $input): bool
     {
-        return $this->probe($input)->streams()->hasAudio();
+        return $this->metadata($input)->streams()->hasAudio();
     }
 
     /**
@@ -171,7 +161,7 @@ class FFMpeg
      */
     public function hasVideo(string $input): bool
     {
-        return $this->probe($input)->streams()->hasVideo();
+        return $this->metadata($input)->streams()->hasVideo();
     }
 
     /**
@@ -182,7 +172,7 @@ class FFMpeg
      */
     public function hasArtwork(string $input): bool
     {
-        return $this->probe($input)->streams()->hasArtwork();
+        return $this->metadata($input)->streams()->hasArtwork();
     }
 
     /**

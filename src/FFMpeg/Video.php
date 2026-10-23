@@ -212,14 +212,20 @@ class Video extends FFMpeg
      * The video is scaled to fit inside the box while keeping its aspect ratio, and a variant is only generated
      * when the source fills at least one side of the box, so the video is never upscaled.
      *
+     * Renditions are encoded in capped CRF: x264 targets a constant quality, spending fewer bits on simple scenes,
+     * while the variant maxrate and bufsize cap the bitrate of complex ones so each rendition stays within its bandwidth.
+     *
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The directory where HLS playlists and segments should be written.
      * @param  string  $playlist  The master playlist filename.
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  string  $preset  The x264 compression speed preset.
+     * @param  int  $crf  The x264 Constant Rate Factor (0–51), the quality targeted by every rendition.
+     *                    Lower is higher quality; 23 is the x264 default and a common choice for streaming.
+     *                    The variant maxrate still caps the bitrate.
      * @param  HlsVariants|null  $variants  The renditions to generate, among those the source supports.
-     *                                      Their bitrates are capped to the source bitrates.
+     *                                      Their maxrate and audio bitrate are capped to the source bitrates.
      * @param  int|float  $startingSize  Size of the variant listed first in the master playlist (e.g. 720 for 720p).
      *                                   Apple players start playback on it, so a mid-quality one gives a fast startup.
      * @param  int|float  $keyframeInterval  Maximum time between keyframes in seconds (Apple recommends 2).
@@ -234,6 +240,7 @@ class Video extends FFMpeg
         string $playlist = 'master.m3u8',
         ?int $fps = null,
         int $segmentLength = 6,
+        int $crf = 23,
         string $preset = 'slow',
         ?HlsVariants $variants = null,
         int|float $startingSize = 720,
@@ -282,6 +289,7 @@ class Video extends FFMpeg
         $arguments = [
             '-c:v', 'libx264',
             '-preset', $preset,
+            '-crf', (string) $crf,
             '-profile:v', 'high',
             '-pix_fmt', 'yuv420p',
             '-sc_threshold', '0',
@@ -331,7 +339,6 @@ class Video extends FFMpeg
             array_push(
                 $arguments,
                 '-map', "[v{$index}out]",
-                "-b:v:{$index}", $variant->bitrate->format(),
                 "-maxrate:v:{$index}", $variant->maxrate->format(),
                 "-bufsize:v:{$index}", $variant->bufsize->format(),
             );
