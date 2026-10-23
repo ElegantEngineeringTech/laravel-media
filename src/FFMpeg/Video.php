@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
+use Elegantly\Media\FFMpeg\ValueObjects\Stream;
 use Elegantly\Media\Helpers\Dimension;
 use Elegantly\Media\Helpers\HlsVariants;
 use Illuminate\Support\Arr;
@@ -12,35 +13,33 @@ use Illuminate\Support\Facades\File;
 
 class Video extends FFMpeg
 {
-    public function dimension(string $input, bool $rotate = true): Dimension
+    /**
+     * The default video stream, ignoring embedded cover art.
+     */
+    public function videoStream(string $input): Stream
     {
-        $stream = $this->metadata($input)->streams()->videos()->defaultVideo();
+        $stream = $this->metadata($input)->streams()->defaultVideo();
 
         if (! $stream) {
             throw VideoStreamNotFoundException::atPath($input);
         }
 
-        return $stream->dimension($rotate);
+        return $stream;
+    }
+
+    public function dimension(string $input, bool $rotate = true): Dimension
+    {
+        return $this->videoStream($input)->dimension($rotate);
     }
 
     public function rotation(string $input): int
     {
-        $stream = $this->metadata($input)->streams()->videos()->defaultVideo();
-
-        if (! $stream) {
-            throw VideoStreamNotFoundException::atPath($input);
-        }
-
-        return $stream->rotation();
+        return $this->videoStream($input)->rotation();
     }
 
     public function isHdr(string $input): bool
     {
-        return $this
-            ->metadata($input)
-            ->streams()
-            ->videos()
-            ->contains(fn ($stream) => $stream->isHdr());
+        return $this->videoStream($input)->isHdr();
     }
 
     /**
@@ -58,14 +57,14 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             ...$filters,
-            'format=yuv420p', // Fix Invalid color space caused by HDR
+            $this->sdrFilter($this->videoStream($input)),
             $this->getScale($width, $height),
         ]);
 
         return $this->ffmpeg([
             '-ss', (string) $timecode,
             '-i', $input,
-            '-vframes', '1',
+            '-frames:v', '1',
             '-vf', $filters,
             $output,
         ]);
@@ -125,8 +124,10 @@ class Video extends FFMpeg
         string $preset = 'slow'
     ): string {
 
+        $stream = $this->videoStream($input);
+
         $filters = implode(',', [
-            'format=yuv420p', // Fix Invalid color space caused by HDR
+            $this->sdrFilter($stream),
             $this->getScale($width, $height),
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
@@ -175,7 +176,10 @@ class Video extends FFMpeg
         int $cpuUsed = 3,
     ): string {
 
+        $stream = $this->videoStream($input);
+
         $filters = implode(',', [
+            $this->sdrFilter($stream),
             $this->getScale($width, $height),
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
@@ -186,6 +190,7 @@ class Video extends FFMpeg
             '-c:v', 'libvpx-vp9',
             '-crf', (string) $crf,
             '-b:v', '0',
+            '-pix_fmt', 'yuv420p',
             '-row-mt', '1',
             '-deadline', $deadline,
             '-cpu-used', (string) $cpuUsed,
@@ -352,8 +357,12 @@ class Video extends FFMpeg
             $audioStreamMap[] = "a:{$index},agroup:{$audioGroup($audioBitrate)},name:{$audioGroup($audioBitrate)},default:yes";
         }
 
+        // The source is converted to SDR once, before being split into renditions
         $filterComplex = "[0:{$videoStream->index()}]".implode(';', [
-            'split='.count($splitLabels).implode('', $splitLabels),
+            implode(',', [
+                $this->sdrFilter($videoStream),
+                'split='.count($splitLabels).implode('', $splitLabels),
+            ]),
             ...$filters,
         ]);
 
@@ -392,5 +401,35 @@ class Video extends FFMpeg
         }
 
         return $result;
+    }
+
+    /**
+     * Filters converting a video stream to 8-bit SDR BT.709 (yuv420p), the format every browser and device can decode.
+     *
+     * HDR (PQ or HLG) and wide gamut (BT.2020) videos go through zscale, which reads the source transfer,
+     * primaries and matrix from the frame metadata: the signal is linearized (1.0 = 100 nits, the SDR reference
+     * white expected by tonemap), converted to BT.709 primaries, then encoded back to BT.709.
+     * HDR highlights are compressed in between with the Möbius curve, which keeps SDR-range content almost unchanged.
+     * Its peak defaults to 1000 nits, the BT.2100 nominal peak of HLG (e.g. iPhone videos) and the usual HDR10 mastering peak.
+     *
+     * Other SDR videos are only converted to 8-bit 4:2:0, keeping their colors untouched.
+     */
+    protected function sdrFilter(Stream $stream): string
+    {
+        if (
+            ! $stream->isHdr() &&
+            ! $stream->isWideGamut()
+        ) {
+            return 'format=yuv420p';
+        }
+
+        return implode(',', array_filter([
+            'zscale=transfer=linear:npl=100',
+            'format=gbrpf32le',
+            'zscale=primaries=bt709',
+            $stream->isHdr() ? 'tonemap=tonemap=mobius:desat=0' : null,
+            'zscale=transfer=bt709:matrix=bt709:range=tv',
+            'format=yuv420p',
+        ]));
     }
 }

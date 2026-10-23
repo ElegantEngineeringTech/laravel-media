@@ -150,20 +150,31 @@ class Stream
         return $dimension;
     }
 
+    public function colorTransfer(): ?string
+    {
+        return $this->getString('color_transfer');
+    }
+
+    public function colorPrimaries(): ?string
+    {
+        return $this->getString('color_primaries');
+    }
+
+    /**
+     * HDR is defined by its transfer function: PQ (HDR10, HDR10+, Dolby Vision) or HLG.
+     *
+     * A 10-bit or BT.2020 video alone can still be SDR.
+     */
     public function isHdr(): bool
     {
-        if (in_array($this->getString('color_transfer'), ['smpte2084', 'arib-std-b67'], true)) {
-            return true;
-        }
+        return in_array($this->colorTransfer(), ['smpte2084', 'arib-std-b67'], true);
+    }
 
-        if (in_array($this->getString('color_primaries'), ['bt2020'], true)) {
-            return true;
-        }
-
-        if (in_array($this->getString('color_space'), ['bt2020nc', 'bt2020c'], true)) {
-            return true;
-        }
-
-        return str_contains($this->getString('pix_fmt') ?? '', '10le');
+    /**
+     * Wide color gamut (BT.2020 primaries), used by every HDR video but also by some SDR ones.
+     */
+    public function isWideGamut(): bool
+    {
+        return $this->colorPrimaries() === 'bt2020';
     }
 }

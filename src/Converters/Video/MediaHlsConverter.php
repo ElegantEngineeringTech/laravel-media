@@ -18,7 +18,7 @@ class MediaHlsConverter extends MediaConverter
 {
     public function __construct(
         Media $media,
-        public ?int $fps = 60,
+        public ?int $fps = null,
         public ?HlsVariants $variants = null,
         public int $segmentLength = 6,
         public string $preset = 'slow',
