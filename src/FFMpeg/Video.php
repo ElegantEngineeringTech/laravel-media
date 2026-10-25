@@ -47,6 +47,7 @@ class Video extends FFMpeg
      * @param  int|float|string  $timecode  in seconds (SS.xxx) or formatted (HH:MM:SS.xx)
      * @param  bool  $upscale  Whether the frame can be larger than the source.
      * @param  string[]  $filters  Additional ffmpeg filters
+     * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
      */
     public function frame(
         string $input,
@@ -55,7 +56,8 @@ class Video extends FFMpeg
         ?int $width = null,
         ?int $height = null,
         bool $upscale = true,
-        array $filters = []
+        array $filters = [],
+        bool $stripMetadata = true,
     ): string {
 
         $filters = implode(',', [
@@ -69,6 +71,7 @@ class Video extends FFMpeg
             '-i', $input,
             '-frames:v', '1',
             '-vf', $filters,
+            ...($stripMetadata ? ['-map_metadata', '-1'] : []),
             $output,
         ]);
     }
@@ -79,6 +82,7 @@ class Video extends FFMpeg
      * @param  int  $frames  Number of frames to analyze per batch
      * @param  bool  $upscale  Whether the thumbnail can be larger than the source.
      * @param  string[]  $filters  Additional ffmpeg filters
+     * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
      */
     public function thumbnail(
         string $input,
@@ -89,6 +93,7 @@ class Video extends FFMpeg
         ?int $height = null,
         bool $upscale = true,
         array $filters = [],
+        bool $stripMetadata = true,
     ): string {
         return $this->frame(
             input: $input,
@@ -101,6 +106,7 @@ class Video extends FFMpeg
                 "thumbnail={$frames}",
                 ...$filters,
             ],
+            stripMetadata: $stripMetadata,
         );
     }
 
@@ -123,6 +129,7 @@ class Video extends FFMpeg
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
      * @param  string  $preset  The compression speed (e.g., 'ultrafast', 'medium', 'veryslow').
      *                          Slower presets result in better compression/smaller files.
+     * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
      */
     public function mp4(
         string $input,
@@ -133,7 +140,8 @@ class Video extends FFMpeg
         ?int $fps = null,
         int|float $keyframeInterval = 2,
         int $crf = 23,
-        string $preset = 'slow'
+        string $preset = 'slow',
+        bool $stripMetadata = true,
     ): string {
 
         $streams = $this->metadata($input)->streams();
@@ -174,6 +182,7 @@ class Video extends FFMpeg
             '-ac', '2', // Stereo
             '-ar', '48000', // Standard rate for video
             '-movflags', '+faststart',
+            ...($stripMetadata ? ['-map_metadata', '-1'] : []),
             $output,
         ]);
     }
@@ -198,6 +207,7 @@ class Video extends FFMpeg
      * @param  string  $deadline  The quality/speed tradeoff: 'realtime', 'good', or 'best'.
      *                            'good' is the recommended balance.
      * @param  int  $cpuUsed  Encoding efficiency (0–8). Higher values speed up encoding at a slight cost to quality.
+     * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
      */
     public function webm(
         string $input,
@@ -210,6 +220,7 @@ class Video extends FFMpeg
         int $crf = 32,
         string $deadline = 'good',
         int $cpuUsed = 3,
+        bool $stripMetadata = true,
     ): string {
 
         $stream = $this->videoStream($input);
@@ -234,6 +245,7 @@ class Video extends FFMpeg
             '-c:a', 'libopus',
             '-b:a', '128k',
             '-movflags', '+faststart',
+            ...($stripMetadata ? ['-map_metadata', '-1'] : []),
             $output,
         ]);
     }
@@ -268,6 +280,7 @@ class Video extends FFMpeg
      * @param  int|float  $keyframeInterval  Maximum time between keyframes in seconds (Apple recommends 2).
      *                                       Shorter intervals make seeking faster at a small bitrate cost.
      *                                       Keyframes always land on segment boundaries.
+     * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
      * @return false|string Command output, or false when the source can't produce a playable stream
      *                      (smaller than every rendition, or too short to be segmented)
      */
@@ -282,6 +295,7 @@ class Video extends FFMpeg
         ?VideoRenditionCollection $renditions = null,
         int $startingSize = 720,
         int|float $keyframeInterval = 2,
+        bool $stripMetadata = true,
     ): false|string {
         $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
 
@@ -433,6 +447,7 @@ class Video extends FFMpeg
             '-start_number', '0',
             '-master_pl_name', $playlist,
             '-var_stream_map', implode(' ', $variantStreamMap),
+            ...($stripMetadata ? ['-map_metadata', '-1'] : []),
             '-hls_segment_filename', "{$output}/%v_segment_%05d.ts",
             "{$output}/%v_playlist.m3u8",
         ]);
