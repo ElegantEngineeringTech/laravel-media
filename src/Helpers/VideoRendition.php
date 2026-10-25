@@ -11,7 +11,7 @@ use Illuminate\Contracts\Support\Arrayable;
  */
 class VideoRendition implements Arrayable
 {
-    public readonly int|float $size;
+    public readonly int $size;
 
     /**
      * The bitrate ceiling of the capped CRF encode.
@@ -26,7 +26,7 @@ class VideoRendition implements Arrayable
     public readonly Bitrate $audioBitrate;
 
     /**
-     * @param  array{ size: int|float, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
+     * @param  array{ size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
      */
     final public function __construct(array $data)
     {
@@ -42,7 +42,7 @@ class VideoRendition implements Arrayable
      */
     public function dimension(bool $portrait = false): Dimension
     {
-        $short = (int) $this->size;
+        $short = $this->size;
         $long = (int) (2 * round($short * 16 / 9 / 2));
 
         return $portrait ? new Dimension($short, $long) : new Dimension($long, $short);
@@ -87,7 +87,7 @@ class VideoRendition implements Arrayable
     }
 
     /**
-     * @return array{ size: int|float, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
+     * @return array{ size: int, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
      */
     public function toArray(): array
     {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Converters\Video;
 
-use Elegantly\Media\Converters\Concerns\HasDimensions;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
@@ -15,8 +14,6 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 
 class MediaFrameConverter extends MediaConverter
 {
-    use HasDimensions;
-
     public function __construct(
         Media $media,
         public string $filename,
@@ -73,16 +70,12 @@ class MediaFrameConverter extends MediaConverter
             return $this->unsupportedConversion();
         }
 
-        $source = $parent ?? $media;
-
-        [$width, $height] = $this->getDimensions($source->width, $source->height, 2);
-
         $ffmpeg->frame(
             input: $filesystem->path($file),
             output: $output,
             timecode: $this->getTimecode($media, $parent),
-            width: $width,
-            height: $height
+            width: $this->width,
+            height: $this->height
         );
 
         return $media->addConversion(

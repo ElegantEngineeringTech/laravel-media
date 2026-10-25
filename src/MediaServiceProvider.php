@@ -64,7 +64,7 @@ class MediaServiceProvider extends PackageServiceProvider
     public static function getVideoRenditions(): VideoRenditionCollection
     {
         return new VideoRenditionCollection(array_map(
-            fn ($value) => new VideoRendition($value),
+            fn ($value) => new VideoRendition($value),// @phpstan-ignore-line
             config('media.videos.renditions')// @phpstan-ignore-line
         ));
     }

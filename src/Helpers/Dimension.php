@@ -7,13 +7,13 @@ namespace Elegantly\Media\Helpers;
 use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * @implements Arrayable<'width'|'height', float|int>
+ * @implements Arrayable<'width'|'height', int>
  */
 class Dimension implements Arrayable
 {
     final public function __construct(
-        public readonly float|int $width,
-        public readonly float|int $height
+        public readonly int $width,
+        public readonly int $height
     ) {
         //
     }
@@ -37,27 +37,25 @@ class Dimension implements Arrayable
         return new static($this->height, $this->width);
     }
 
+    /**
+     * The dimension after fitting inside the given width and/or height while keeping the aspect ratio,
+     * like ffmpeg's scale filter with force_original_aspect_ratio=decrease. It can be upscaled.
+     */
     public function scale(?int $width = null, ?int $height = null): static
     {
-        if ($width && $height) {
-            return new static($width, $height);
+        if (! $width && ! $height) {
+            return new static($this->width, $this->height);
         }
 
-        if ($width) {
-            return new static(
-                $width,
-                (int) (2 * round($this->height * $width / $this->width / 2))
-            );
-        }
+        $factor = min(
+            $width ? $width / $this->width : INF,
+            $height ? $height / $this->height : INF,
+        );
 
-        if ($height) {
-            return new static(
-                (int) (2 * round($this->width * $height / $this->height / 2)),
-                $height
-            );
-        }
-
-        return new static($this->width, $this->height);
+        return new static(
+            (int) round($this->width * $factor),
+            (int) round($this->height * $factor),
+        );
     }
 
     public function fitInto(Dimension $max): bool
@@ -67,7 +65,7 @@ class Dimension implements Arrayable
     }
 
     /**
-     * @return array{ width: float|int, height: float|int }
+     * @return array{ width: int, height: int }
      */
     public function toArray(): array
     {

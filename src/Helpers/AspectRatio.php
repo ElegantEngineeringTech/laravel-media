@@ -12,13 +12,13 @@ class AspectRatio
         //
     }
 
-    public function getWidth(int|float $height): int|float
+    public function getWidth(int $height): int
     {
-        return $height * $this->value;
+        return (int) round($height * $this->value);
     }
 
-    public function getHeight(int|float $width): int|float
+    public function getHeight(int $width): int
     {
-        return $width / $this->value;
+        return (int) round($width / $this->value);
     }
 }

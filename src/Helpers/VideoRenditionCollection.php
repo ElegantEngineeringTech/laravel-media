@@ -35,12 +35,12 @@ class VideoRenditionCollection extends Collection
         return $items->supportedBy($source)->last() ?? $items->first();
     }
 
-    public function getClosestTo(int|float $size): ?VideoRendition
+    public function getClosestTo(int $size): ?VideoRendition
     {
         return $this->sortBy(fn ($rendition) => abs($rendition->size - $size))->first();
     }
 
-    public function getClosestToKey(int|float $size): ?int
+    public function getClosestToKey(int $size): ?int
     {
         return array_key_first(
             $this->sortBy(fn ($rendition) => abs($rendition->size - $size))->all()

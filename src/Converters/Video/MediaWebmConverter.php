@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Converters\Video;
 
-use Elegantly\Media\Converters\Concerns\HasDimensions;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
@@ -15,8 +14,6 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 
 class MediaWebmConverter extends MediaConverter
 {
-    use HasDimensions;
-
     public function __construct(
         Media $media,
         public string $filename,
@@ -34,11 +31,7 @@ class MediaWebmConverter extends MediaConverter
     {
         $source = $parent ?? $media;
 
-        if ($source->type === MediaType::Video) {
-            return true;
-        }
-
-        return in_array($media->mime_type, ['image/gif']);
+        return $source->type === MediaType::Video || in_array($source->mime_type, ['image/gif']);
     }
 
     public function convert(
@@ -58,15 +51,11 @@ class MediaWebmConverter extends MediaConverter
 
         $ffmpeg = FFMpeg::video();
 
-        $source = $parent ?? $media;
-
-        [$width, $height] = $this->getDimensions($source->width, $source->height, 2);
-
         $ffmpeg->webm(
             input: $input,
             output: $output,
-            width: $width,
-            height: $height,
+            width: $this->width,
+            height: $this->height,
             fps: $this->fps,
             crf: $this->crf,
             deadline: $this->deadline,

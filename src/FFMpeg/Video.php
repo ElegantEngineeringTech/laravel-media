@@ -248,8 +248,8 @@ class Video extends FFMpeg
      *                    The rendition maxrate still caps the bitrate.
      * @param  VideoRenditionCollection|null  $renditions  The renditions to generate, among those the source supports.
      *                                                     Their maxrate and audio bitrate are capped to the source bitrates.
-     * @param  int|float  $startingSize  Size of the rendition listed first in the master playlist (e.g. 720 for 720p).
-     *                                   Apple players start playback on it, so a mid-quality one gives a fast startup.
+     * @param  int  $startingSize  Size of the rendition listed first in the master playlist (e.g. 720 for 720p).
+     *                             Apple players start playback on it, so a mid-quality one gives a fast startup.
      * @param  int|float  $keyframeInterval  Maximum time between keyframes in seconds (Apple recommends 2).
      *                                       Shorter intervals make seeking faster at a small bitrate cost.
      *                                       Keyframes always land on segment boundaries.
@@ -265,7 +265,7 @@ class Video extends FFMpeg
         int $crf = 23,
         string $preset = 'slow',
         ?VideoRenditionCollection $renditions = null,
-        int|float $startingSize = 720,
+        int $startingSize = 720,
         int|float $keyframeInterval = 2,
     ): false|string {
         $renditions ??= MediaServiceProvider::getVideoRenditions();
@@ -311,7 +311,6 @@ class Video extends FFMpeg
             '-c:v', 'libx264',
             '-preset', $preset,
             '-crf', (string) $crf,
-            '-profile:v', 'high',
             '-pix_fmt', 'yuv420p',
             '-sc_threshold', '0',
             '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength}/{$keyframesPerSegment})",
@@ -468,38 +467,27 @@ class Video extends FFMpeg
     }
 
     /**
-     * @param  bool  $even  Fit the video inside the given width and/or height, keeping its aspect ratio,
-     *                      with even dimensions as required by libx264 for 4:2:0 video (e.g. for odd sized GIFs).
-     *                      The video is still upscaled when the given size is larger than the source.
+     * Fit the video inside the given width and/or height, keeping its aspect ratio.
+     * The video is upscaled when the given size is larger than the source.
+     *
+     * @param  bool  $even  Round the dimensions to even numbers, as required by libx264 for 4:2:0 video (e.g. for odd sized GIFs).
      */
     protected function scaleFilter(
         ?int $width = null,
         ?int $height = null,
         bool $even = false,
     ): string {
-        if ($even) {
-            return 'scale='.implode(':', [
-                'w='.($width ?? ($height ? -1 : 'iw')),
-                'h='.($height ?? ($width ? -1 : 'ih')),
-                'force_original_aspect_ratio=decrease',
-                'force_divisible_by=2',
-                'flags=lanczos',
-            ]);
+        if (! $width && ! $height && ! $even) {
+            return 'null';
         }
 
-        if ($width && $height) {
-            return "scale={$width}:{$height}";
-        }
-
-        if ($width) {
-            return "scale={$width}:-2";
-        }
-
-        if ($height) {
-            return "scale=-2:{$height}";
-        }
-
-        return 'null';
+        return 'scale='.implode(':', [
+            'w='.($width ?? ($height ? -1 : 'iw')),
+            'h='.($height ?? ($width ? -1 : 'ih')),
+            'force_original_aspect_ratio=decrease',
+            'force_divisible_by='.($even ? 2 : 1),
+            'flags=lanczos',
+        ]);
     }
 
     protected function fpsFilter(?int $fps): string
