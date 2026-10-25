@@ -23,8 +23,8 @@ class MediaMp4Converter extends MediaConverter
         public ?int $width = null,
         public ?int $height = null,
         public ?int $fps = null,
-        public int $crf = 18,
-        public string $preset = 'veryslow',
+        public int $crf = 23,
+        public string $preset = 'slow',
     ) {
         parent::__construct($media);
     }

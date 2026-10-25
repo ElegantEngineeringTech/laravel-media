@@ -7,6 +7,8 @@ namespace Elegantly\Media;
 use Elegantly\Media\Commands\GenerateMediaConversionsCommand;
 use Elegantly\Media\Commands\RetryMediaConversionsCommand;
 use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Helpers\VideoRendition;
+use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -57,5 +59,13 @@ class MediaServiceProvider extends PackageServiceProvider
     {
         // @phpstan-ignore-next-line
         return config('media.delete_media_file_job');
+    }
+
+    public static function getVideoRenditions(): VideoRenditionCollection
+    {
+        return new VideoRenditionCollection(array_map(
+            fn ($value) => new VideoRendition($value),
+            config('media.videos.renditions')// @phpstan-ignore-line
+        ));
     }
 }

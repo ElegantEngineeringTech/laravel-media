@@ -123,26 +123,6 @@ class FFMpeg
     }
 
     /**
-     * The 'null' filter is an identity filter.
-     */
-    protected function getScale(?int $width = null, ?int $height = null): string
-    {
-        if ($width && $height) {
-            return "scale={$width}:{$height}";
-        }
-
-        if ($width) {
-            return "scale={$width}:-2";
-        }
-
-        if ($height) {
-            return "scale=-2:{$height}";
-        }
-
-        return 'null';
-    }
-
-    /**
      * Detect whether the media contains at least one audio stream.
      *
      * Notes:

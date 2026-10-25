@@ -7,7 +7,7 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
-use Elegantly\Media\Helpers\HlsVariants;
+use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -19,7 +19,7 @@ class MediaHlsConverter extends MediaConverter
     public function __construct(
         Media $media,
         public ?int $fps = null,
-        public ?HlsVariants $variants = null,
+        public ?VideoRenditionCollection $renditions = null,
         public int $segmentLength = 6,
         public string $preset = 'slow',
         public string $playlist = 'master.m3u8',
@@ -61,7 +61,7 @@ class MediaHlsConverter extends MediaConverter
             fps: $this->fps,
             segmentLength: $this->segmentLength,
             preset: $this->preset,
-            variants: $this->variants,
+            renditions: $this->renditions,
             startingSize: $this->startingSize,
         );
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\FFMpeg\Video;
-use Elegantly\Media\Helpers\HlsVariant;
-use Elegantly\Media\Helpers\HlsVariants;
+use Elegantly\Media\Helpers\VideoRendition;
+use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\TemporaryDirectory;
 
 it('detects audio and video stream in a mp4.', function () {
@@ -141,7 +141,7 @@ it('generates m3u8 hls renditions for a portrait video', function () {
 
 });
 
-it('generates one audio rendition per distinct variant audio bitrate', function () {
+it('generates one audio rendition per distinct rendition audio bitrate', function () {
     $file = $this->getTestFile('videos/horizontal.mp4');
 
     $temporaryDirectory = (new TemporaryDirectory)
@@ -154,13 +154,13 @@ it('generates one audio rendition per distinct variant audio bitrate', function 
     $output = $temporaryDirectory->path();
     $playlist = 'master.m3u8';
 
-    $variants = new HlsVariants([
-        new HlsVariant(['name' => '720p', 'size' => 720, 'bitrate' => '2800k', 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '64k']),
-        new HlsVariant(['name' => '480p', 'size' => 480, 'bitrate' => '1400k', 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '64k']),
-        new HlsVariant(['name' => '240p', 'size' => 240, 'bitrate' => '600k', 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '48k']),
+    $renditions = new VideoRenditionCollection([
+        new VideoRendition(['size' => 720, 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '64k']),
+        new VideoRendition(['size' => 480, 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '64k']),
+        new VideoRendition(['size' => 240, 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '48k']),
     ]);
 
-    Video::make()->hls($file, $output, $playlist, variants: $variants);
+    Video::make()->hls($file, $output, $playlist, renditions: $renditions);
 
     $filesystem->assertExists('audio_64k_playlist.m3u8');
     $filesystem->assertExists('audio_48k_playlist.m3u8');

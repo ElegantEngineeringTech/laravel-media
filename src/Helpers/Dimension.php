@@ -37,6 +37,29 @@ class Dimension implements Arrayable
         return new static($this->height, $this->width);
     }
 
+    public function scale(?int $width = null, ?int $height = null): static
+    {
+        if ($width && $height) {
+            return new static($width, $height);
+        }
+
+        if ($width) {
+            return new static(
+                $width,
+                (int) (2 * round($this->height * $width / $this->width / 2))
+            );
+        }
+
+        if ($height) {
+            return new static(
+                (int) (2 * round($this->width * $height / $this->height / 2)),
+                $height
+            );
+        }
+
+        return new static($this->width, $this->height);
+    }
+
     public function fitInto(Dimension $max): bool
     {
         return $this->width <= $max->width

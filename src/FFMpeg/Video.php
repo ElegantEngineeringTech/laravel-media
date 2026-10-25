@@ -7,7 +7,8 @@ namespace Elegantly\Media\FFMpeg;
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\FFMpeg\ValueObjects\Stream;
 use Elegantly\Media\Helpers\Dimension;
-use Elegantly\Media\Helpers\HlsVariants;
+use Elegantly\Media\Helpers\VideoRenditionCollection;
+use Elegantly\Media\MediaServiceProvider;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
 
@@ -58,7 +59,7 @@ class Video extends FFMpeg
         $filters = implode(',', [
             ...$filters,
             $this->sdrFilter($this->videoStream($input)),
-            $this->getScale($width, $height),
+            $this->scaleFilter($width, $height),
         ]);
 
         return $this->ffmpeg([
@@ -102,15 +103,17 @@ class Video extends FFMpeg
      * Transcodes a video file to MP4 (H.264/AAC) using FFmpeg.
      * This method optimizes the video for web playback by applying a YUV420p pixel format and the +faststart flag.
      *
+     * The video is encoded in capped CRF: x264 targets a constant quality, spending fewer bits on simple scenes,
+     * while complex ones are capped to the maxrate and bufsize of the video rendition of the same size (and to the source bitrate),
+     * so the file can be played progressively without buffering.
+     *
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The absolute path where the output MP4 should be saved.
      * @param  int|null  $width  The target width in pixels. If null, original width is kept.
      * @param  int|null  $height  The target height in pixels. If null, original height is kept.
      * @param  int|null  $fps  Target FPS (capped at source rate).
-     * @param  int  $crf  Constant Rate Factor (0–51).
-     *                    18 is visually lossless;
-     *                    23 is default;
-     *                    higher is lower quality.
+     * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
+     *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
      * @param  string  $preset  The compression speed (e.g., 'ultrafast', 'medium', 'veryslow').
      *                          Slower presets result in better compression/smaller files.
      */
@@ -120,16 +123,31 @@ class Video extends FFMpeg
         ?int $width = null,
         ?int $height = null,
         ?int $fps = null,
-        int $crf = 18,
+        int $crf = 23,
         string $preset = 'slow'
     ): string {
 
-        $stream = $this->videoStream($input);
+        $streams = $this->metadata($input)->streams();
+
+        $video = $streams->defaultVideo();
+
+        if (! $video) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
+
+        $audio = $streams->defaultAudio();
+
+        $dimension = $video->dimension()->scale($width, $height);
+
+        $rendition = MediaServiceProvider::getVideoRenditions()
+            ->getBestSupportedBy($dimension)
+            ->setMaxBitrate($video->bitrate())
+            ->setMaxAudioBitrate($audio?->bitrate());
 
         $filters = implode(',', [
-            $this->sdrFilter($stream),
-            $this->getScale($width, $height),
-            $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
+            $this->sdrFilter($video),
+            $this->scaleFilter($width, $height, even: true),
+            $this->fpsFilter($fps),
         ]);
 
         return $this->ffmpeg([
@@ -137,10 +155,14 @@ class Video extends FFMpeg
             '-vf', $filters,
             '-c:v', 'libx264',
             '-crf', (string) $crf,
+            '-maxrate', $rendition->maxrate->format(),
+            '-bufsize', $rendition->bufsize->format(),
             '-preset', $preset,
             '-pix_fmt', 'yuv420p',
             '-c:a', 'aac',
-            '-b:a', '128k',
+            '-b:a', $rendition->audioBitrate->format(),
+            '-ac', '2', // Stereo
+            '-ar', '48000', // Standard rate for video
             '-movflags', '+faststart',
             $output,
         ]);
@@ -180,7 +202,7 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->sdrFilter($stream),
-            $this->getScale($width, $height),
+            $this->scaleFilter($width, $height),
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
 
@@ -195,7 +217,7 @@ class Video extends FFMpeg
             '-deadline', $deadline,
             '-cpu-used', (string) $cpuUsed,
             '-c:a', 'libopus',
-            '-b:a', '96k',
+            '-b:a', '128k',
             '-movflags', '+faststart',
             $output,
         ]);
@@ -205,15 +227,15 @@ class Video extends FFMpeg
      * Generate a production-ready HLS VOD playlist with adaptive m3u8 variants.
      *
      * The output directory will contain a master playlist, one media playlist per generated resolution
-     * and, when the source has audio, one audio-only rendition per distinct variant audio bitrate,
-     * shared by every video rendition using that bitrate (a single one with the default variants).
+     * and, when the source has audio, one audio-only rendition per distinct audio bitrate of the renditions,
+     * shared by every video rendition using that bitrate (a single one with the default renditions).
      *
-     * Each variant describes a 16:9 bounding box (e.g. 1080p is 1920x1080, or 1080x1920 for portrait sources).
-     * The video is scaled to fit inside the box while keeping its aspect ratio, and a variant is only generated
+     * Each rendition describes a 16:9 bounding box (e.g. 1080p is 1920x1080, or 1080x1920 for portrait sources).
+     * The video is scaled to fit inside the box while keeping its aspect ratio, and a rendition is only generated
      * when the source fills at least one side of the box, so the video is never upscaled.
      *
      * Renditions are encoded in capped CRF: x264 targets a constant quality, spending fewer bits on simple scenes,
-     * while the variant maxrate and bufsize cap the bitrate of complex ones so each rendition stays within its bandwidth.
+     * while the rendition maxrate and bufsize cap the bitrate of complex ones so each rendition stays within its bandwidth.
      *
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The directory where HLS playlists and segments should be written.
@@ -223,16 +245,16 @@ class Video extends FFMpeg
      * @param  string  $preset  The x264 compression speed preset.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the quality targeted by every rendition.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for streaming.
-     *                    The variant maxrate still caps the bitrate.
-     * @param  HlsVariants|null  $variants  The renditions to generate, among those the source supports.
-     *                                      Their maxrate and audio bitrate are capped to the source bitrates.
-     * @param  int|float  $startingSize  Size of the variant listed first in the master playlist (e.g. 720 for 720p).
+     *                    The rendition maxrate still caps the bitrate.
+     * @param  VideoRenditionCollection|null  $renditions  The renditions to generate, among those the source supports.
+     *                                                     Their maxrate and audio bitrate are capped to the source bitrates.
+     * @param  int|float  $startingSize  Size of the rendition listed first in the master playlist (e.g. 720 for 720p).
      *                                   Apple players start playback on it, so a mid-quality one gives a fast startup.
      * @param  int|float  $keyframeInterval  Maximum time between keyframes in seconds (Apple recommends 2).
      *                                       Shorter intervals make seeking faster at a small bitrate cost.
      *                                       Keyframes always land on segment boundaries.
      * @return false|string Command output, or false when the source can't produce a playable stream
-     *                      (smaller than every variant, or too short to be segmented)
+     *                      (smaller than every rendition, or too short to be segmented)
      */
     public function hls(
         string $input,
@@ -242,11 +264,11 @@ class Video extends FFMpeg
         int $segmentLength = 6,
         int $crf = 23,
         string $preset = 'slow',
-        ?HlsVariants $variants = null,
+        ?VideoRenditionCollection $renditions = null,
         int|float $startingSize = 720,
         int|float $keyframeInterval = 2,
     ): false|string {
-        $variants ??= HlsVariants::defaults();
+        $renditions ??= MediaServiceProvider::getVideoRenditions();
 
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
 
@@ -260,27 +282,26 @@ class Video extends FFMpeg
 
         $sourceDimension = $videoStream->dimension(rotate: true);
 
-        $variants = $variants->supportedBy($sourceDimension);
+        $renditions = $renditions->supportedBy($sourceDimension);
 
-        if ($variants->isEmpty()) {
+        if ($renditions->isEmpty()) {
             return false;
         }
 
         $audioStream = $streams->defaultAudio();
 
-        $variants = $variants
+        $renditions = $renditions
             ->setMaxBitrate($videoStream->bitrate())
             ->setMaxAudioBitrate($audioStream?->bitrate());
 
-        // Variants sharing the same audio bitrate share a single audio rendition.
+        // Renditions sharing the same audio bitrate share a single audio rendition.
         // Without audio, the list is empty so no audio rendition is mapped nor listed.
-        $audioBitrates = $audioStream ? $variants->audioBitrates()->unique()->values()->all() : [];
+        $audioBitrates = $audioStream ? $renditions->audioBitrates()->unique()->values()->all() : [];
 
         $audioGroup = fn (string $audioBitrate) => "audio_{$audioBitrate}";
 
         // Apple players start playback on the first variant of the master playlist.
-        // Variants can't be empty here, the fallback only satisfies the nullable return type.
-        $startingVariantKey = $variants->getKeyClosestTo($startingSize) ?? 0;
+        $startingRenditionKey = $renditions->getClosestToKey($startingSize) ?? 0;
 
         // Keyframes at most every $keyframeInterval seconds for faster seeking,
         // always landing on segment boundaries so renditions stay aligned.
@@ -303,8 +324,8 @@ class Video extends FFMpeg
             array_push(
                 $arguments,
                 '-c:a', 'aac',
-                '-ac', '2', // Stereo, supported by every player
-                '-ar', '48000', // Standard rate for video, used by most sources
+                '-ac', '2', // Stereo
+                '-ar', '48000', // Standard rate for video
             );
         } else {
             array_push(
@@ -313,25 +334,24 @@ class Video extends FFMpeg
             );
         }
 
-        $fpsFilter = $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null';
+        $fpsFilter = $this->fpsFilter($fps);
 
         $splitLabels = [];
         $filters = [];
         $variantStreamMap = [];
 
-        // Each rendition's filter, output options and playlist entry are built together.
         // Options apply to the whole output, only the order of the -map options defines the output stream indexes.
-        foreach ($variants as $index => $variant) {
+        foreach ($renditions as $index => $rendition) {
 
-            $variantDimension = $variant->dimension(portrait: $sourceDimension->isPortrait());
+            $renditionDimension = $rendition->dimension(
+                portrait: $sourceDimension->isPortrait()
+            );
 
-            $scaleFilter = 'scale='.implode(':', [
-                "w={$variantDimension->width}",
-                "h={$variantDimension->height}",
-                'force_original_aspect_ratio=decrease',
-                'force_divisible_by=2',
-                'flags=lanczos',
-            ]);
+            $scaleFilter = $this->scaleFilter(
+                width: $renditionDimension->width,
+                height: $renditionDimension->height,
+                even: true
+            );
 
             $splitLabels[] = "[v{$index}]";
             $filters[] = "[v{$index}]{$scaleFilter},{$fpsFilter}[v{$index}out]";
@@ -339,14 +359,14 @@ class Video extends FFMpeg
             array_push(
                 $arguments,
                 '-map', "[v{$index}out]",
-                "-maxrate:v:{$index}", $variant->maxrate->format(),
-                "-bufsize:v:{$index}", $variant->bufsize->format(),
+                "-maxrate:v:{$index}", $rendition->maxrate->format(),
+                "-bufsize:v:{$index}", $rendition->bufsize->format(),
             );
 
             $variantStreamMap[$index] = implode(',', array_filter([
                 "v:{$index}",
-                $audioStream ? 'agroup:'.$audioGroup($variant->audioBitrate->format()) : null,
-                "name:{$variant->name}",
+                $audioStream ? 'agroup:'.$audioGroup($rendition->audioBitrate->format()) : null,
+                "name:{$rendition->size}p",
             ]));
 
         }
@@ -360,8 +380,15 @@ class Video extends FFMpeg
                 "-b:a:{$index}", $audioBitrate,
             );
 
+            $agroup = $audioGroup($audioBitrate);
+
             // default:yes prevents ffmpeg from also listing the audio as a standalone variant
-            $audioStreamMap[] = "a:{$index},agroup:{$audioGroup($audioBitrate)},name:{$audioGroup($audioBitrate)},default:yes";
+            $audioStreamMap[] = implode(',', [
+                "a:{$index}",
+                "agroup:{$agroup}",
+                "name:{$agroup}",
+                'default:yes',
+            ]);
         }
 
         // The source is converted to SDR once, before being split into renditions
@@ -375,8 +402,8 @@ class Video extends FFMpeg
 
         $variantStreamMap = [
             ...$audioStreamMap,
-            $variantStreamMap[$startingVariantKey],
-            ...Arr::except($variantStreamMap, $startingVariantKey),
+            $variantStreamMap[$startingRenditionKey],
+            ...Arr::except($variantStreamMap, $startingRenditionKey),
         ];
 
         File::ensureDirectoryExists($output);
@@ -438,5 +465,45 @@ class Video extends FFMpeg
             'zscale=transfer=bt709:matrix=bt709:range=tv',
             'format=yuv420p',
         ]));
+    }
+
+    /**
+     * @param  bool  $even  Fit the video inside the given width and/or height, keeping its aspect ratio,
+     *                      with even dimensions as required by libx264 for 4:2:0 video (e.g. for odd sized GIFs).
+     *                      The video is still upscaled when the given size is larger than the source.
+     */
+    protected function scaleFilter(
+        ?int $width = null,
+        ?int $height = null,
+        bool $even = false,
+    ): string {
+        if ($even) {
+            return 'scale='.implode(':', [
+                'w='.($width ?? ($height ? -1 : 'iw')),
+                'h='.($height ?? ($width ? -1 : 'ih')),
+                'force_original_aspect_ratio=decrease',
+                'force_divisible_by=2',
+                'flags=lanczos',
+            ]);
+        }
+
+        if ($width && $height) {
+            return "scale={$width}:{$height}";
+        }
+
+        if ($width) {
+            return "scale={$width}:-2";
+        }
+
+        if ($height) {
+            return "scale=-2:{$height}";
+        }
+
+        return 'null';
+    }
+
+    protected function fpsFilter(?int $fps): string
+    {
+        return $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null';
     }
 }
