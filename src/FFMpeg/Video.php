@@ -118,6 +118,7 @@ class Video extends FFMpeg
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Target FPS (capped at source rate).
+     * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
      * @param  string  $preset  The compression speed (e.g., 'ultrafast', 'medium', 'veryslow').
@@ -130,6 +131,7 @@ class Video extends FFMpeg
         ?int $height = null,
         bool $upscale = true,
         ?int $fps = null,
+        int|float $keyframeInterval = 2,
         int $crf = 23,
         string $preset = 'slow'
     ): string {
@@ -162,6 +164,7 @@ class Video extends FFMpeg
             '-vf', $filters,
             '-c:v', 'libx264',
             '-crf', (string) $crf,
+            '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
             '-maxrate', $rendition->maxrate->format(),
             '-bufsize', $rendition->bufsize->format(),
             '-preset', $preset,
@@ -187,6 +190,7 @@ class Video extends FFMpeg
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Target FPS (capped at source rate).
+     * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
      *                    31–34 is recommended for 1080p;
@@ -202,6 +206,7 @@ class Video extends FFMpeg
         ?int $height = null,
         bool $upscale = true,
         ?int $fps = null,
+        int|float $keyframeInterval = 2,
         int $crf = 32,
         string $deadline = 'good',
         int $cpuUsed = 3,
@@ -221,6 +226,7 @@ class Video extends FFMpeg
             '-c:v', 'libvpx-vp9',
             '-crf', (string) $crf,
             '-b:v', '0',
+            '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
             '-pix_fmt', 'yuv420p',
             '-row-mt', '1',
             '-deadline', $deadline,
@@ -277,7 +283,7 @@ class Video extends FFMpeg
         int $startingSize = 720,
         int|float $keyframeInterval = 2,
     ): false|string {
-        $renditions ??= MediaServiceProvider::getVideoRenditions();
+        $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
 
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
 

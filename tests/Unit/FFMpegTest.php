@@ -100,7 +100,7 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
 });
 
 it('generates m3u8 hls renditions for a portrait video', function () {
-    $file = $this->getTestFile('videos/90rotation.mp4');
+    $file = $this->getTestFile('videos/portrait-rotated.mp4');
 
     $temporaryDirectory = (new TemporaryDirectory)
         ->location(storage_path('media-tmp'))

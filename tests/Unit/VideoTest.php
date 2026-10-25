@@ -16,7 +16,7 @@ it('get the correct dimension from a non rotated video', function () {
 
 it('get the correct dimension from a rotated video', function () {
 
-    $file = $this->getTestFile('videos/90rotation.mp4');
+    $file = $this->getTestFile('videos/portrait-rotated.mp4');
 
     $dimension = Video::dimension($file);
 

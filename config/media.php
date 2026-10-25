@@ -103,7 +103,7 @@ return [
             ['size' => 1440, 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '128k'],
             ['size' => 2160, 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '128k'],
         ],
-        'hls' => [240, 360, 480, 720, 1080, 1440, 2160],
+        'hls_renditions' => [240, 360, 480, 720, 1080, 1440, 2160],
     ],
 
     /**

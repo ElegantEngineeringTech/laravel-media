@@ -7,6 +7,7 @@ namespace Elegantly\Media;
 use Elegantly\Media\Commands\GenerateMediaConversionsCommand;
 use Elegantly\Media\Commands\RetryMediaConversionsCommand;
 use Elegantly\Media\FFMpeg\FFMpeg;
+use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\VideoRendition;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\Jobs\DeleteMediaFileJob;
@@ -66,6 +67,36 @@ class MediaServiceProvider extends PackageServiceProvider
         return new VideoRenditionCollection(array_map(
             fn ($value) => new VideoRendition($value),// @phpstan-ignore-line
             config('media.videos.renditions')// @phpstan-ignore-line
+        ));
+    }
+
+    public static function getVideoHlsRenditions(): VideoRenditionCollection
+    {
+        $renditions = static::getVideoRenditions();
+
+        /**
+         * @var array<int, int|array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
+         */
+        $values = config('media.videos.hls_renditions');
+
+        /**
+         * @var array<int, array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
+         */
+        $items = [];
+
+        foreach ($values as $value) {
+
+            if (is_array($value)) {
+                $items[] = $value;
+            } elseif ($rendition = $renditions->firstWhere('size', $value)) {
+                $items[] = $rendition->toArray();
+            }
+
+        }
+
+        return new VideoRenditionCollection(array_map(
+            fn ($value) => new VideoRendition($value),
+            $items
         ));
     }
 }
