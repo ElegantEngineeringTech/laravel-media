@@ -7,7 +7,7 @@ namespace Elegantly\Media\Helpers;
 use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * @implements Arrayable<string, string|int|float|Bitrate>
+ * @implements Arrayable<string, int|Bitrate>
  */
 class VideoRendition implements Arrayable
 {

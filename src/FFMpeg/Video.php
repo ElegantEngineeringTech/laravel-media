@@ -109,8 +109,8 @@ class Video extends FFMpeg
      *
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The absolute path where the output MP4 should be saved.
-     * @param  int|null  $width  The target width in pixels. If null, original width is kept.
-     * @param  int|null  $height  The target height in pixels. If null, original height is kept.
+     * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
+     * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
@@ -171,13 +171,13 @@ class Video extends FFMpeg
     /**
      * Transcodes a video file to WebM (VP9/Opus) using FFmpeg.
      *
-     * This method uses the libvpx-vp9 encoder in Constrained Quality (CQ) mode.
+     * This method uses the libvpx-vp9 encoder in Constant Quality mode.
      * It enables multi-threading and modern audio compression (Opus) for superior web performance.
      *
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The absolute path for the output .webm file.
-     * @param  int|null  $width  Target width in pixels. Auto-scales if null.
-     * @param  int|null  $height  Target height in pixels. Auto-scales if null.
+     * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
+     * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
@@ -242,10 +242,10 @@ class Video extends FFMpeg
      * @param  string  $playlist  The master playlist filename.
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $segmentLength  HLS segment length in seconds.
-     * @param  string  $preset  The x264 compression speed preset.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the quality targeted by every rendition.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for streaming.
      *                    The rendition maxrate still caps the bitrate.
+     * @param  string  $preset  The x264 compression speed preset.
      * @param  VideoRenditionCollection|null  $renditions  The renditions to generate, among those the source supports.
      *                                                     Their maxrate and audio bitrate are capped to the source bitrates.
      * @param  int  $startingSize  Size of the rendition listed first in the master playlist (e.g. 720 for 720p).
