@@ -55,6 +55,7 @@ class MediaMp4Converter extends MediaConverter
             output: $output,
             width: $this->width,
             height: $this->height,
+            upscale: false,
             fps: $this->fps,
             crf: $this->crf,
             preset: $this->preset,

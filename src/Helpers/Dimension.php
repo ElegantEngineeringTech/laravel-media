@@ -39,10 +39,13 @@ class Dimension implements Arrayable
 
     /**
      * The dimension after fitting inside the given width and/or height while keeping the aspect ratio,
-     * like ffmpeg's scale filter with force_original_aspect_ratio=decrease. It can be upscaled.
+     * like ffmpeg's scale filter with force_original_aspect_ratio=decrease.
      */
-    public function scale(?int $width = null, ?int $height = null): static
-    {
+    public function scale(
+        ?int $width = null,
+        ?int $height = null,
+        bool $upscale = true
+    ): static {
         if (! $width && ! $height) {
             return new static($this->width, $this->height);
         }
@@ -50,6 +53,7 @@ class Dimension implements Arrayable
         $factor = min(
             $width ? $width / $this->width : INF,
             $height ? $height / $this->height : INF,
+            $upscale ? INF : 1,
         );
 
         return new static(

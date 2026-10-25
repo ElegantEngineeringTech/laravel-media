@@ -75,7 +75,8 @@ class MediaFrameConverter extends MediaConverter
             output: $output,
             timecode: $this->getTimecode($media, $parent),
             width: $this->width,
-            height: $this->height
+            height: $this->height,
+            upscale: false
         );
 
         return $media->addConversion(

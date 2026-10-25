@@ -56,6 +56,7 @@ class MediaWebmConverter extends MediaConverter
             output: $output,
             width: $this->width,
             height: $this->height,
+            upscale: false,
             fps: $this->fps,
             crf: $this->crf,
             deadline: $this->deadline,

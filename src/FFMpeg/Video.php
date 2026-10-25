@@ -45,6 +45,7 @@ class Video extends FFMpeg
 
     /**
      * @param  int|float|string  $timecode  in seconds (SS.xxx) or formatted (HH:MM:SS.xx)
+     * @param  bool  $upscale  Whether the frame can be larger than the source.
      * @param  string[]  $filters  Additional ffmpeg filters
      */
     public function frame(
@@ -53,13 +54,14 @@ class Video extends FFMpeg
         int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,
+        bool $upscale = true,
         array $filters = []
     ): string {
 
         $filters = implode(',', [
             ...$filters,
             $this->sdrFilter($this->videoStream($input)),
-            $this->scaleFilter($width, $height),
+            $this->scaleFilter($width, $height, $upscale),
         ]);
 
         return $this->ffmpeg([
@@ -75,6 +77,7 @@ class Video extends FFMpeg
      * Extract a representative thumbnail using FFmpeg's thumbnail filter.
      *
      * @param  int  $frames  Number of frames to analyze per batch
+     * @param  bool  $upscale  Whether the thumbnail can be larger than the source.
      * @param  string[]  $filters  Additional ffmpeg filters
      */
     public function thumbnail(
@@ -84,6 +87,7 @@ class Video extends FFMpeg
         int|float|string $timecode = '00:00:00',
         ?int $width = null,
         ?int $height = null,
+        bool $upscale = true,
         array $filters = [],
     ): string {
         return $this->frame(
@@ -92,6 +96,7 @@ class Video extends FFMpeg
             timecode: $timecode,
             width: $width,
             height: $height,
+            upscale: $upscale,
             filters: [
                 "thumbnail={$frames}",
                 ...$filters,
@@ -111,6 +116,7 @@ class Video extends FFMpeg
      * @param  string  $output  The absolute path where the output MP4 should be saved.
      * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
+     * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
@@ -122,6 +128,7 @@ class Video extends FFMpeg
         string $output,
         ?int $width = null,
         ?int $height = null,
+        bool $upscale = true,
         ?int $fps = null,
         int $crf = 23,
         string $preset = 'slow'
@@ -137,7 +144,7 @@ class Video extends FFMpeg
 
         $audio = $streams->defaultAudio();
 
-        $dimension = $video->dimension()->scale($width, $height);
+        $dimension = $video->dimension()->scale($width, $height, $upscale);
 
         $rendition = MediaServiceProvider::getVideoRenditions()
             ->getBestSupportedBy($dimension)
@@ -146,7 +153,7 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->sdrFilter($video),
-            $this->scaleFilter($width, $height, even: true),
+            $this->scaleFilter($width, $height, $upscale, even: true),
             $this->fpsFilter($fps),
         ]);
 
@@ -178,6 +185,7 @@ class Video extends FFMpeg
      * @param  string  $output  The absolute path for the output .webm file.
      * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
+     * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Target FPS (capped at source rate).
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
@@ -192,6 +200,7 @@ class Video extends FFMpeg
         string $output,
         ?int $width = null,
         ?int $height = null,
+        bool $upscale = true,
         ?int $fps = null,
         int $crf = 32,
         string $deadline = 'good',
@@ -202,7 +211,7 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->sdrFilter($stream),
-            $this->scaleFilter($width, $height),
+            $this->scaleFilter($width, $height, $upscale),
             $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
         ]);
 
@@ -468,22 +477,27 @@ class Video extends FFMpeg
 
     /**
      * Fit the video inside the given width and/or height, keeping its aspect ratio.
-     * The video is upscaled when the given size is larger than the source.
      *
+     * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  bool  $even  Round the dimensions to even numbers, as required by libx264 for 4:2:0 video (e.g. for odd sized GIFs).
      */
     protected function scaleFilter(
         ?int $width = null,
         ?int $height = null,
+        bool $upscale = true,
         bool $even = false,
     ): string {
         if (! $width && ! $height && ! $even) {
             return 'null';
         }
 
+        // Without upscaling, the box is clamped to the source size
+        $boxWidth = $width && ! $upscale ? "min({$width}\\,iw)" : $width;
+        $boxHeight = $height && ! $upscale ? "min({$height}\\,ih)" : $height;
+
         return 'scale='.implode(':', [
-            'w='.($width ?? ($height ? -1 : 'iw')),
-            'h='.($height ?? ($width ? -1 : 'ih')),
+            'w='.($boxWidth ?? ($height ? -1 : 'iw')),
+            'h='.($boxHeight ?? ($width ? -1 : 'ih')),
             'force_original_aspect_ratio=decrease',
             'force_divisible_by='.($even ? 2 : 1),
             'flags=lanczos',

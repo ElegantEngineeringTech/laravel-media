@@ -77,7 +77,8 @@ class MediaThumbnailConverter extends MediaConverter
             frames: $this->frames,
             timecode: $this->getTimecode($media, $parent),
             width: $this->width,
-            height: $this->height
+            height: $this->height,
+            upscale: false
         );
 
         return $media->addConversion(
