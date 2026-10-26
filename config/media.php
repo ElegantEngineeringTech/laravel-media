@@ -95,15 +95,17 @@ return [
 
     'videos' => [
         'renditions' => [
-            ['size' => 240, 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '128k'],
-            ['size' => 360, 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k'],
-            ['size' => 480, 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '128k'],
+            ['size' => 240, 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '128k', 'fps' => 30],
+            ['size' => 360, 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k', 'fps' => 30],
+            ['size' => 480, 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '128k', 'fps' => 30],
             ['size' => 720, 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '128k'],
             ['size' => 1080, 'maxrate' => '5350k', 'bufsize' => '7500k', 'audioBitrate' => '128k'],
             ['size' => 1440, 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '128k'],
             ['size' => 2160, 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '128k'],
         ],
-        'hls_renditions' => [240, 360, 480, 720, 1080, 1440, 2160],
+        'hls' => [
+            'renditions' => [360, 480, 720, 1080, 1440, 2160],
+        ],
     ],
 
     /**

@@ -5,12 +5,38 @@ declare(strict_types=1);
 namespace Elegantly\Media\Helpers;
 
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 /**
  * @extends Collection<int, VideoRendition>
  */
 class VideoRenditionCollection extends Collection
 {
+    /**
+     * @param  int[]  $values
+     */
+    public function onlySizes(array $values, bool $strict = false): static
+    {
+        $filtered = $this->whereIn('size', $values)->values();
+
+        if ($strict) {
+            $sizes = array_column($this->all(), 'size');
+
+            $missing = array_diff($values, $sizes);
+
+            if ($missing) {
+                throw new InvalidArgumentException(sprintf(
+                    'Unknown video rendition %s %s. Available sizes: %s.',
+                    count($missing) > 1 ? 'sizes' : 'size',
+                    implode(', ', $missing),
+                    implode(', ', array_unique($sizes)),
+                ));
+            }
+        }
+
+        return $filtered;
+    }
+
     /**
      * @return Collection<int, string>
      */
@@ -64,6 +90,15 @@ class VideoRenditionCollection extends Collection
             ...$rendition->toArray(),
             'audioBitrate' => $value,
         ]));
+    }
+
+    public function setMaxFps(?int $value): static
+    {
+        if ($value === null) {
+            return $this;
+        }
+
+        return $this->map(fn ($rendition) => $rendition->setMaxFps($value));
     }
 
     public function setMaxAudioBitrate(null|string|float|int|Bitrate $value): static

@@ -159,12 +159,13 @@ class Video extends FFMpeg
         $rendition = MediaServiceProvider::getVideoRenditions()
             ->getBestSupportedBy($dimension)
             ->setMaxBitrate($video->bitrate())
-            ->setMaxAudioBitrate($audio?->bitrate());
+            ->setMaxAudioBitrate($audio?->bitrate())
+            ->setMaxFps($fps);
 
         $filters = implode(',', [
             $this->sdrFilter($video),
             $this->scaleFilter($width, $height, $upscale, even: true),
-            $this->fpsFilter($fps),
+            $this->fpsFilter($rendition->fps),
         ]);
 
         return $this->ffmpeg([
@@ -275,8 +276,8 @@ class Video extends FFMpeg
      * @param  string  $preset  The x264 compression speed preset.
      * @param  VideoRenditionCollection|null  $renditions  The renditions to generate, among those the source supports.
      *                                                     Their maxrate and audio bitrate are capped to the source bitrates.
-     * @param  int  $startingSize  Size of the rendition listed first in the master playlist (e.g. 720 for 720p).
-     *                             Apple players start playback on it, so a mid-quality one gives a fast startup.
+     * @param  int  $startingRendition  Size of the rendition listed first in the master playlist (e.g. 720 for 720p).
+     *                                  Apple players start playback on it, so a mid-quality one gives a fast startup.
      * @param  int|float  $keyframeInterval  Maximum time between keyframes in seconds (Apple recommends 2).
      *                                       Shorter intervals make seeking faster at a small bitrate cost.
      *                                       Keyframes always land on segment boundaries.
@@ -293,13 +294,12 @@ class Video extends FFMpeg
         int $crf = 23,
         string $preset = 'slow',
         ?VideoRenditionCollection $renditions = null,
-        int $startingSize = 720,
+        int $startingRendition = 720,
         int|float $keyframeInterval = 2,
         bool $stripMetadata = true,
     ): false|string {
-        $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
-
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
+        $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
 
         $streams = $this->metadata($input)->streams();
 
@@ -321,7 +321,8 @@ class Video extends FFMpeg
 
         $renditions = $renditions
             ->setMaxBitrate($videoStream->bitrate())
-            ->setMaxAudioBitrate($audioStream?->bitrate());
+            ->setMaxAudioBitrate($audioStream?->bitrate())
+            ->setMaxFps($fps);
 
         // Renditions sharing the same audio bitrate share a single audio rendition.
         // Without audio, the list is empty so no audio rendition is mapped nor listed.
@@ -330,7 +331,7 @@ class Video extends FFMpeg
         $audioGroup = fn (string $audioBitrate) => "audio_{$audioBitrate}";
 
         // Apple players start playback on the first variant of the master playlist.
-        $startingRenditionKey = $renditions->getClosestToKey($startingSize) ?? 0;
+        $startingRenditionKey = $renditions->getClosestToKey($startingRendition) ?? 0;
 
         // Keyframes at most every $keyframeInterval seconds for faster seeking,
         // always landing on segment boundaries so renditions stay aligned.
@@ -362,8 +363,6 @@ class Video extends FFMpeg
             );
         }
 
-        $fpsFilter = $this->fpsFilter($fps);
-
         $splitLabels = [];
         $filters = [];
         $variantStreamMap = [];
@@ -380,6 +379,8 @@ class Video extends FFMpeg
                 height: $renditionDimension->height,
                 even: true
             );
+
+            $fpsFilter = $this->fpsFilter($rendition->fps);
 
             $splitLabels[] = "[v{$index}]";
             $filters[] = "[v{$index}]{$scaleFilter},{$fpsFilter}[v{$index}out]";

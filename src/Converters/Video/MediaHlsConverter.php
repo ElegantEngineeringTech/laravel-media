@@ -8,6 +8,7 @@ use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -16,14 +17,18 @@ use Illuminate\Support\Str;
 
 class MediaHlsConverter extends MediaConverter
 {
+    /**
+     * @param  null|array<array-key, int>|VideoRenditionCollection  $renditions
+     */
     public function __construct(
         Media $media,
         public ?int $fps = null,
-        public ?VideoRenditionCollection $renditions = null,
+        public null|array|VideoRenditionCollection $renditions = null,
+        public int $startingRendition = 720,
         public int $segmentLength = 6,
+        public int $crf = 23,
         public string $preset = 'slow',
         public string $playlist = 'master.m3u8',
-        public int $startingSize = 720,
     ) {
         parent::__construct($media);
     }
@@ -33,6 +38,15 @@ class MediaHlsConverter extends MediaConverter
         $source = $parent ?? $media;
 
         return $source->type === MediaType::Video;
+    }
+
+    public function getRenditions(): ?VideoRenditionCollection
+    {
+        if (is_array($this->renditions)) {
+            return MediaServiceProvider::getVideoHlsRenditions($this->renditions);
+        }
+
+        return $this->renditions;
     }
 
     public function convert(
@@ -60,9 +74,10 @@ class MediaHlsConverter extends MediaConverter
             playlist: $this->playlist,
             fps: $this->fps,
             segmentLength: $this->segmentLength,
+            crf: $this->crf,
             preset: $this->preset,
-            renditions: $this->renditions,
-            startingSize: $this->startingSize,
+            renditions: $this->getRenditions(),
+            startingRendition: $this->startingRendition,
         );
 
         if ($result === false) {

@@ -7,11 +7,16 @@ namespace Elegantly\Media\Helpers;
 use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * @implements Arrayable<string, int|Bitrate>
+ * @implements Arrayable<string, null|int|Bitrate>
  */
 class VideoRendition implements Arrayable
 {
     public readonly int $size;
+
+    /**
+     * The frame rate cap, null to keep the source frame rate.
+     */
+    public readonly ?int $fps;
 
     /**
      * The bitrate ceiling of the capped CRF encode.
@@ -26,11 +31,12 @@ class VideoRendition implements Arrayable
     public readonly Bitrate $audioBitrate;
 
     /**
-     * @param  array{ size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
+     * @param  array{ size: int, fps?: ?int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}  $data
      */
     final public function __construct(array $data)
     {
         $this->size = $data['size'];
+        $this->fps = $data['fps'] ?? null;
         $this->maxrate = Bitrate::parse($data['maxrate']);
         $this->bufsize = Bitrate::parse($data['bufsize']);
         $this->audioBitrate = Bitrate::parse($data['audioBitrate']);
@@ -71,6 +77,18 @@ class VideoRendition implements Arrayable
         ]);
     }
 
+    public function setMaxFps(?int $value): static
+    {
+        if ($value === null) {
+            return new static($this->toArray());
+        }
+
+        return new static([
+            ...$this->toArray(),
+            'fps' => $this->fps === null ? $value : min($this->fps, $value),
+        ]);
+    }
+
     public function setMaxAudioBitrate(null|string|float|int|Bitrate $value): static
     {
         $value = Bitrate::parse($value);
@@ -87,12 +105,13 @@ class VideoRendition implements Arrayable
     }
 
     /**
-     * @return array{ size: int, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
+     * @return array{ size: int, fps: ?int, maxrate: Bitrate, bufsize: Bitrate, audioBitrate: Bitrate}
      */
     public function toArray(): array
     {
         return [
             'size' => $this->size,
+            'fps' => $this->fps,
             'maxrate' => $this->maxrate,
             'bufsize' => $this->bufsize,
             'audioBitrate' => $this->audioBitrate,

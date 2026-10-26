@@ -11,6 +11,7 @@ use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\VideoRendition;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\Jobs\DeleteMediaFileJob;
+use LogicException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -62,41 +63,66 @@ class MediaServiceProvider extends PackageServiceProvider
         return config('media.delete_media_file_job');
     }
 
-    public static function getVideoRenditions(): VideoRenditionCollection
+    /**
+     * @param  null|int[]  $only
+     */
+    public static function getVideoRenditions(?array $only = null): VideoRenditionCollection
     {
-        return new VideoRenditionCollection(array_map(
-            fn ($value) => new VideoRendition($value),// @phpstan-ignore-line
-            config('media.videos.renditions')// @phpstan-ignore-line
+        /**
+         * @var array{size: int, fps?: ?int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}[]
+         */
+        $values = config('media.videos.renditions');
+
+        $renditions = new VideoRenditionCollection(array_map(
+            fn ($value) => new VideoRendition($value),
+            $values
         ));
-    }
 
-    public static function getVideoHlsRenditions(): VideoRenditionCollection
-    {
-        $renditions = static::getVideoRenditions();
-
-        /**
-         * @var array<int, int|array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
-         */
-        $values = config('media.videos.hls_renditions');
-
-        /**
-         * @var array<int, array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
-         */
-        $items = [];
-
-        foreach ($values as $value) {
-
-            if (is_array($value)) {
-                $items[] = $value;
-            } elseif ($rendition = $renditions->firstWhere('size', $value)) {
-                $items[] = $rendition->toArray();
-            }
-
+        if ($only !== null) {
+            $renditions = $renditions->onlySizes(
+                values: $only,
+                strict: true
+            );
         }
 
-        return new VideoRenditionCollection(array_map(
-            fn ($value) => new VideoRendition($value),
-            $items
+        return $renditions;
+    }
+
+    /**
+     * @param  null|int[]  $only
+     */
+    public static function getVideoHlsRenditions(?array $only = null): VideoRenditionCollection
+    {
+        /**
+         * @var array<int, int|array{size: int, fps?: ?int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
+         */
+        $values = config('media.videos.hls.renditions');
+
+        $renditions = static::getVideoRenditions();
+
+        $renditions = new VideoRenditionCollection(array_map(
+            function ($value) use ($renditions) {
+
+                if (is_array($value)) {
+                    return new VideoRendition($value);
+                }
+
+                if ($rendition = $renditions->firstWhere('size', $value)) {
+                    return $rendition;
+                }
+
+                throw new LogicException("The HLS rendition size {$value} in media.videos.hls.renditions is not defined in media.videos.renditions.");
+            },
+            $values
         ));
+
+        if ($only !== null) {
+            $renditions = $renditions->onlySizes(
+                values: $only,
+                strict: true
+            );
+        }
+
+        return $renditions;
     }
 }
