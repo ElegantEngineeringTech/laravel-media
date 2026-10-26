@@ -44,14 +44,17 @@ class VideoRenditionCollection extends Collection
             ->values();
     }
 
-    public function getBestSupportedBy(Dimension $source): ?VideoRendition
+    /**
+     * The rendition whose pixel count is the closest to the dimension, as bitrates scale with the pixel count.
+     * Pixel counts are compared on a log scale, like the renditions sizes grow geometrically.
+     */
+    public function getClosestBy(Dimension $dimension): ?VideoRendition
     {
-        return $this->sortBy('size')->supportedBy($source)->last();
-    }
+        $pixels = max(1, $dimension->pixels());
 
-    public function getClosestTo(int $size): ?VideoRendition
-    {
-        return $this->sortBy(fn ($rendition) => abs($rendition->size - $size))->first();
+        return $this
+            ->sortBy(fn ($rendition) => abs(log($pixels / $rendition->dimension()->pixels())))
+            ->first();
     }
 
     public function getClosestToKey(int $size): ?int

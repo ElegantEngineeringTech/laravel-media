@@ -32,6 +32,11 @@ class Dimension implements Arrayable
         return $this->height > $this->width;
     }
 
+    public function pixels(): int
+    {
+        return $this->width * $this->height;
+    }
+
     public function flip(): static
     {
         return new static($this->height, $this->width);
