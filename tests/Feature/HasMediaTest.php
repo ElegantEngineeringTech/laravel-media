@@ -137,6 +137,7 @@ it('adds a new media to the specified collection group', function () {
 
 it('deletes old media when adding to single collection', function () {
     Storage::fake('media');
+    Queue::fake();
     $model = new TestCollections;
     $model->save();
 
@@ -156,7 +157,10 @@ it('deletes old media when adding to single collection', function () {
         collectionName: 'single',
     );
 
-    Storage::disk('media')->assertMissing($firstMedia->path);
+    Queue::assertPushed(
+        DeleteMediaFileJob::class,
+        fn ($job) => $job->disk === $firstMedia->disk && $job->path === $firstMedia->path
+    );
     Storage::disk('media')->assertExists($secondMedia->path);
 
     expect($model->media)->toHaveLength(1);

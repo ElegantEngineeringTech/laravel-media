@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Elegantly\Media\Models\Media;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 it('deletes the files associated with the MediaConversion', function () {
@@ -40,6 +42,7 @@ it('On MediaConversion deletion, it deletes the files', function () {
     ]);
 
     Storage::fake('media');
+    Queue::fake();
 
     $media->save();
 
@@ -55,6 +58,9 @@ it('On MediaConversion deletion, it deletes the files', function () {
 
     $conversion->delete();
 
-    Storage::disk('media')->assertMissing($conversion->path);
+    Queue::assertPushed(
+        DeleteMediaFileJob::class,
+        fn ($job) => $job->disk === $conversion->disk && $job->path === $conversion->path
+    );
 
 });

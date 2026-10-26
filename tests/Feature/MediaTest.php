@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Elegantly\Media\Database\Factories\MediaFactory;
+use Elegantly\Media\Jobs\DeleteMediaFileJob;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -10,6 +11,7 @@ use Elegantly\Media\Tests\Models\TestConversions;
 use Elegantly\Media\UrlFormatters\CloudflareImageUrlFormatter;
 use Elegantly\Media\UrlFormatters\CloudflareVideoUrlFormatter;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 
 it('stores an uploaded image', function () {
@@ -222,6 +224,7 @@ it('deletes old conversion files when adding the same conversion', function () {
     $media->save();
 
     Storage::fake('media');
+    Queue::fake();
 
     $file = UploadedFile::fake()->image('foo.jpg', width: 16, height: 9);
 
@@ -244,7 +247,11 @@ it('deletes old conversion files when adding the same conversion', function () {
     $newPath = $newConversion->path;
 
     Storage::disk('media')->assertExists($newPath);
-    Storage::disk('media')->assertMissing($path);
+
+    Queue::assertPushed(
+        DeleteMediaFileJob::class,
+        fn ($job) => $job->disk === 'media' && $job->path === $path
+    );
 
     expect($media->conversions)->toHaveLength(1);
 
