@@ -452,11 +452,14 @@ class Video extends FFMpeg
             '-hls_time', (string) $segmentLength,
             '-hls_playlist_type', 'vod',
             '-hls_flags', 'independent_segments',
+            '-hls_segment_type', 'fmp4',
+            // Written next to the media playlists
+            '-hls_fmp4_init_filename', '%v_init.mp4',
             '-start_number', '0',
             '-master_pl_name', $playlist,
             '-var_stream_map', implode(' ', $variantStreamMap),
             ...($stripMetadata ? ['-map_metadata', '-1'] : []),
-            '-hls_segment_filename', "{$output}/%v_segment_%05d.ts",
+            '-hls_segment_filename', "{$output}/%v_segment_%05d.m4s",
             "{$output}/%v_playlist.m3u8",
         ]);
 

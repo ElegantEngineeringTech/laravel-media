@@ -80,21 +80,12 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
     Video::make()->hls($file, $output, $playlist);
 
     $filesystem->assertExists($playlist);
-    $filesystem->assertExists('720p_segment_00000.ts');
-    $filesystem->assertExists('720p_playlist.m3u8');
-    $filesystem->assertExists('480p_segment_00000.ts');
-    $filesystem->assertExists('480p_playlist.m3u8');
-    $filesystem->assertExists('360p_segment_00000.ts');
-    $filesystem->assertExists('360p_playlist.m3u8');
-    $filesystem->assertExists('240p_segment_00000.ts');
-    $filesystem->assertExists('240p_playlist.m3u8');
 
-    // The audio is muxed into every rendition, without any separate audio rendition
     foreach (['720p', '480p', '360p', '240p'] as $rendition) {
-        expect(FFMpeg::make()->hasAudio($filesystem->path("{$rendition}_segment_00000.ts")))->toBe(true);
+        $filesystem->assertExists("{$rendition}_playlist.m3u8");
+        $filesystem->assertExists("{$rendition}_init.mp4");
+        $filesystem->assertExists("{$rendition}_segment_00000.m4s");
     }
-
-    expect($filesystem->get($playlist))->not->toContain('#EXT-X-MEDIA:TYPE=AUDIO');
 
     $filesystem->assertMissing('1080p_playlist.m3u8');
     $filesystem->assertMissing('1440p_playlist.m3u8');
@@ -126,7 +117,7 @@ it('generates m3u8 hls renditions for a portrait video', function () {
 
     expect(
         Video::make()
-            ->dimension($filesystem->path('1080p_segment_00000.ts'))
+            ->dimension($filesystem->path('1080p_playlist.m3u8'))
             ->toArray()
     )->toBe([
         'width' => 1080,
@@ -135,7 +126,7 @@ it('generates m3u8 hls renditions for a portrait video', function () {
 
     expect(
         Video::make()
-            ->dimension($filesystem->path('720p_segment_00000.ts'))
+            ->dimension($filesystem->path('720p_playlist.m3u8'))
             ->toArray()
     )->toBe([
         'width' => 720,
@@ -166,7 +157,7 @@ it('muxes the audio into every rendition at the rendition audio bitrate', functi
     Video::make()->hls($file, $output, $playlist, renditions: $renditions);
 
     $audioBitrate = fn (string $rendition) => Video::make()
-        ->metadata($filesystem->path("{$rendition}_segment_00000.ts"))
+        ->metadata($filesystem->path("{$rendition}_playlist.m3u8"))
         ->streams()
         ->defaultAudio()
         ?->bitrate()

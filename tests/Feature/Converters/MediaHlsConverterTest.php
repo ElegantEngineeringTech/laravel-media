@@ -29,7 +29,7 @@ it('converts an mp4 video into a hls playlist', function () {
     expect($conversion->mime_type)->toBe('application/vnd.apple.mpegurl');
     expect($conversion->type)->toBe(MediaType::Video);
 
-    // A playlist and a segment per rendition, the audio being muxed into each of them
-    expect($conversion->additional_files)->toHaveLength(4 * 2);
+    // A playlist, an initialization file and a segment per rendition, the audio being muxed into each of them
+    expect($conversion->additional_files)->toHaveLength(4 * 3);
 
 });
