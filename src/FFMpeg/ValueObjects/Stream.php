@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\FFMpeg\ValueObjects;
 
 use Elegantly\Media\FFMpeg\ValueObjects\Concerns\InteractsWithData;
+use Elegantly\Media\Helpers\AspectRatio;
 use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\Dimension;
 
@@ -139,9 +140,43 @@ class Stream
         return $rotation % 90 === 0 && $rotation % 180 !== 0;
     }
 
+    /**
+     * The width to height ratio of a pixel, from ffprobe "width:height" format (e.g. "32:27").
+     * 1 when the pixels are square or the ratio is unknown (e.g. "0:1" or "N/A").
+     */
+    public function sampleAspectRatio(): AspectRatio
+    {
+        $value = $this->getString('sample_aspect_ratio') ?? '';
+
+        if (! preg_match('/^(?<width>\d+):(?<height>\d+)$/', $value, $matches)) {
+            return new AspectRatio(1);
+        }
+
+        $width = (int) $matches['width'];
+        $height = (int) $matches['height'];
+
+        if ($width === 0 || $height === 0) {
+            return new AspectRatio(1);
+        }
+
+        return new AspectRatio($width / $height);
+    }
+
+    /**
+     * The display dimension, with square pixels.
+     *
+     * Anamorphic videos (non square pixels) are widened rather than shrunk to keep their resolution,
+     * e.g. a 720x480 video with a 32:27 sample aspect ratio is displayed at 853x480.
+     */
     public function dimension(bool $rotate = true): Dimension
     {
-        $dimension = new Dimension($this->width(), $this->height());
+        $sar = $this->sampleAspectRatio();
+
+        // A pixel is $sar times wider than tall
+        $dimension = new Dimension(
+            $sar->value > 1 ? $sar->getWidth($this->width()) : $this->width(),
+            $sar->value < 1 ? $sar->getHeight($this->height()) : $this->height(),
+        );
 
         if ($rotate && $this->isFlipped()) {
             return $dimension->flip();

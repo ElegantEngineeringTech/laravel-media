@@ -12,13 +12,19 @@ class AspectRatio
         //
     }
 
+    /**
+     * Truncated like ffmpeg, so a display size matches the size of the scaled video.
+     */
     public function getWidth(int $height): int
     {
-        return (int) round($height * $this->value);
+        return (int) ($height * $this->value);
     }
 
+    /**
+     * Truncated like ffmpeg, so a display size matches the size of the scaled video.
+     */
     public function getHeight(int $width): int
     {
-        return (int) round($width / $this->value);
+        return (int) ($width / $this->value);
     }
 }

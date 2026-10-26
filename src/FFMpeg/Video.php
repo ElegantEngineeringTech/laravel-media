@@ -501,7 +501,12 @@ class Video extends FFMpeg
     /**
      * Fit the video inside the given width and/or height, keeping its aspect ratio.
      *
-     * @param  bool  $upscale  Whether the video can be larger than the source.
+     * The output always has square pixels: anamorphic videos (e.g. 720x480 DVDs displayed at 16:9) are scaled
+     * to their display size, widening them rather than losing resolution (720x480 becomes 853x480),
+     * so players and HLS RESOLUTION attributes see the real size.
+     * Without a width nor a height, the video is only scaled when its pixels are not square.
+     *
+     * @param  bool  $upscale  Whether the video can be larger than the source display size.
      * @param  bool  $even  Round the dimensions to even numbers, as required by libx264 for 4:2:0 video (e.g. for odd sized GIFs).
      */
     protected function scaleFilter(
@@ -510,19 +515,20 @@ class Video extends FFMpeg
         bool $upscale = true,
         bool $even = false,
     ): string {
-        if (! $width && ! $height && ! $even) {
-            return 'null';
-        }
+        // The display size, see Stream::dimension()
+        $displayWidth = 'max(iw*sar\,iw)';
+        $displayHeight = 'max(ih/sar\,ih)';
 
-        // Without upscaling, the box is clamped to the source size
-        $boxWidth = $width && ! $upscale ? "min({$width}\\,iw)" : $width;
-        $boxHeight = $height && ! $upscale ? "min({$height}\\,ih)" : $height;
+        // Without upscaling, the box is clamped to the display size
+        $boxWidth = $width && ! $upscale ? "min({$width}\\,{$displayWidth})" : $width;
+        $boxHeight = $height && ! $upscale ? "min({$height}\\,{$displayHeight})" : $height;
 
         return 'scale='.implode(':', [
-            'w='.($boxWidth ?? ($height ? -1 : 'iw')),
-            'h='.($boxHeight ?? ($width ? -1 : 'ih')),
+            'w='.($boxWidth ?? ($height ? -1 : $displayWidth)),
+            'h='.($boxHeight ?? ($width ? -1 : $displayHeight)),
             'force_original_aspect_ratio=decrease',
             'force_divisible_by='.($even ? 2 : 1),
+            'reset_sar=1',
             'flags=lanczos',
         ]);
     }
