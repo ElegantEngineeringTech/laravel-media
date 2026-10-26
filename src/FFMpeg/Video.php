@@ -123,7 +123,7 @@ class Video extends FFMpeg
      * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
-     * @param  int|null  $fps  Target FPS (capped at the source and rendition frame rates).
+     * @param  int|null  $fps  Maximum frame rate, never raising the source frame rate.
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
@@ -159,12 +159,11 @@ class Video extends FFMpeg
         $rendition = MediaServiceProvider::getVideoRenditions()
             ->getBestSupportedBy($dimension)
             ->setMaxBitrate($video->bitrate())
-            ->setMaxAudioBitrate($audio?->bitrate())
-            ->setMaxFps($fps);
+            ->setMaxAudioBitrate($audio?->bitrate());
 
         $filters = implode(',', [
             $this->sdrFilter($video),
-            $this->fpsFilter($rendition->fps),
+            $this->fpsFilter($fps),
             $this->scaleFilter($width, $height, $upscale, even: true),
         ]);
 
@@ -177,7 +176,6 @@ class Video extends FFMpeg
             '-maxrate', $rendition->maxrate->format(),
             '-bufsize', $rendition->bufsize->format(),
             '-preset', $preset,
-            '-pix_fmt', 'yuv420p',
             '-c:a', 'aac',
             '-b:a', $rendition->audioBitrate->format(),
             '-ac', '2', // Stereo
@@ -200,7 +198,7 @@ class Video extends FFMpeg
      * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
-     * @param  int|null  $fps  Target FPS (capped at the source and rendition frame rates).
+     * @param  int|null  $fps  Maximum frame rate, never raising the source frame rate.
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
@@ -240,12 +238,11 @@ class Video extends FFMpeg
         $rendition = MediaServiceProvider::getVideoRenditions()
             ->getBestSupportedBy($dimension)
             ->setMaxBitrate($video->bitrate())
-            ->setMaxAudioBitrate($audio?->bitrate())
-            ->setMaxFps($fps);
+            ->setMaxAudioBitrate($audio?->bitrate());
 
         $filters = implode(',', [
             $this->sdrFilter($video),
-            $this->fpsFilter($rendition->fps),
+            $this->fpsFilter($fps),
             $this->scaleFilter($width, $height, $upscale),
         ]);
 
@@ -256,7 +253,6 @@ class Video extends FFMpeg
             '-crf', (string) $crf,
             '-b:v', $rendition->maxrate->format(),
             '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
-            '-pix_fmt', 'yuv420p',
             '-row-mt', '1',
             '-deadline', $deadline,
             '-cpu-used', (string) $cpuUsed,
@@ -287,7 +283,8 @@ class Video extends FFMpeg
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The directory where HLS playlists and segments should be written.
      * @param  string  $playlist  The master playlist filename.
-     * @param  int|null  $fps  Target FPS (capped at the source and rendition frame rates).
+     * @param  int|null  $fps  Maximum frame rate of every rendition, never raising the source frame rate.
+     *                         Renditions share the same frame rate so their keyframes, and segments, stay aligned.
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the quality targeted by every rendition.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for streaming.
@@ -343,8 +340,7 @@ class Video extends FFMpeg
 
         $renditions = $renditions
             ->setMaxBitrate($videoStream->bitrate())
-            ->setMaxAudioBitrate($audioStream?->bitrate())
-            ->setMaxFps($fps);
+            ->setMaxAudioBitrate($audioStream?->bitrate());
 
         // Apple players start playback on the first variant of the master playlist.
         $startingRenditionKey = $renditions->getClosestToKey($startingRendition) ?? 0;
@@ -357,7 +353,6 @@ class Video extends FFMpeg
             '-c:v', 'libx264',
             '-preset', $preset,
             '-crf', (string) $crf,
-            '-pix_fmt', 'yuv420p',
             '-sc_threshold', '0',
             '-force_key_frames', "expr:gte(t,n_forced*{$segmentLength}/{$keyframesPerSegment})",
             '-forced-idr', '1',
@@ -398,10 +393,8 @@ class Video extends FFMpeg
                 even: true
             );
 
-            $fpsFilter = $this->fpsFilter($rendition->fps);
-
             $splitLabels[] = "[v{$index}]";
-            $filters[] = "[v{$index}]{$fpsFilter},{$scaleFilter}[v{$index}out]";
+            $filters[] = "[v{$index}]{$scaleFilter}[v{$index}out]";
 
             array_push(
                 $arguments,
@@ -428,10 +421,12 @@ class Video extends FFMpeg
 
         }
 
-        // The source is converted to SDR once, before being split into renditions
+        // The source is converted to SDR and to the frame rate once, before being split into renditions.
+        // Every rendition then has the same frames, so the forced keyframes, and segments, are aligned.
         $filterComplex = "[0:{$videoStream->index()}]".implode(';', [
             implode(',', [
                 $this->sdrFilter($videoStream),
+                $this->fpsFilter($fps),
                 'split='.count($splitLabels).implode('', $splitLabels),
             ]),
             ...$filters,

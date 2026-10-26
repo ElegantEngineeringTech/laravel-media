@@ -69,7 +69,7 @@ class MediaServiceProvider extends PackageServiceProvider
     public static function getVideoRenditions(?array $only = null): VideoRenditionCollection
     {
         /**
-         * @var array{size: int, fps?: ?int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}[]
+         * @var array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}[]
          */
         $values = config('media.videos.renditions');
 
@@ -94,7 +94,7 @@ class MediaServiceProvider extends PackageServiceProvider
     public static function getVideoHlsRenditions(?array $only = null): VideoRenditionCollection
     {
         /**
-         * @var array<int, int|array{size: int, fps?: ?int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
+         * @var array<int, int|array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}>
          */
         $values = config('media.videos.hls.renditions');
 

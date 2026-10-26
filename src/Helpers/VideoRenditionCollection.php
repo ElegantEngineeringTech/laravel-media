@@ -73,11 +73,6 @@ class VideoRenditionCollection extends Collection
         return $this->map(fn ($rendition) => $rendition->setAudioBitrate($value));
     }
 
-    public function setMaxFps(?int $value): static
-    {
-        return $this->map(fn ($rendition) => $rendition->setMaxFps($value));
-    }
-
     public function setMaxAudioBitrate(null|string|float|int|Bitrate $value): static
     {
         return $this->map(fn ($rendition) => $rendition->setMaxAudioBitrate($value));
