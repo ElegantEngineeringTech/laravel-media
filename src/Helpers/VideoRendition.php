@@ -67,7 +67,7 @@ class VideoRendition implements Arrayable
         $value = Bitrate::parse($value);
 
         if ($value === null || $value->isZero()) {
-            return new static($this->toArray());
+            return $this;
         }
 
         return new static([
@@ -80,7 +80,7 @@ class VideoRendition implements Arrayable
     public function setMaxFps(?int $value): static
     {
         if ($value === null) {
-            return new static($this->toArray());
+            return $this;
         }
 
         return new static([
@@ -89,19 +89,26 @@ class VideoRendition implements Arrayable
         ]);
     }
 
+    public function setAudioBitrate(string|float|int|Bitrate $value): static
+    {
+        return new static([
+            ...$this->toArray(),
+            'audioBitrate' => $value,
+        ]);
+    }
+
     public function setMaxAudioBitrate(null|string|float|int|Bitrate $value): static
     {
         $value = Bitrate::parse($value);
 
         if ($value === null || $value->isZero()) {
-            return new static($this->toArray());
+            return $this;
         }
 
         return new static([
             ...$this->toArray(),
             'audioBitrate' => $this->audioBitrate->max($value),
         ]);
-
     }
 
     /**

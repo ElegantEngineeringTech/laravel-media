@@ -75,44 +75,21 @@ class VideoRenditionCollection extends Collection
 
     public function setMaxBitrate(null|string|float|int|Bitrate $value): static
     {
-        $value = Bitrate::parse($value);
-
-        if ($value === null || $value->isZero()) {
-            return $this;
-        }
-
         return $this->map(fn ($rendition) => $rendition->setMaxBitrate($value));
     }
 
     public function setAudioBitrate(string|float|int|Bitrate $value): static
     {
-        return $this->map(fn ($rendition) => new VideoRendition([
-            ...$rendition->toArray(),
-            'audioBitrate' => $value,
-        ]));
+        return $this->map(fn ($rendition) => $rendition->setAudioBitrate($value));
     }
 
     public function setMaxFps(?int $value): static
     {
-        if ($value === null) {
-            return $this;
-        }
-
         return $this->map(fn ($rendition) => $rendition->setMaxFps($value));
     }
 
     public function setMaxAudioBitrate(null|string|float|int|Bitrate $value): static
     {
-        $value = Bitrate::parse($value);
-
-        if ($value === null || $value->isZero()) {
-            return $this;
-        }
-
-        return $this->map(fn ($rendition) => new VideoRendition([
-            ...$rendition->toArray(),
-            'audioBitrate' => $rendition->audioBitrate->max($value),
-        ]));
-
+        return $this->map(fn ($rendition) => $rendition->setMaxAudioBitrate($value));
     }
 }

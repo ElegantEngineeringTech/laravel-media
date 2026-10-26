@@ -123,7 +123,7 @@ class Video extends FFMpeg
      * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
-     * @param  int|null  $fps  Target FPS (capped at source rate).
+     * @param  int|null  $fps  Target FPS (capped at the source and rendition frame rates).
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
@@ -268,7 +268,7 @@ class Video extends FFMpeg
      * @param  string  $input  The absolute path to the source video file.
      * @param  string  $output  The directory where HLS playlists and segments should be written.
      * @param  string  $playlist  The master playlist filename.
-     * @param  int|null  $fps  Target FPS (capped at source rate).
+     * @param  int|null  $fps  Target FPS (capped at the source and rendition frame rates).
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the quality targeted by every rendition.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for streaming.
