@@ -94,15 +94,40 @@ return [
     ],
 
     'videos' => [
+        /**
+         * The bitrates of each video size, by codec.
+         * The video is encoded at a constant quality, the maxrate only caps the bitrate of complex scenes.
+         */
         'renditions' => [
-            ['size' => 240, 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '128k'],
-            ['size' => 360, 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k'],
-            ['size' => 480, 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '128k'],
-            ['size' => 720, 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '128k'],
-            ['size' => 1080, 'maxrate' => '5350k', 'bufsize' => '7500k', 'audioBitrate' => '128k'],
-            ['size' => 1440, 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '128k'],
-            ['size' => 2160, 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '128k'],
+            /**
+             * H.264/AAC, used by MP4 and HLS.
+             */
+            'mp4' => [
+                ['size' => 240, 'maxrate' => '642k', 'bufsize' => '900k', 'audioBitrate' => '128k'],
+                ['size' => 360, 'maxrate' => '856k', 'bufsize' => '1200k', 'audioBitrate' => '128k'],
+                ['size' => 480, 'maxrate' => '1498k', 'bufsize' => '2100k', 'audioBitrate' => '128k'],
+                ['size' => 720, 'maxrate' => '2996k', 'bufsize' => '4200k', 'audioBitrate' => '128k'],
+                ['size' => 1080, 'maxrate' => '5350k', 'bufsize' => '7500k', 'audioBitrate' => '128k'],
+                ['size' => 1440, 'maxrate' => '8560k', 'bufsize' => '12000k', 'audioBitrate' => '128k'],
+                ['size' => 2160, 'maxrate' => '26750k', 'bufsize' => '37500k', 'audioBitrate' => '128k'],
+            ],
+            /**
+             * VP9/Opus, used by WebM.
+             * VP9 reaches the quality of H.264 with ~40% fewer bits, and Opus the quality of AAC at lower bitrates.
+             */
+            'webm' => [
+                ['size' => 240, 'maxrate' => '385k', 'bufsize' => '578k', 'audioBitrate' => '96k'],
+                ['size' => 360, 'maxrate' => '514k', 'bufsize' => '771k', 'audioBitrate' => '96k'],
+                ['size' => 480, 'maxrate' => '899k', 'bufsize' => '1349k', 'audioBitrate' => '96k'],
+                ['size' => 720, 'maxrate' => '1798k', 'bufsize' => '2697k', 'audioBitrate' => '96k'],
+                ['size' => 1080, 'maxrate' => '3210k', 'bufsize' => '4815k', 'audioBitrate' => '96k'],
+                ['size' => 1440, 'maxrate' => '5136k', 'bufsize' => '7704k', 'audioBitrate' => '96k'],
+                ['size' => 2160, 'maxrate' => '16050k', 'bufsize' => '24075k', 'audioBitrate' => '96k'],
+            ],
         ],
+        /**
+         * The HLS renditions, among the mp4 sizes, or as rendition arrays.
+         */
         'hls' => [
             'renditions' => [240, 360, 480, 720, 1080, 1440, 2160],
         ],

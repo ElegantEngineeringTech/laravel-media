@@ -64,14 +64,19 @@ class MediaServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * @param  string  $codec  The key of the renditions in media.videos.renditions (e.g. 'mp4' or 'webm').
      * @param  null|int[]  $only
      */
-    public static function getVideoRenditions(?array $only = null): VideoRenditionCollection
+    public static function getVideoRenditions(string $codec = 'mp4', ?array $only = null): VideoRenditionCollection
     {
         /**
-         * @var array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}[]
+         * @var null|array{size: int, maxrate: int|float|string|Bitrate, bufsize: int|float|string|Bitrate, audioBitrate: int|float|string|Bitrate}[]
          */
-        $values = config('media.videos.renditions');
+        $values = config("media.videos.renditions.{$codec}");
+
+        if ($values === null) {
+            throw new LogicException("The video renditions media.videos.renditions.{$codec} are not defined.");
+        }
 
         $renditions = new VideoRenditionCollection(array_map(
             fn ($value) => new VideoRendition($value),
@@ -98,7 +103,7 @@ class MediaServiceProvider extends PackageServiceProvider
          */
         $values = config('media.videos.hls.renditions');
 
-        $renditions = static::getVideoRenditions();
+        $renditions = static::getVideoRenditions('mp4');
 
         $renditions = new VideoRenditionCollection(array_map(
             function ($value) use ($renditions) {
@@ -111,7 +116,7 @@ class MediaServiceProvider extends PackageServiceProvider
                     return $rendition;
                 }
 
-                throw new LogicException("The HLS rendition size {$value} in media.videos.hls.renditions is not defined in media.videos.renditions.");
+                throw new LogicException("The HLS rendition size {$value} in media.videos.hls.renditions is not defined in media.videos.renditions.mp4.");
             },
             $values
         ));

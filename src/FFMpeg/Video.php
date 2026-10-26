@@ -116,7 +116,7 @@ class Video extends FFMpeg
      * This method optimizes the video for web playback by applying a YUV420p pixel format and the +faststart flag.
      *
      * The video is encoded in capped CRF: x264 targets a constant quality, spending fewer bits on simple scenes,
-     * while complex ones are capped to the maxrate and bufsize of the video rendition of the same size (and to the source bitrate),
+     * while complex ones are capped to the maxrate and bufsize of the mp4 video rendition of the same size (and to the source bitrate),
      * so the file can be played progressively without buffering.
      *
      * @param  string  $input  The absolute path to the source video file.
@@ -157,7 +157,7 @@ class Video extends FFMpeg
 
         $dimension = $video->dimension()->scale($width, $height, $upscale);
 
-        $rendition = MediaServiceProvider::getVideoRenditions()
+        $rendition = MediaServiceProvider::getVideoRenditions('mp4')
             ->getBestSupportedBy($dimension)
             ?->setMaxBitrate($video->bitrate())
             ->setMaxAudioBitrate($audio?->bitrate());
@@ -195,7 +195,7 @@ class Video extends FFMpeg
      * Transcodes a video file to WebM (VP9/Opus) using FFmpeg.
      *
      * This method uses the libvpx-vp9 encoder in Constrained Quality mode: the crf sets the targeted quality,
-     * while the average bitrate is capped to the maxrate of the video rendition of the same size (and to the source bitrate).
+     * while the average bitrate is capped to the maxrate of the webm video rendition of the same size (and to the source bitrate).
      * It enables multi-threading and modern audio compression (Opus) for superior web performance.
      *
      * @param  string  $input  The absolute path to the source video file.
@@ -240,7 +240,7 @@ class Video extends FFMpeg
 
         $dimension = $video->dimension()->scale($width, $height, $upscale);
 
-        $rendition = MediaServiceProvider::getVideoRenditions()
+        $rendition = MediaServiceProvider::getVideoRenditions('webm')
             ->getBestSupportedBy($dimension)
             ?->setMaxBitrate($video->bitrate())
             ->setMaxAudioBitrate($audio?->bitrate());
