@@ -6,6 +6,7 @@ namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\FFMpeg\ValueObjects\Stream;
+use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\Dimension;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\MediaServiceProvider;
@@ -158,7 +159,7 @@ class Video extends FFMpeg
 
         $rendition = MediaServiceProvider::getVideoRenditions()
             ->getBestSupportedBy($dimension)
-            ->setMaxBitrate($video->bitrate())
+            ?->setMaxBitrate($video->bitrate())
             ->setMaxAudioBitrate($audio?->bitrate());
 
         $filters = implode(',', [
@@ -173,11 +174,15 @@ class Video extends FFMpeg
             '-c:v', 'libx264',
             '-crf', (string) $crf,
             '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
-            '-maxrate', $rendition->maxrate->format(),
-            '-bufsize', $rendition->bufsize->format(),
+            ...($rendition ? [
+                '-maxrate', $rendition->maxrate->format(),
+                '-bufsize', $rendition->bufsize->format(),
+                '-b:a', $rendition->audioBitrate->format(),
+            ] : [
+                '-b:a', '128k',
+            ]),
             '-preset', $preset,
             '-c:a', 'aac',
-            '-b:a', $rendition->audioBitrate->format(),
             '-ac', '2', // Stereo
             '-ar', '48000', // Standard rate for video
             '-movflags', '+faststart',
@@ -237,7 +242,7 @@ class Video extends FFMpeg
 
         $rendition = MediaServiceProvider::getVideoRenditions()
             ->getBestSupportedBy($dimension)
-            ->setMaxBitrate($video->bitrate())
+            ?->setMaxBitrate($video->bitrate())
             ->setMaxAudioBitrate($audio?->bitrate());
 
         $filters = implode(',', [
@@ -251,13 +256,18 @@ class Video extends FFMpeg
             '-vf', $filters,
             '-c:v', 'libvpx-vp9',
             '-crf', (string) $crf,
-            '-b:v', $rendition->maxrate->format(),
+            ...($rendition ? [
+                '-b:v', $rendition->maxrate->format(),
+                '-b:a', $rendition->audioBitrate->format(),
+            ] : [
+                '-b:v', '0',
+                '-b:a', '96k',
+            ]),
             '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
             '-row-mt', '1',
             '-deadline', $deadline,
             '-cpu-used', (string) $cpuUsed,
             '-c:a', 'libopus',
-            '-b:a', $rendition->audioBitrate->format(),
             '-ac', '2', // Stereo
             '-cues_to_front', '1', // Seek index at the start, for faster playback start and seeking
             ...($stripMetadata ? ['-map_metadata', '-1'] : []),

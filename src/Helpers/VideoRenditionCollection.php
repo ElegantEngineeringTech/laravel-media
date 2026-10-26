@@ -44,11 +44,9 @@ class VideoRenditionCollection extends Collection
             ->values();
     }
 
-    public function getBestSupportedBy(Dimension $source): VideoRendition
+    public function getBestSupportedBy(Dimension $source): ?VideoRendition
     {
-        $items = $this->sortBy('size');
-
-        return $items->supportedBy($source)->last() ?? $items->first();
+        return $this->sortBy('size')->supportedBy($source)->last();
     }
 
     public function getClosestTo(int $size): ?VideoRendition
