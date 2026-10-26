@@ -89,9 +89,12 @@ it('generates m3u8 hls renditions supported by the source resolution', function 
     $filesystem->assertExists('240p_segment_00000.ts');
     $filesystem->assertExists('240p_playlist.m3u8');
 
-    // A single audio rendition at the default 128k, capped to the source's 72.5 kb/s
-    $filesystem->assertExists('audio_72k_segment_00000.ts');
-    $filesystem->assertExists('audio_72k_playlist.m3u8');
+    // The audio is muxed into every rendition, without any separate audio rendition
+    foreach (['720p', '480p', '360p', '240p'] as $rendition) {
+        expect(FFMpeg::make()->hasAudio($filesystem->path("{$rendition}_segment_00000.ts")))->toBe(true);
+    }
+
+    expect($filesystem->get($playlist))->not->toContain('#EXT-X-MEDIA:TYPE=AUDIO');
 
     $filesystem->assertMissing('1080p_playlist.m3u8');
     $filesystem->assertMissing('1440p_playlist.m3u8');
@@ -141,7 +144,7 @@ it('generates m3u8 hls renditions for a portrait video', function () {
 
 });
 
-it('generates one audio rendition per distinct rendition audio bitrate', function () {
+it('muxes the audio into every rendition at the rendition audio bitrate', function () {
     $file = $this->getTestFile('videos/horizontal.mp4');
 
     $temporaryDirectory = (new TemporaryDirectory)
@@ -162,7 +165,15 @@ it('generates one audio rendition per distinct rendition audio bitrate', functio
 
     Video::make()->hls($file, $output, $playlist, renditions: $renditions);
 
-    $filesystem->assertExists('audio_64k_playlist.m3u8');
-    $filesystem->assertExists('audio_48k_playlist.m3u8');
+    $audioBitrate = fn (string $rendition) => Video::make()
+        ->metadata($filesystem->path("{$rendition}_segment_00000.ts"))
+        ->streams()
+        ->defaultAudio()
+        ?->bitrate()
+        ?->value;
+
+    expect($audioBitrate('720p'))->toEqualWithDelta(64_000, 6_400);
+    expect($audioBitrate('480p'))->toEqualWithDelta(64_000, 6_400);
+    expect($audioBitrate('240p'))->toEqualWithDelta(48_000, 4_800);
 
 });

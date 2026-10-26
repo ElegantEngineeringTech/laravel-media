@@ -272,9 +272,9 @@ class Video extends FFMpeg
     /**
      * Generate a production-ready HLS VOD playlist with adaptive m3u8 variants.
      *
-     * The output directory will contain a master playlist, one media playlist per generated resolution
-     * and, when the source has audio, one audio-only rendition per distinct audio bitrate of the renditions,
-     * shared by every video rendition using that bitrate (a single one with the default renditions).
+     * The output directory will contain a master playlist and one media playlist per generated resolution.
+     * When the source has audio, it is muxed into every rendition at the rendition audio bitrate,
+     * so the bandwidth ffmpeg measures for each variant includes it.
      *
      * Each rendition describes a 16:9 bounding box (e.g. 1080p is 1920x1080, or 1080x1920 for portrait sources).
      * The video is scaled to fit inside the box while keeping its aspect ratio, and a rendition is only generated
@@ -342,12 +342,6 @@ class Video extends FFMpeg
             ->setMaxAudioBitrate($audioStream?->bitrate())
             ->setMaxFps($fps);
 
-        // Renditions sharing the same audio bitrate share a single audio rendition.
-        // Without audio, the list is empty so no audio rendition is mapped nor listed.
-        $audioBitrates = $audioStream ? $renditions->audioBitrates()->unique()->values()->all() : [];
-
-        $audioGroup = fn (string $audioBitrate) => "audio_{$audioBitrate}";
-
         // Apple players start playback on the first variant of the master playlist.
         $startingRenditionKey = $renditions->getClosestToKey($startingRendition) ?? 0;
 
@@ -410,32 +404,22 @@ class Video extends FFMpeg
                 "-bufsize:v:{$index}", $rendition->bufsize->format(),
             );
 
+            // Each rendition gets its own copy of the audio, as ffmpeg leaves the audio out of
+            // the BANDWIDTH of variants referencing a separate audio rendition.
+            if ($audioStream) {
+                array_push(
+                    $arguments,
+                    '-map', "0:{$audioStream->index()}",
+                    "-b:a:{$index}", $rendition->audioBitrate->format(),
+                );
+            }
+
             $variantStreamMap[$index] = implode(',', array_filter([
                 "v:{$index}",
-                $audioStream ? 'agroup:'.$audioGroup($rendition->audioBitrate->format()) : null,
+                $audioStream ? "a:{$index}" : null,
                 "name:{$rendition->size}p",
             ]));
 
-        }
-
-        $audioStreamMap = [];
-
-        foreach ($audioBitrates as $index => $audioBitrate) {
-            array_push(
-                $arguments,
-                '-map', "0:{$audioStream->index()}",
-                "-b:a:{$index}", $audioBitrate,
-            );
-
-            $agroup = $audioGroup($audioBitrate);
-
-            // default:yes prevents ffmpeg from also listing the audio as a standalone variant
-            $audioStreamMap[] = implode(',', [
-                "a:{$index}",
-                "agroup:{$agroup}",
-                "name:{$agroup}",
-                'default:yes',
-            ]);
         }
 
         // The source is converted to SDR once, before being split into renditions
@@ -448,7 +432,6 @@ class Video extends FFMpeg
         ]);
 
         $variantStreamMap = [
-            ...$audioStreamMap,
             $variantStreamMap[$startingRenditionKey],
             ...Arr::except($variantStreamMap, $startingRenditionKey),
         ];

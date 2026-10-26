@@ -37,16 +37,6 @@ class VideoRenditionCollection extends Collection
         return $filtered;
     }
 
-    /**
-     * @return Collection<int, string>
-     */
-    public function audioBitrates(): Collection
-    {
-        return $this
-            ->toBase()
-            ->map(fn ($rendition) => $rendition->audioBitrate->format());
-    }
-
     public function supportedBy(Dimension $source): static
     {
         return $this
