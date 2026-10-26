@@ -164,8 +164,8 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->sdrFilter($video),
-            $this->scaleFilter($width, $height, $upscale, even: true),
             $this->fpsFilter($rendition->fps),
+            $this->scaleFilter($width, $height, $upscale, even: true),
         ]);
 
         return $this->ffmpeg([
@@ -245,8 +245,8 @@ class Video extends FFMpeg
 
         $filters = implode(',', [
             $this->sdrFilter($video),
-            $this->scaleFilter($width, $height, $upscale),
             $this->fpsFilter($rendition->fps),
+            $this->scaleFilter($width, $height, $upscale),
         ]);
 
         return $this->ffmpeg([
@@ -395,7 +395,7 @@ class Video extends FFMpeg
             $fpsFilter = $this->fpsFilter($rendition->fps);
 
             $splitLabels[] = "[v{$index}]";
-            $filters[] = "[v{$index}]{$scaleFilter},{$fpsFilter}[v{$index}out]";
+            $filters[] = "[v{$index}]{$fpsFilter},{$scaleFilter}[v{$index}out]";
 
             array_push(
                 $arguments,
@@ -527,8 +527,22 @@ class Video extends FFMpeg
         ]);
     }
 
+    /**
+     * Cap the frame rate without judder, never raising the source frame rate.
+     *
+     * Dropping frames evenly requires an integer fraction of the source rate (e.g. 50 → 25, 59.94 → 29.97, 120 → 30),
+     * while capping 50fps to exactly 30fps keeps 3 frames out of 5 and makes motion stutter.
+     * The largest fraction under the cap is used, unless it falls below 75% of the cap (e.g. 30 → 15 for a 24fps cap),
+     * in which case the cap itself is used.
+     */
     protected function fpsFilter(?int $fps): string
     {
-        return $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null';
+        if (! $fps) {
+            return 'null';
+        }
+
+        $fraction = "source_fps/ceil(source_fps/{$fps})";
+
+        return "fps=fps=min(source_fps\,if(gte({$fraction}\,{$fps}*0.75)\,{$fraction}\,{$fps}))";
     }
 }
