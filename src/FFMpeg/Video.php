@@ -191,7 +191,8 @@ class Video extends FFMpeg
     /**
      * Transcodes a video file to WebM (VP9/Opus) using FFmpeg.
      *
-     * This method uses the libvpx-vp9 encoder in Constant Quality mode.
+     * This method uses the libvpx-vp9 encoder in Constrained Quality mode: the crf sets the targeted quality,
+     * while the average bitrate is capped to the maxrate of the video rendition of the same size (and to the source bitrate).
      * It enables multi-threading and modern audio compression (Opus) for superior web performance.
      *
      * @param  string  $input  The absolute path to the source video file.
@@ -199,7 +200,7 @@ class Video extends FFMpeg
      * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
-     * @param  int|null  $fps  Target FPS (capped at source rate).
+     * @param  int|null  $fps  Target FPS (capped at the source and rendition frame rates).
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
@@ -224,12 +225,28 @@ class Video extends FFMpeg
         bool $stripMetadata = true,
     ): string {
 
-        $stream = $this->videoStream($input);
+        $streams = $this->metadata($input)->streams();
+
+        $video = $streams->defaultVideo();
+
+        if (! $video) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
+
+        $audio = $streams->defaultAudio();
+
+        $dimension = $video->dimension()->scale($width, $height, $upscale);
+
+        $rendition = MediaServiceProvider::getVideoRenditions()
+            ->getBestSupportedBy($dimension)
+            ->setMaxBitrate($video->bitrate())
+            ->setMaxAudioBitrate($audio?->bitrate())
+            ->setMaxFps($fps);
 
         $filters = implode(',', [
-            $this->sdrFilter($stream),
+            $this->sdrFilter($video),
             $this->scaleFilter($width, $height, $upscale),
-            $fps ? "fps=fps=min({$fps}\,source_fps)" : 'null',
+            $this->fpsFilter($rendition->fps),
         ]);
 
         return $this->ffmpeg([
@@ -237,15 +254,16 @@ class Video extends FFMpeg
             '-vf', $filters,
             '-c:v', 'libvpx-vp9',
             '-crf', (string) $crf,
-            '-b:v', '0',
+            '-b:v', $rendition->maxrate->format(),
             '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
             '-pix_fmt', 'yuv420p',
             '-row-mt', '1',
             '-deadline', $deadline,
             '-cpu-used', (string) $cpuUsed,
             '-c:a', 'libopus',
-            '-b:a', '128k',
-            '-movflags', '+faststart',
+            '-b:a', $rendition->audioBitrate->format(),
+            '-ac', '2', // Stereo
+            '-cues_to_front', '1', // Seek index at the start, for faster playback start and seeking
             ...($stripMetadata ? ['-map_metadata', '-1'] : []),
             $output,
         ]);
