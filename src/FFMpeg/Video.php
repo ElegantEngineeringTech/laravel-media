@@ -279,6 +279,7 @@ class Video extends FFMpeg
      * Each rendition describes a 16:9 bounding box (e.g. 1080p is 1920x1080, or 1080x1920 for portrait sources).
      * The video is scaled to fit inside the box while keeping its aspect ratio, and a rendition is only generated
      * when the source fills at least one side of the box, so the video is never upscaled.
+     * Sources smaller than every rendition (e.g. 320x180) get the smallest one, at their own size.
      *
      * Renditions are encoded in capped CRF: x264 targets a constant quality, spending fewer bits on simple scenes,
      * while the rendition maxrate and bufsize cap the bitrate of complex ones so each rendition stays within its bandwidth.
@@ -301,7 +302,7 @@ class Video extends FFMpeg
      *                                       Keyframes always land on segment boundaries.
      * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
      * @return false|string Command output, or false when the source can't produce a playable stream
-     *                      (smaller than every rendition, or too short to be segmented)
+     *                      (no renditions given, or too short to be segmented)
      */
     public function hls(
         string $input,
@@ -329,11 +330,14 @@ class Video extends FFMpeg
 
         $sourceDimension = $videoStream->dimension(rotate: true);
 
-        $renditions = $renditions->supportedBy($sourceDimension);
-
         if ($renditions->isEmpty()) {
             return false;
         }
+
+        // Sources smaller than every rendition get the smallest one, scaled down to their own size
+        $renditions = $renditions->supportedBy($sourceDimension)->whenEmpty(
+            fn () => $renditions->sortBy('size')->take(1)->values()
+        );
 
         $audioStream = $streams->defaultAudio();
 
@@ -386,9 +390,11 @@ class Video extends FFMpeg
                 portrait: $sourceDimension->isPortrait()
             );
 
+            // Supported renditions never upscale, this only clamps the fallback rendition to the source size
             $scaleFilter = $this->scaleFilter(
                 width: $renditionDimension->width,
                 height: $renditionDimension->height,
+                upscale: false,
                 even: true
             );
 
