@@ -64,7 +64,6 @@ class GenerateMediaConversionsCommand extends Command
                         $query->orWhereDoesntHave(
                             'conversions',
                             fn (Builder $query) => $query
-                                // @phpstan-ignore-next-line
                                 ->where('conversion_name', $conversion)
                                 ->whereIn('state', [
                                     MediaConversionState::Succeeded,
