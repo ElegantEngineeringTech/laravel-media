@@ -48,21 +48,15 @@ trait HasMedia
 
             if ($isSoftDeleting) {
 
-                foreach ($model->media as $medium) {
+                $model->media()->get()->each(function ($medium) {
                     $medium->delete();
-                }
+                });
 
             } else {
 
-                $media = $model
-                    ->media()
-                    ->withoutGlobalScope(SoftDeletingScope::class)
-                    ->get();
-
-                foreach ($media as $medium) {
-
+                $model->media()->withoutGlobalScope(SoftDeletingScope::class)->get()->each(function ($medium) {
                     $medium->forceDelete();
-                }
+                });
 
             }
 
@@ -319,18 +313,29 @@ trait HasMedia
     }
 
     /**
+     * @param  string[]  $collections
      * @param  string[]  $conversions
      */
     #[Scope]
-    protected function withMedia(Builder $query, array $conversions = []): Builder
-    {
-        if ($conversions) {
-            return $query->with([
-                'media.conversions' => fn ($query) => $query->whereIn('conversion_name', $conversions),
-            ]);
-        }
+    protected function withMedia(
+        Builder $query,
+        array $collections = [],
+        array $conversions = [],
+    ): Builder {
 
-        return $query->with(['media']);
+        return $query->with([
+            'media' => fn ($query) => $query
+                ->when(
+                    $collections,
+                    fn ($query) => $query->whereIn('collection_name', $collections)
+                )
+                ->when(
+                    $conversions,
+                    fn ($query) => $query->with([
+                        'conversions' => fn ($query) => $query->whereIn('conversion_name', $conversions),
+                    ])
+                ),
+        ]);
 
     }
 }
