@@ -10,6 +10,8 @@ use Elegantly\Media\Helpers\File as HelpersFile;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -314,5 +316,21 @@ trait HasMedia
             ->each(function ($media) use ($conversionName) {
                 return $media->deleteConversion($conversionName);
             });
+    }
+
+    /**
+     * @param  string[]  $conversions
+     */
+    #[Scope]
+    protected function withMedia(Builder $query, array $conversions = []): Builder
+    {
+        if ($conversions) {
+            return $query->with([
+                'media.conversions' => fn ($query) => $query->whereIn('conversion_name', $conversions),
+            ]);
+        }
+
+        return $query->with(['media']);
+
     }
 }
