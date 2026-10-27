@@ -13,6 +13,7 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
@@ -43,8 +44,24 @@ trait HasMedia
                 return true;
             }
 
-            foreach ($model->media as $media) {
-                $media->delete();
+            if ($isSoftDeleting) {
+
+                foreach ($model->media as $medium) {
+                    $medium->delete();
+                }
+
+            } else {
+
+                $media = $model
+                    ->media()
+                    ->withoutGlobalScope(SoftDeletingScope::class)
+                    ->get();
+
+                foreach ($media as $medium) {
+
+                    $medium->forceDelete();
+                }
+
             }
 
         });

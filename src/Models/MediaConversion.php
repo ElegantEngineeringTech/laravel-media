@@ -90,6 +90,11 @@ class MediaConversion extends Model implements InteractWithFiles
         });
 
         static::deleted(function (MediaConversion $conversion) {
+
+            if (method_exists($conversion, 'isForceDeleting') && ! $conversion->isForceDeleting()) {
+                return;
+            }
+
             $job = MediaServiceProvider::getDeleteMediaFileJob();
 
             if ($conversion->additional_files) {

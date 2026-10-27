@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
@@ -86,8 +87,17 @@ class Media extends Model implements InteractWithFiles
     {
         static::deleted(function (Media $media) {
 
-            foreach ($media->conversions as $conversion) {
-                $conversion->delete();
+            if (method_exists($media, 'isForceDeleting') && ! $media->isForceDeleting()) {
+                return;
+            }
+
+            $conversions = $media
+                ->conversions()
+                ->withoutGlobalScope(SoftDeletingScope::class)
+                ->get();
+
+            foreach ($conversions as $conversion) {
+                $conversion->forceDelete();
             }
 
             $job = MediaServiceProvider::getDeleteMediaFileJob();
@@ -415,7 +425,7 @@ class Media extends Model implements InteractWithFiles
         }
 
         if ($existingConversion) {
-            $existingConversion->delete();
+            $existingConversion->forceDelete();
             $this->setRelation(
                 'conversions',
                 $this->conversions->except([$existingConversion->id])
@@ -461,7 +471,7 @@ class Media extends Model implements InteractWithFiles
          * Delete existing conversion
          */
         if ($existingConversion = $this->getConversion($conversionName)) {
-            $existingConversion->delete();
+            $existingConversion->forceDelete();
             $this->setRelation(
                 'conversions',
                 $this->conversions->except([$existingConversion->id])
@@ -579,7 +589,7 @@ class Media extends Model implements InteractWithFiles
 
                 return str($conversion->conversion_name)->startsWith("{$conversionName}.");
             })
-            ->each(fn ($conversion) => $conversion->delete());
+            ->each(fn ($conversion) => $conversion->forceDelete());
 
         $this->setRelation(
             'conversions',
@@ -593,7 +603,7 @@ class Media extends Model implements InteractWithFiles
     {
         $deleted = $this
             ->getChildrenConversions($conversionName)
-            ->each(fn ($conversion) => $conversion->delete());
+            ->each(fn ($conversion) => $conversion->forceDelete());
 
         $this->setRelation(
             'conversions',
