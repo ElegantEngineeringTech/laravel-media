@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Concerns;
 
+use Elegantly\Media\Collections\Eloquent\MediaCollection as EloquentMediaCollection;
 use Elegantly\Media\Events\MediaAddedEvent;
 use Elegantly\Media\Exceptions\InvalidMimeTypeException;
 use Elegantly\Media\Helpers\File as HelpersFile;
@@ -12,20 +13,20 @@ use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 
 /**
  * @mixin Model
  *
  * @template TMedia of Media
  *
- * @property Collection<int, TMedia> $media
+ * @property EloquentMediaCollection<TMedia> $media
  */
 trait HasMedia
 {
@@ -89,12 +90,12 @@ trait HasMedia
     }
 
     /**
-     * @return Collection<int, TMedia>
+     * @return EloquentMediaCollection<TMedia>
      */
     public function getMedia(
         ?string $collectionName = null,
         ?string $collectionGroup = null
-    ): Collection {
+    ): EloquentMediaCollection {
         return $this->media
             ->when($collectionName, fn ($collection) => $collection->where('collection_name', $collectionName))
             ->when($collectionGroup, fn ($collection) => $collection->where('collection_group', $collectionGroup))
@@ -271,7 +272,7 @@ trait HasMedia
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, PendingDispatch>
+     * @return Collection<int, PendingDispatch>
      */
     public function dispatchMediaConversion(
         string $conversionName,
@@ -280,7 +281,7 @@ trait HasMedia
         ?string $collectionGroup = null,
         bool $withChildren = false,
         bool $withForceChildren = false,
-    ): \Illuminate\Support\Collection {
+    ): Collection {
 
         return $this
             ->getMedia($collectionName, $collectionGroup)
@@ -298,13 +299,13 @@ trait HasMedia
     }
 
     /**
-     * @return Collection<int, TMedia>
+     * @return EloquentMediaCollection<TMedia>
      */
     public function deleteMediaConversion(
         string $conversionName,
         ?string $collectionName = null,
         ?string $collectionGroup = null,
-    ): Collection {
+    ): EloquentMediaCollection {
         return $this
             ->getMedia($collectionName, $collectionGroup)
             ->each(function ($media) use ($conversionName) {

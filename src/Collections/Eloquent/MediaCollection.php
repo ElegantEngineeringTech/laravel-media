@@ -9,6 +9,8 @@ use Elegantly\Media\Models\Media;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
+ * @template TMedia of Media
+ *
  * @extends Collection<int, Media>
  */
 class MediaCollection extends Collection
