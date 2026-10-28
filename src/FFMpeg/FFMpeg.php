@@ -6,6 +6,7 @@ namespace Elegantly\Media\FFMpeg;
 
 use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Elegantly\Media\FFMpeg\ValueObjects\Metadata;
+use Elegantly\Media\FFMpeg\ValueObjects\StreamCollection;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process;
 
@@ -16,6 +17,13 @@ class FFMpeg
     public string $ffprobe;
 
     public ?string $logChannel = null;
+
+    /**
+     * The codecs ffmpeg can decode, detected on first use.
+     *
+     * @var null|string[]
+     */
+    protected ?array $decodableCodecs = null;
 
     final public function __construct(
         ?string $ffmpeg = null,
@@ -42,12 +50,14 @@ class FFMpeg
 
     public function video(): Video
     {
-        return new Video($this->ffmpeg, $this->ffprobe, $this->logChannel);
+        return (new Video($this->ffmpeg, $this->ffprobe, $this->logChannel))
+            ->setDecodableCodecs($this->decodableCodecs);
     }
 
     public function audio(): Audio
     {
-        return new Audio($this->ffmpeg, $this->ffprobe, $this->logChannel);
+        return (new Audio($this->ffmpeg, $this->ffprobe, $this->logChannel))
+            ->setDecodableCodecs($this->decodableCodecs);
     }
 
     /**
@@ -64,6 +74,49 @@ class FFMpeg
         ]);
 
         return Metadata::fromJson($output);
+    }
+
+    /**
+     * The streams ffmpeg can decode.
+     *
+     * Notes:
+     * - ffmpeg fails on a stream it can't decode instead of skipping it, whether the stream is mapped
+     *   or picked by its own selection (the default audio stream with the most channels).
+     * - Recent iPhones record spatial audio in a default 4.0 APAC track that ffmpeg can't decode,
+     *   along with a stereo AAC track.
+     */
+    public function decodableStreams(string $input): StreamCollection
+    {
+        return $this->metadata($input)->streams()->decodable($this->decodableCodecs());
+    }
+
+    /**
+     * The names of the codecs ffmpeg can decode, as reported in the `codec_name` of ffprobe streams.
+     *
+     * @return string[]
+     */
+    public function decodableCodecs(): array
+    {
+        if ($this->decodableCodecs === null) {
+            $output = $this->ffmpeg(['-hide_banner', '-codecs']);
+
+            // Codecs are listed as " DEA.L. aac  AAC (Advanced Audio Coding)", where D means decoding is supported
+            preg_match_all('/^ D[.E][VASDT][.I][.L][.S] (\S+)/m', $output, $matches);
+
+            $this->decodableCodecs = $matches[1];
+        }
+
+        return $this->decodableCodecs;
+    }
+
+    /**
+     * @param  null|string[]  $codecs
+     */
+    public function setDecodableCodecs(?array $codecs): static
+    {
+        $this->decodableCodecs = $codecs;
+
+        return $this;
     }
 
     public function stripMetadata(

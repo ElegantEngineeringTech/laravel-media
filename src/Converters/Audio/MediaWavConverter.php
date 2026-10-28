@@ -45,7 +45,7 @@ class MediaWavConverter extends MediaConverter
 
         $ffmpeg = FFMpeg::audio();
 
-        if (! $ffmpeg->hasAudio($input)) {
+        if (! $ffmpeg->decodableStreams($input)->hasAudio()) {
             return $this->unsupportedConversion();
         }
 

@@ -30,6 +30,11 @@ class Stream
         return $this->getInt('index') ?? 0;
     }
 
+    public function codecName(): ?string
+    {
+        return $this->getString('codec_name');
+    }
+
     public function codecType(): ?string
     {
         return $this->getString('codec_type');

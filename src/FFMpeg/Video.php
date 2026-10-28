@@ -145,7 +145,7 @@ class Video extends FFMpeg
         bool $stripMetadata = true,
     ): string {
 
-        $streams = $this->metadata($input)->streams();
+        $streams = $this->decodableStreams($input);
 
         $video = $streams->defaultVideo();
 
@@ -170,6 +170,10 @@ class Video extends FFMpeg
 
         return $this->ffmpeg([
             '-i', $input,
+            '-map', "0:{$video->index()}",
+            ...($audio ? [
+                '-map', "0:{$audio->index()}",
+            ] : []),
             '-vf', $filters,
             '-c:v', 'libx264',
             '-crf', (string) $crf,
@@ -228,7 +232,7 @@ class Video extends FFMpeg
         bool $stripMetadata = true,
     ): string {
 
-        $streams = $this->metadata($input)->streams();
+        $streams = $this->decodableStreams($input);
 
         $video = $streams->defaultVideo();
 
@@ -253,6 +257,10 @@ class Video extends FFMpeg
 
         return $this->ffmpeg([
             '-i', $input,
+            '-map', "0:{$video->index()}",
+            ...($audio ? [
+                '-map', "0:{$audio->index()}",
+            ] : []),
             '-vf', $filters,
             '-c:v', 'libvpx-vp9',
             '-crf', (string) $crf,
@@ -327,7 +335,7 @@ class Video extends FFMpeg
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
         $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
 
-        $streams = $this->metadata($input)->streams();
+        $streams = $this->decodableStreams($input);
 
         $videoStream = $streams->defaultVideo();
 

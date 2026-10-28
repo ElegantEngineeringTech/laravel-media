@@ -26,6 +26,14 @@ class StreamCollection extends Collection
         return $this->filter(fn ($stream) => $stream->isArtwork());
     }
 
+    /**
+     * @param  string[]  $codecs  The names of the codecs that can be decoded.
+     */
+    public function decodable(array $codecs): static
+    {
+        return $this->filter(fn ($stream) => in_array($stream->codecName(), $codecs, true));
+    }
+
     public function defaultVideo(): ?Stream
     {
         $videos = $this->videos();

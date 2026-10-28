@@ -4,8 +4,27 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\FFMpeg;
 
+use Elegantly\Media\FFMpeg\Exceptions\AudioStreamNotFoundException;
+use Elegantly\Media\FFMpeg\ValueObjects\Stream;
+
 class Audio extends FFMpeg
 {
+    /**
+     * The default audio stream ffmpeg can decode.
+     *
+     * @see FFMpeg::decodableStreams()
+     */
+    public function audioStream(string $input): Stream
+    {
+        $stream = $this->decodableStreams($input)->defaultAudio();
+
+        if (! $stream) {
+            throw AudioStreamNotFoundException::atPath($input);
+        }
+
+        return $stream;
+    }
+
     /**
      * @param  string  $bitrate
      *                           - 32k   : Very low quality, speech/voice only, smallest file size.
@@ -21,9 +40,11 @@ class Audio extends FFMpeg
         string $output,
         string $bitrate = '128k',
     ): string {
+        $stream = $this->audioStream($input);
+
         return $this->ffmpeg([
             '-i', $input,
-            '-vn',
+            '-map', "0:{$stream->index()}",
             '-acodec', 'libmp3lame',
             '-b:a', $bitrate,
             $output,
@@ -34,9 +55,11 @@ class Audio extends FFMpeg
         string $input,
         string $output,
     ): string {
+        $stream = $this->audioStream($input);
+
         return $this->ffmpeg([
             '-i', $input,
-            '-vn',
+            '-map', "0:{$stream->index()}",
             '-acodec', 'pcm_s16le',
             '-ar', '44100',
             '-ac', '2',
@@ -66,9 +89,11 @@ class Audio extends FFMpeg
         string $bitrate = '128k',
         int $channels = 2,
     ): string {
+        $stream = $this->audioStream($input);
+
         return $this->ffmpeg([
             '-i', $input,
-            '-vn',
+            '-map', "0:{$stream->index()}",
             '-c:a', 'aac',
             '-b:a', $bitrate,
             '-ac', (string) $channels,
