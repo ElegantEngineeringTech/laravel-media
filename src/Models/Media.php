@@ -19,6 +19,8 @@ use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Elegantly\Media\ValueObjects\AdditionalFile;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -1111,4 +1113,24 @@ class Media extends Model implements InteractWithFiles
     }
 
     // End attributes getters ----------------------------------------------------------------------
+
+    /**
+     * @param  Builder<static>  $query
+     * @param  string[]  $conversions
+     * @return Builder<static>
+     */
+    #[Scope]
+    protected function withConversions(
+        Builder $query,
+        array $conversions = [],
+    ): Builder {
+
+        return $query->with([
+            'conversions' => fn ($query) => $query->when(
+                $conversions,
+                fn ($query) => $query->whereIn('conversion_name', $conversions),
+            ),
+        ]);
+
+    }
 }
