@@ -4,23 +4,22 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Contracts;
 
-use Elegantly\Media\Collections\Eloquent\MediaCollection as EloquentMediaCollection;
 use Elegantly\Media\MediaCollection;
 use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Collection;
 
 /**
  * @mixin Model
  *
  * @template TMedia of Media
  *
- * @property EloquentMediaCollection<TMedia> $media
+ * @property Collection<int, TMedia> $media
  */
 interface InteractWithMedia
 {
@@ -37,12 +36,12 @@ interface InteractWithMedia
     public function getMediaCollection(string $collectionName): ?MediaCollection;
 
     /**
-     * @return EloquentMediaCollection<TMedia>
+     * @return Collection<int, TMedia>
      */
     public function getMedia(
         ?string $collectionName = null,
         ?string $collectionGroup = null
-    ): EloquentMediaCollection;
+    ): Collection;
 
     public function hasMedia(
         ?string $collectionName = null,
@@ -100,21 +99,21 @@ interface InteractWithMedia
     ): static;
 
     /**
-     * @return Collection<int, PendingDispatch>
+     * @return \Illuminate\Support\Collection<int, PendingDispatch>
      */
     public function dispatchMediaConversion(
         string $conversionName,
         bool $force = true,
         ?string $collectionName = null,
         ?string $collectionGroup = null,
-    ): Collection;
+    ): \Illuminate\Support\Collection;
 
     /**
-     * @return EloquentMediaCollection<TMedia>
+     * @return Collection<int, TMedia>
      */
     public function deleteMediaConversion(
         string $conversionName,
         ?string $collectionName = null,
         ?string $collectionGroup = null,
-    ): EloquentMediaCollection;
+    ): Collection;
 }

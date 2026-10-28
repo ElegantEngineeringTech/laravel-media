@@ -6,7 +6,6 @@ namespace Elegantly\Media\Models;
 
 use Carbon\Carbon;
 use Closure;
-use Elegantly\Media\Collections\Eloquent\MediaCollection;
 use Elegantly\Media\Concerns\HasAdditionalFiles;
 use Elegantly\Media\Concerns\HasFile;
 use Elegantly\Media\Contracts\InteractWithFiles;
@@ -20,7 +19,6 @@ use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Elegantly\Media\ValueObjects\AdditionalFile;
-use Illuminate\Database\Eloquent\Attributes\CollectedBy;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsCollection;
@@ -53,7 +51,6 @@ use Illuminate\Support\Facades\DB;
  * @property Carbon $updated_at
  * @property-read ?string $url
  */
-#[CollectedBy(MediaCollection::class)]
 class Media extends Model implements InteractWithFiles
 {
     use HasAdditionalFiles;
@@ -623,15 +620,15 @@ class Media extends Model implements InteractWithFiles
     /**
      * @param  array<array-key, int>  $keys
      * @param  null|(Closure(null|int $previous): int)  $using
-     * @return MediaCollection<static>
+     * @return EloquentCollection<int, static>
      */
     public static function reorder(
         array $keys,
         ?Closure $using = null,
-    ): MediaCollection {
+    ): EloquentCollection {
         $positions = array_flip($keys);
 
-        /** @var MediaCollection<static> $models */
+        /** @var EloquentCollection<int, static> $models */
         $models = static::query()
             ->whereIn('id', $keys)
             ->get()
