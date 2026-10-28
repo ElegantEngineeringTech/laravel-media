@@ -623,15 +623,15 @@ class Media extends Model implements InteractWithFiles
     /**
      * @param  array<array-key, int>  $keys
      * @param  null|(Closure(null|int $previous): int)  $using
-     * @return EloquentCollection<int, static>
+     * @return MediaCollection<static>
      */
     public static function reorder(
         array $keys,
         ?Closure $using = null,
-    ): EloquentCollection {
+    ): MediaCollection {
         $positions = array_flip($keys);
 
-        /** @var EloquentCollection<int, static> $models */
+        /** @var MediaCollection<static> $models */
         $models = static::query()
             ->whereIn('id', $keys)
             ->get()
