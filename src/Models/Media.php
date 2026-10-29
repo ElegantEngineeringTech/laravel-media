@@ -1115,6 +1115,22 @@ class Media extends Model implements InteractWithFiles
     // End attributes getters ----------------------------------------------------------------------
 
     /**
+     * @param  string[]  $conversions
+     */
+    public function loadConversions(
+        array $conversions = [],
+    ): static {
+
+        return $this->load([
+            'conversions' => fn ($query) => $query->when(
+                $conversions,
+                fn ($query) => $query->whereIn('conversion_name', $conversions),
+            ),
+        ]);
+
+    }
+
+    /**
      * @param  Builder<static>  $query
      * @param  string[]  $conversions
      * @return Builder<static>
