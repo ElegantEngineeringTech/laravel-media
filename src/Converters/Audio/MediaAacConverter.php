@@ -20,7 +20,7 @@ class MediaAacConverter extends MediaConverter
      *                           - 48k   : Low quality, speech with some music.
      *                           - 64k   : Medium quality, low-quality music or streaming voice.
      *                           - 96k   : Good quality, general music, small files.
-     *                           - 128k  : Standard quality, good for most uses (default for MP3).
+     *                           - 128k  : Standard quality, good for most uses (default, web streaming standard).
      *                           - 192k  : High quality, detailed music.
      *                           - 256k+ : Very high quality, archival purposes (large files).
      * @param  null|int  $channels
@@ -34,7 +34,7 @@ class MediaAacConverter extends MediaConverter
     public function __construct(
         Media $media,
         public string $filename,
-        public string $bitrate = '64k',
+        public string $bitrate = '128k',
         public ?int $channels = 2,
     ) {
         parent::__construct($media);

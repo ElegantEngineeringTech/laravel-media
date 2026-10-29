@@ -252,6 +252,7 @@ This package provides common converter to simplify your work:
 - `MediaWebmConverter`: This conversion optimizes, resizes, or converts any video or gif to webm video using `ffmpeg`.
 - `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
 - `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
+- `MediaOpusConverter`: This conversion optimizes, resizes, converts or extract any audio in opus format using `ffmpeg`.
 - `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
 - `MediaThumbnailConverter`: This conversion smartly extracts the best thumbnail from a video using `ffmpeg`.
 - `MediaPdfToImageConverter`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.

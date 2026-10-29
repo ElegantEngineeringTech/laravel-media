@@ -31,7 +31,7 @@ class Audio extends FFMpeg
      *                           - 48k   : Low quality, speech with some music.
      *                           - 64k   : Medium quality, low-quality music or streaming voice.
      *                           - 96k   : Good quality, general music, small files.
-     *                           - 128k  : Standard quality, good for most uses (default for MP3).
+     *                           - 128k  : Standard quality, good for most uses (default, web streaming standard).
      *                           - 192k  : High quality, detailed music.
      *                           - 256k+ : Very high quality, archival purposes (large files).
      * @param  null|int  $channels
@@ -89,7 +89,7 @@ class Audio extends FFMpeg
      *                           - 48k   : Low quality, speech with some music.
      *                           - 64k   : Medium quality, low-quality music or streaming voice.
      *                           - 96k   : Good quality, general music, small files.
-     *                           - 128k  : Standard quality, good for most uses (default for MP3).
+     *                           - 128k  : Standard quality, good for most uses (default, web streaming standard).
      *                           - 192k  : High quality, detailed music.
      *                           - 256k+ : Very high quality, archival purposes (large files).
      * @param  null|int  $channels
@@ -112,6 +112,43 @@ class Audio extends FFMpeg
             '-i', $input,
             '-map', "0:{$stream->index()}",
             '-c:a', 'aac',
+            '-b:a', $bitrate,
+            ...($channels ? ['-ac', (string) $channels] : []),
+            $output,
+        ]);
+    }
+
+    /**
+     * Use an .opus, .ogg or .webm output.
+     *
+     * @param  string  $bitrate
+     *                           - 16k   : Low quality, speech/voice only, smallest file size.
+     *                           - 24k   : Good quality speech.
+     *                           - 32k   : Very good quality speech, low-quality music.
+     *                           - 64k   : Good quality music, small files.
+     *                           - 96k   : Very good quality, general music (default, matches AAC at 128k).
+     *                           - 128k  : High quality, detailed music.
+     *                           - 192k+ : Very high quality, archival purposes (large files).
+     * @param  null|int  $channels
+     *                              - null : Keep the source channel layout.
+     *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
+     *                              - 2    : Stereo — two-channel audio, standard for music and video.
+     *                              - 4    : Quad — four-channel audio (rare, surround setups).
+     *                              - 6    : 5.1 Surround — six channels (home theater, cinema).
+     *                              - 8    : 7.1 Surround — eight channels (high-end surround systems).
+     */
+    public function opus(
+        string $input,
+        string $output,
+        string $bitrate = '96k',
+        ?int $channels = null,
+    ): string {
+        $stream = $this->audioStream($input);
+
+        return $this->ffmpeg([
+            '-i', $input,
+            '-map', "0:{$stream->index()}",
+            '-c:a', 'libopus',
             '-b:a', $bitrate,
             ...($channels ? ['-ac', (string) $channels] : []),
             $output,

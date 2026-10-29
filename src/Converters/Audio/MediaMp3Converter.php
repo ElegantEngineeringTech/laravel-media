@@ -15,6 +15,14 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 class MediaMp3Converter extends MediaConverter
 {
     /**
+     * @param  string  $bitrate
+     *                           - 32k   : Very low quality, speech/voice only, smallest file size.
+     *                           - 48k   : Low quality, speech with some music.
+     *                           - 64k   : Medium quality, low-quality music or streaming voice.
+     *                           - 96k   : Good quality, general music, small files.
+     *                           - 128k  : Standard quality, good for most uses (default, web streaming standard).
+     *                           - 192k  : High quality, detailed music.
+     *                           - 256k+ : Very high quality, archival purposes (large files).
      * @param  null|int  $channels
      *                              - null : Keep the source channel layout.
      *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
@@ -23,6 +31,7 @@ class MediaMp3Converter extends MediaConverter
     public function __construct(
         Media $media,
         public string $filename,
+        public string $bitrate = '128k',
         public ?int $channels = 2,
     ) {
         parent::__construct($media);
@@ -59,6 +68,7 @@ class MediaMp3Converter extends MediaConverter
         $ffmpeg->mp3(
             input: $input,
             output: $output,
+            bitrate: $this->bitrate,
             channels: $this->channels,
         );
 
