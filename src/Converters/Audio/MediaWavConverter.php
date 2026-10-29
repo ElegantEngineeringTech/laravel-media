@@ -14,9 +14,19 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 
 class MediaWavConverter extends MediaConverter
 {
+    /**
+     * @param  null|int  $channels
+     *                              - null : Keep the source channel layout.
+     *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
+     *                              - 2    : Stereo — two-channel audio, standard for music and video.
+     *                              - 4    : Quad — four-channel audio (rare, surround setups).
+     *                              - 6    : 5.1 Surround — six channels (home theater, cinema).
+     *                              - 8    : 7.1 Surround — eight channels (high-end surround systems).
+     */
     public function __construct(
         Media $media,
         public string $filename,
+        public ?int $channels = 2,
     ) {
         parent::__construct($media);
     }
@@ -52,6 +62,7 @@ class MediaWavConverter extends MediaConverter
         $ffmpeg->wav(
             input: $input,
             output: $output,
+            channels: $this->channels,
         );
 
         return $media->addConversion(

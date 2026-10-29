@@ -23,18 +23,19 @@ class MediaAacConverter extends MediaConverter
      *                           - 128k  : Standard quality, good for most uses (default for MP3).
      *                           - 192k  : High quality, detailed music.
      *                           - 256k+ : Very high quality, archival purposes (large files).
-     * @param  int  $channels
-     *                         - 1 : Mono — single channel audio, smallest file size, good for voice.
-     *                         - 2 : Stereo — two-channel audio, standard for music and video.
-     *                         - 4 : Quad — four-channel audio (rare, surround setups).
-     *                         - 6 : 5.1 Surround — six channels (home theater, cinema).
-     *                         - 8 : 7.1 Surround — eight channels (high-end surround systems).
+     * @param  null|int  $channels
+     *                              - null : Keep the source channel layout.
+     *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
+     *                              - 2    : Stereo — two-channel audio, standard for music and video.
+     *                              - 4    : Quad — four-channel audio (rare, surround setups).
+     *                              - 6    : 5.1 Surround — six channels (home theater, cinema).
+     *                              - 8    : 7.1 Surround — eight channels (high-end surround systems).
      */
     public function __construct(
         Media $media,
         public string $filename,
         public string $bitrate = '64k',
-        public int $channels = 2,
+        public ?int $channels = 2,
     ) {
         parent::__construct($media);
     }

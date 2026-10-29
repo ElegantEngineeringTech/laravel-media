@@ -34,11 +34,16 @@ class Audio extends FFMpeg
      *                           - 128k  : Standard quality, good for most uses (default for MP3).
      *                           - 192k  : High quality, detailed music.
      *                           - 256k+ : Very high quality, archival purposes (large files).
+     * @param  null|int  $channels
+     *                              - null : Keep the source channel layout.
+     *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
+     *                              - 2    : Stereo — two-channel audio (MP3 supports at most 2 channels).
      */
     public function mp3(
         string $input,
         string $output,
         string $bitrate = '128k',
+        ?int $channels = null,
     ): string {
         $stream = $this->audioStream($input);
 
@@ -47,13 +52,24 @@ class Audio extends FFMpeg
             '-map', "0:{$stream->index()}",
             '-acodec', 'libmp3lame',
             '-b:a', $bitrate,
+            ...($channels ? ['-ac', (string) $channels] : []),
             $output,
         ]);
     }
 
+    /**
+     * @param  null|int  $channels
+     *                              - null : Keep the source channel layout.
+     *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
+     *                              - 2    : Stereo — two-channel audio, standard for music and video.
+     *                              - 4    : Quad — four-channel audio (rare, surround setups).
+     *                              - 6    : 5.1 Surround — six channels (home theater, cinema).
+     *                              - 8    : 7.1 Surround — eight channels (high-end surround systems).
+     */
     public function wav(
         string $input,
         string $output,
+        ?int $channels = null,
     ): string {
         $stream = $this->audioStream($input);
 
@@ -62,7 +78,7 @@ class Audio extends FFMpeg
             '-map', "0:{$stream->index()}",
             '-acodec', 'pcm_s16le',
             '-ar', '44100',
-            '-ac', '2',
+            ...($channels ? ['-ac', (string) $channels] : []),
             $output,
         ]);
     }
@@ -76,18 +92,19 @@ class Audio extends FFMpeg
      *                           - 128k  : Standard quality, good for most uses (default for MP3).
      *                           - 192k  : High quality, detailed music.
      *                           - 256k+ : Very high quality, archival purposes (large files).
-     * @param  int  $channels
-     *                         - 1 : Mono — single channel audio, smallest file size, good for voice.
-     *                         - 2 : Stereo — two-channel audio, standard for music and video.
-     *                         - 4 : Quad — four-channel audio (rare, surround setups).
-     *                         - 6 : 5.1 Surround — six channels (home theater, cinema).
-     *                         - 8 : 7.1 Surround — eight channels (high-end surround systems).
+     * @param  null|int  $channels
+     *                              - null : Keep the source channel layout.
+     *                              - 1    : Mono — single channel audio, smallest file size, good for voice.
+     *                              - 2    : Stereo — two-channel audio, standard for music and video.
+     *                              - 4    : Quad — four-channel audio (rare, surround setups).
+     *                              - 6    : 5.1 Surround — six channels (home theater, cinema).
+     *                              - 8    : 7.1 Surround — eight channels (high-end surround systems).
      */
     public function aac(
         string $input,
         string $output,
         string $bitrate = '128k',
-        int $channels = 2,
+        ?int $channels = null,
     ): string {
         $stream = $this->audioStream($input);
 
@@ -96,7 +113,7 @@ class Audio extends FFMpeg
             '-map', "0:{$stream->index()}",
             '-c:a', 'aac',
             '-b:a', $bitrate,
-            '-ac', (string) $channels,
+            ...($channels ? ['-ac', (string) $channels] : []),
             $output,
         ]);
     }
