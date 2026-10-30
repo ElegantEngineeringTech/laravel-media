@@ -63,11 +63,11 @@ enum MediaType: string
 
         if (in_array($guessed, [self::Video, self::Audio])) {
 
-            if (FFMpeg::video()->hasVideo($path)) {
+            if (FFMpeg::hasVideo($path)) {
                 return self::Video;
             }
 
-            if (FFMpeg::audio()->hasAudio($path)) {
+            if (FFMpeg::hasAudio($path)) {
                 return self::Audio;
             }
 
