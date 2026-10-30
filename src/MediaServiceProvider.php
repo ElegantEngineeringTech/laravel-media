@@ -49,6 +49,8 @@ class MediaServiceProvider extends PackageServiceProvider
                 ffprobe: config('media.ffmpeg.ffprobe_binaries'),
                 // @phpstan-ignore-next-line
                 logChannel: config('media.ffmpeg.log_channel'),
+                // @phpstan-ignore-next-line
+                timeout: config('media.ffmpeg.timeout'),
             );
 
         });

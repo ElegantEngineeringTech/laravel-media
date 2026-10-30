@@ -187,6 +187,12 @@ return [
          * Set to null to disable logging.
          */
         'log_channel' => null,
+
+        /**
+         * The timeout in seconds of FFmpeg and FFprobe processes.
+         * Set to null to disable the timeout.
+         */
+        'timeout' => null,
     ],
 ];
 ```

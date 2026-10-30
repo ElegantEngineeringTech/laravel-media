@@ -19,6 +19,11 @@ class FFMpeg
     public ?string $logChannel = null;
 
     /**
+     * The timeout in seconds of the processes, null to disable it.
+     */
+    public ?float $timeout = null;
+
+    /**
      * The codecs ffmpeg can decode, detected on first use.
      *
      * @var null|string[]
@@ -29,6 +34,7 @@ class FFMpeg
         ?string $ffmpeg = null,
         ?string $ffprobe = null,
         ?string $logChannel = null,
+        ?float $timeout = null,
     ) {
         // @phpstan-ignore-next-line
         $this->ffmpeg = $ffmpeg ?? config('media.ffmpeg.ffmpeg_binaries');
@@ -38,25 +44,29 @@ class FFMpeg
 
         // @phpstan-ignore-next-line
         $this->logChannel = $logChannel ?: config('media.ffmpeg.log_channel');
+
+        // @phpstan-ignore-next-line
+        $this->timeout = $timeout ?? config('media.ffmpeg.timeout');
     }
 
     public static function make(
         ?string $ffmpeg = null,
         ?string $ffprobe = null,
         ?string $logChannel = null,
+        ?float $timeout = null,
     ): static {
-        return new static($ffmpeg, $ffprobe, $logChannel);
+        return new static($ffmpeg, $ffprobe, $logChannel, $timeout);
     }
 
     public function video(): Video
     {
-        return (new Video($this->ffmpeg, $this->ffprobe, $this->logChannel))
+        return (new Video($this->ffmpeg, $this->ffprobe, $this->logChannel, $this->timeout))
             ->setDecodableCodecs($this->decodableCodecs);
     }
 
     public function audio(): Audio
     {
-        return (new Audio($this->ffmpeg, $this->ffprobe, $this->logChannel))
+        return (new Audio($this->ffmpeg, $this->ffprobe, $this->logChannel, $this->timeout))
             ->setDecodableCodecs($this->decodableCodecs);
     }
 
@@ -144,7 +154,7 @@ class FFMpeg
         }
 
         $process = new Process($command);
-        $process->setTimeout(null);
+        $process->setTimeout($this->timeout);
         $process->run();
 
         if ($process->isSuccessful()) {
