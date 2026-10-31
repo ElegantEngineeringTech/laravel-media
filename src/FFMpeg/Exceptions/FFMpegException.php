@@ -8,10 +8,10 @@ use Exception;
 
 class FFMpegException extends Exception
 {
-    public static function executionFailed(int $code, string $command, string $error): self
+    public static function executionFailed(string $binary, int $code, string $command, string $error): self
     {
         return new self(implode("\n", [
-            "Error {$code} Executing ffmpeg: ",
+            "Error {$code} executing ".basename($binary).':',
             '---',
             $command,
             '---',

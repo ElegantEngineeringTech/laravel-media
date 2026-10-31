@@ -164,7 +164,7 @@ class FFMpeg
         $code = $process->getExitCode() ?? 1;
         $error = $process->getErrorOutput();
 
-        throw FFMpegException::executionFailed($code, implode(' ', $command), $error);
+        throw FFMpegException::executionFailed($binary, $code, implode(' ', $command), $error);
     }
 
     /**
