@@ -35,7 +35,8 @@ class MediaServiceProvider extends PackageServiceProvider
             ->hasMigration('add_additional_files_to_media_table')
             ->hasCommand(GenerateMediaConversionsCommand::class)
             ->hasCommand(RetryMediaConversionsCommand::class)
-            ->hasViews();
+            ->hasViews()
+            ->hasTranslations();
     }
 
     public function registeringPackage(): void

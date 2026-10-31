@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\FFMpeg;
 
+use Elegantly\Media\Enums\VideoIssue;
+use Elegantly\Media\FFMpeg\Exceptions\FFMpegException;
 use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\FFMpeg\ValueObjects\Stream;
 use Elegantly\Media\Helpers\Bitrate;
@@ -27,6 +29,35 @@ class Video extends FFMpeg
         }
 
         return $stream;
+    }
+
+    /**
+     * Check that the file is a readable video, from its ffprobe metadata only.
+     *
+     * Notes:
+     * - Frames are not decoded, so corrupted data past the header is not detected.
+     * - Throws when the check itself fails (missing file, misconfigured binary, timeout),
+     *   so that a server problem is never reported as an issue with the file.
+     *
+     * @return null|VideoIssue null when no issue is found
+     */
+    public function issue(string $input): ?VideoIssue
+    {
+        try {
+            $metadata = $this->metadata($input);
+        } catch (FFMpegException $exception) {
+            if ($exception->isInvalidData()) {
+                return VideoIssue::Unreadable;
+            }
+
+            throw $exception;
+        }
+
+        if (! $metadata->streams()->hasVideo()) {
+            return VideoIssue::NoVideoStream;
+        }
+
+        return null;
     }
 
     public function dimension(string $input, bool $rotate = true): Dimension
