@@ -15,8 +15,18 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 use Spatie\Image\Enums\Fit;
 use Spatie\Image\Image;
 
+/**
+ * Generates a tiny, blurred JPEG placeholder of the image.
+ * The result is stored base64-encoded in the conversion's `contents` instead of on a disk.
+ */
 class MediaImagePlaceholderConverter extends MediaConverter
 {
+    /**
+     * @param  int  $blur  Blur amount, from 0 (none) to 100 (maximum).
+     * @param  int  $width  Maximum width in pixels. The aspect ratio is preserved and the image is never upscaled.
+     * @param  null|int  $height  Maximum height in pixels.
+     *                            - null : Only the width is constrained.
+     */
     public function __construct(
         Media $media,
         public int $blur = 20,
