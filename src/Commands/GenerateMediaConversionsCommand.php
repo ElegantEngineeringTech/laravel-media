@@ -55,7 +55,6 @@ class GenerateMediaConversionsCommand extends Command
         $model = config('media.model');
 
         $query = $model::query()
-            ->with(['model', 'conversions'])
             ->when($ids, fn (Builder $query) => $query->whereIn('id', $ids))
             ->when($models, fn (Builder $query) => $query->whereIn('model_type', $models))
             ->when($collections, fn (Builder $query) => $query->whereIn('collection_name', $collections))
@@ -86,35 +85,38 @@ class GenerateMediaConversionsCommand extends Command
 
         $progress = new Progress('Dispatching Media conversions', $count);
 
-        $query->chunkById(100, function ($media) use ($progress, $queue, $force, $immediate, $conversions, $withChildren, $withForceChildren) {
+        $query
+            ->with(['model'])
+            ->withConversions($conversions)
+            ->chunkById(100, function ($media) use ($progress, $queue, $force, $immediate, $conversions, $withChildren, $withForceChildren) {
 
-            /** @var Media $medium */
-            foreach ($media as $medium) {
+                /** @var Media $medium */
+                foreach ($media as $medium) {
 
-                if ($conversions) {
-                    foreach ($conversions as $conversion) {
-                        $medium->dispatchConversion(
-                            conversion: $conversion,
+                    if ($conversions) {
+                        foreach ($conversions as $conversion) {
+                            $medium->dispatchConversion(
+                                conversion: $conversion,
+                                force: $force,
+                                withChildren: $withChildren,
+                                withForceChildren: $withForceChildren,
+                                queue: $queue,
+                            );
+                        }
+                    } else {
+                        $medium->generateConversions(
+                            filter: fn ($definition) => $immediate ? $definition->immediate : true,
+                            queued: $queue,
                             force: $force,
                             withChildren: $withChildren,
                             withForceChildren: $withForceChildren,
-                            queue: $queue,
                         );
                     }
-                } else {
-                    $medium->generateConversions(
-                        filter: fn ($definition) => $immediate ? $definition->immediate : true,
-                        queued: $queue,
-                        force: $force,
-                        withChildren: $withChildren,
-                        withForceChildren: $withForceChildren,
-                    );
+
+                    $progress->advance();
                 }
 
-                $progress->advance();
-            }
-
-        });
+            });
 
         return self::SUCCESS;
     }
