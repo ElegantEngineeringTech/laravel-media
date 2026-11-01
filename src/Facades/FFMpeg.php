@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static Video video()
  * @method static Audio audio()
- * @method static Metadata metadata(string $input)
+ * @method static Metadata metadata(string $input, bool $extradata = false)
  * @method static StreamCollection decodableStreams(string $input)
  * @method static string[] decodableCodecs()
  * @method static \Elegantly\Media\FFMpeg\FFMpeg setDecodableCodecs(string[]|null $codecs)

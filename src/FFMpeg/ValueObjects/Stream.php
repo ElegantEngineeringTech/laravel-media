@@ -40,6 +40,58 @@ class Stream
         return $this->getString('codec_type');
     }
 
+    /**
+     * The codec in the RFC 6381 format, as in the CODECS attribute of HLS playlists or the type of HTML video sources
+     * (e.g. "avc1.64001f" for H.264 High profile level 3.1, "mp4a.40.2" for AAC-LC).
+     *
+     * Notes:
+     * - Supports H.264 and AAC, null for other codecs.
+     * - Read from the decoder configuration of the stream, only probed with FFMpeg::metadata(extradata: true).
+     *   H.264 needs its avcC configuration, stored in MP4, MOV or MKV files but not in MPEG-TS.
+     * - Encoders mostly signal HE-AAC as AAC-LC extended with SBR, which only shows in the profile
+     *   once ffprobe has decoded some audio.
+     */
+    public function codecString(): ?string
+    {
+        if ($this->codecName() === 'h264') {
+            $configuration = $this->extradata();
+
+            // The avcC configuration starts with its version, then the profile, constraints and level of the stream
+            return $configuration !== null && $configuration[0] === "\x01"
+                ? 'avc1.'.bin2hex(substr($configuration, 1, 3))
+                : null;
+        }
+
+        if ($this->codecName() === 'aac') {
+            $configuration = $this->extradata();
+
+            $type = match ($this->getString('profile')) {
+                'LC' => 2,
+                'HE-AAC' => 5,
+                'HE-AACv2' => 29,
+                // The AudioSpecificConfig starts with the 5 bits of the audio object type, 31 announcing an extended one
+                default => $configuration === null ? null : ord($configuration[0]) >> 3,
+            };
+
+            return $type !== null && $type < 31 ? "mp4a.40.{$type}" : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * The codec private data, such as the decoder configuration of H.264 and AAC streams.
+     * ffprobe prints it as a hex dump with -show_data: "00000000: 0164 001f ffe1 0018 6764 001f acd9 4050  .d......gd....@P".
+     */
+    protected function extradata(): ?string
+    {
+        preg_match_all('/^[0-9a-f]{8}: (?<bytes>[0-9a-f ]+?)  /m', $this->getString('extradata') ?? '', $lines);
+
+        $hex = str_replace(' ', '', implode('', $lines['bytes']));
+
+        return $hex === '' ? null : (string) hex2bin($hex);
+    }
+
     public function isAudio(): bool
     {
         return $this->codecType() === 'audio';

@@ -10,6 +10,8 @@ use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\FFMpeg\ValueObjects\Stream;
 use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\Dimension;
+use Elegantly\Media\Helpers\Hls;
+use Elegantly\Media\Helpers\HlsVariant;
 use Elegantly\Media\Helpers\Spritesheet;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\MediaServiceProvider;
@@ -570,8 +572,10 @@ class Video extends FFMpeg
      * Generate a production-ready HLS VOD playlist with adaptive m3u8 variants.
      *
      * The output directory will contain a master playlist and one media playlist per generated resolution.
+     * ffmpeg writes the media playlists and their segments, while the master playlist is written from the returned Hls:
+     * ffmpeg leaves out the FRAME-RATE Apple devices require, and can't measure the bandwidth of sources shorter than ~0.5s.
      * When the source has audio, it is muxed into every rendition at the rendition audio bitrate,
-     * so the bandwidth ffmpeg measures for each variant includes it.
+     * so the bandwidth measured for each variant includes it.
      *
      * Each rendition describes a 16:9 bounding box (e.g. 1080p is 1920x1080, or 1080x1920 for portrait sources).
      * The video is scaled to fit inside the box while keeping its aspect ratio, and a rendition is only generated
@@ -599,8 +603,7 @@ class Video extends FFMpeg
      *                                       Shorter intervals make seeking faster at a small bitrate cost.
      *                                       Keyframes always land on segment boundaries.
      * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
-     * @return false|string Command output, or false when the source can't produce a playable stream
-     *                      (no renditions given, or too short to be segmented)
+     * @return false|Hls The variants written, or false when no rendition is given or no segment could be written.
      */
     public function hls(
         string $input,
@@ -614,7 +617,7 @@ class Video extends FFMpeg
         int $startingRendition = 720,
         int|float $keyframeInterval = 2,
         bool $stripMetadata = true,
-    ): false|string {
+    ): false|Hls {
         $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
         $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
 
@@ -704,8 +707,7 @@ class Video extends FFMpeg
                 "-bufsize:v:{$index}", $rendition->bufsize->format(),
             );
 
-            // Each rendition gets its own copy of the audio, as ffmpeg leaves the audio out of
-            // the BANDWIDTH of variants referencing a separate audio rendition.
+            // Each rendition gets its own copy of the audio, so the bandwidth measured from its segments includes it.
             if ($audioStream) {
                 array_push(
                     $arguments,
@@ -733,14 +735,9 @@ class Video extends FFMpeg
             ...$filters,
         ]);
 
-        $variantStreamMap = [
-            $variantStreamMap[$startingRenditionKey],
-            ...Arr::except($variantStreamMap, $startingRenditionKey),
-        ];
-
         File::ensureDirectoryExists($output);
 
-        $result = $this->ffmpeg([
+        $this->ffmpeg([
             '-i', $input,
             '-filter_complex', $filterComplex,
             ...$arguments,
@@ -753,7 +750,6 @@ class Video extends FFMpeg
             // ffmpeg only expands %v in the init filename when there are several variants.
             '-hls_fmp4_init_filename', $renditions->count() > 1 ? '%v_init.mp4' : "{$renditions->sole()->size}p_init.mp4",
             '-start_number', '0',
-            '-master_pl_name', $playlist,
             '-var_stream_map', implode(' ', $variantStreamMap),
             ...($stripMetadata ? [
                 '-map_metadata', '-1',
@@ -762,18 +758,70 @@ class Video extends FFMpeg
             "{$output}/%v_playlist.m3u8",
         ]);
 
-        // ffmpeg can't measure the bandwidth of sources shorter than ~0.5s
-        // and then silently writes a master playlist without any variant
-        $master = "{$output}/{$playlist}";
+        $variants = array_map(
+            fn ($rendition) => $this->hlsVariant(
+                directory: $output,
+                name: "{$rendition->size}p"
+            ),
+            $renditions->all()
+        );
 
-        if (
-            ! File::exists($master) ||
-            ! str_contains(File::get($master), '#EXT-X-STREAM-INF')
-        ) {
-            return false;
+        foreach ($variants as $variant) {
+            if (! $variant->segments) {
+                return false;
+            }
         }
 
-        return $result;
+        $hls = new Hls([
+            $variants[$startingRenditionKey],
+            ...Arr::except($variants, $startingRenditionKey),
+        ]);
+
+        File::put("{$output}/{$playlist}", $hls->toM3u8());
+
+        return $hls;
+    }
+
+    /**
+     * Describe a variant from the media playlist, initialization segment and segments written by the hls muxer.
+     */
+    protected function hlsVariant(string $directory, string $name): HlsVariant
+    {
+        $playlist = "{$name}_playlist.m3u8";
+        $init = "{$name}_init.mp4";
+
+        $content = File::get("{$directory}/{$playlist}");
+
+        preg_match('/^#EXT-X-TARGETDURATION:(?<seconds>\d+)/m', $content, $targetDuration);
+
+        // Each segment is listed right after its duration
+        preg_match_all('/^#EXTINF:(?<duration>[\d.]+),.*\R(?<file>.+)$/m', $content, $segments, PREG_SET_ORDER);
+
+        $streams = $this->metadata("{$directory}/{$playlist}", ['-show_data'])->streams();
+
+        $video = $streams->defaultVideo();
+
+        if (! $video) {
+            throw VideoStreamNotFoundException::atPath("{$directory}/{$playlist}");
+        }
+
+        return new HlsVariant(
+            name: $name,
+            playlist: $playlist,
+            init: $init,
+            segments: array_map(fn ($segment) => [
+                'file' => $segment['file'],
+                'duration' => (float) $segment['duration'],
+                'size' => File::size("{$directory}/{$segment['file']}"),
+            ], $segments),
+            targetDuration: (int) ($targetDuration['seconds'] ?? 0),
+            dimension: $video->dimension(),
+            frameRate: $video->frameRate(),
+            codecs: array_values(array_filter([
+                $video->codecString(),
+                $streams->defaultAudio()?->codecString(),
+            ])),
+        );
     }
 
     /**

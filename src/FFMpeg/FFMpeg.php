@@ -72,13 +72,16 @@ class FFMpeg
 
     /**
      * Probe the media format and streams with ffprobe.
+     *
+     * @param  string[]  $arguments
      */
-    public function metadata(string $input): Metadata
+    public function metadata(string $input, array $arguments = []): Metadata
     {
         $output = $this->ffprobe([
             '-v', 'error',
             '-show_format',
             '-show_streams',
+            ...$arguments,
             '-print_format', 'json',
             $input,
         ]);

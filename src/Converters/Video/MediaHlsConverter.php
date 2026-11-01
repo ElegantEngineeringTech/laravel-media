@@ -8,6 +8,7 @@ use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\Helpers\Hls;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\Media;
@@ -16,6 +17,14 @@ use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Str;
 
+/**
+ * Encodes a video into an adaptive HLS stream, with one variant per rendition the source supports.
+ *
+ * The master playlist is the conversion file, and the media playlists and segments it references
+ * are additional files stored next to it. The variants are stored in the conversion metadata, see Hls::toArray().
+ *
+ * @see Hls
+ */
 class MediaHlsConverter extends MediaConverter
 {
     /**
@@ -71,7 +80,7 @@ class MediaHlsConverter extends MediaConverter
 
         $ffmpeg = FFMpeg::video();
 
-        $result = $ffmpeg->hls(
+        $hls = $ffmpeg->hls(
             input: $input,
             output: $output,
             playlist: $this->playlist,
@@ -83,21 +92,18 @@ class MediaHlsConverter extends MediaConverter
             startingRendition: $this->startingRendition,
         );
 
-        if ($result === false) {
+        if ($hls === false) {
             return $this->unsupportedConversion();
         }
 
-        $master = $outputId.DIRECTORY_SEPARATOR.$this->playlist;
-
-        $files = array_filter($filesystem->files($outputId), fn ($file) => $file !== $master);
-
         return $media->addConversion(
-            file: $filesystem->path($master),
+            file: $filesystem->path("{$outputId}/{$this->playlist}"),
             conversionName: $this->conversion,
             parent: $parent,
+            metadata: $hls->toArray(),
             additionalFiles: array_map(
-                fn ($file) => $filesystem->path($file),
-                $files
+                fn ($file) => $filesystem->path("{$outputId}/{$file}"),
+                $hls->files(),
             ),
         );
 

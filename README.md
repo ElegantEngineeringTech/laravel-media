@@ -46,6 +46,7 @@ I developed this package with the highest degree of flexibility possible and I h
 
 1. [Conversions Presets](#conversions-presets)
     - [Image Placeholder](#image-placeholder)
+    - [Video Streaming (HLS)](#video-streaming-hls)
     - [Video Sprite Sheets](#video-sprite-sheets)
 
 1. [Customization](#customization)
@@ -258,6 +259,7 @@ This package provides common converter to simplify your work:
 - `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video or gif to mp4 video using `ffmpeg`.
 - `MediaWebmConverter`: This conversion optimizes, resizes, or converts any video or gif to webm video using `ffmpeg`.
 - `MediaAv1Converter`: This conversion optimizes, resizes, or converts any video or gif to AV1 video (in an mp4 or webm container) using `ffmpeg`.
+- `MediaHlsConverter`: This conversion encodes any video into an adaptive HLS stream with several resolutions using `ffmpeg`. See [Video Streaming (HLS)](#video-streaming-hls).
 - `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
 - `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
 - `MediaOpusConverter`: This conversion optimizes, resizes, converts or extract any audio in opus format using `ffmpeg`.
@@ -925,6 +927,89 @@ If you need to manually work with the placeholder (e.g., for API responses or in
 $placeholder = $media->getConversion('placeholder');
 
 $base64Image = $placeholder?->contents;
+```
+
+### Video Streaming (HLS)
+
+HLS (HTTP Live Streaming) splits a video into short segments encoded at several resolutions. Players start quickly, then switch to the resolution the connection allows.
+
+The `MediaHlsConverter` encodes a variant for each rendition the source fills, without upscaling, and writes the master playlist listing them with the attributes Apple devices require: the peak and average bandwidths, the codecs, the resolution and the frame rate.
+
+#### Defining the HLS Conversion
+
+```php
+use Elegantly\Media\Converters\Video\MediaHlsConverter;
+
+new MediaCollection(
+    name: 'videos',
+    conversions: [
+        new MediaConversionDefinition(
+            name: 'hls',
+            converter: fn ($media) => new MediaHlsConverter(
+                media: $media,
+                renditions: [360, 720, 1080],
+            ),
+        ),
+    ]
+);
+```
+
+| Parameter           | Default       | Description                                                                                                  |
+| ------------------- | ------------- | ------------------------------------------------------------------------------------------------------------ |
+| `renditions`        | `null`        | The sizes of the renditions to generate, among `media.videos.hls.renditions`. `null` generates all of them.  |
+| `startingRendition` | `720`         | The size of the rendition players start with, listed first in the master playlist.                           |
+| `segmentLength`     | `6`           | The duration of a segment, in seconds.                                                                       |
+| `fps`               | `null`        | The maximum frame rate, never raising the frame rate of the source.                                          |
+| `crf`, `preset`     | `23`, `slow`  | The quality targeted by x264, and its compression speed.                                                     |
+| `playlist`          | `master.m3u8` | The file name of the master playlist.                                                                        |
+
+#### Stored Files and Variants
+
+The conversion file is the master playlist. The media playlists and segments of each variant are stored as additional files next to it, as the playlists reference them by their file name. The variants are saved in the conversion metadata, in the order of the master playlist:
+
+```php
+$hls = $media->getConversion('hls');
+
+$hls->getUrl(); // The master playlist
+
+$hls->metadata;
+// [
+//     'variants' => [
+//         [
+//             'name' => '720p',
+//             'playlist' => '720p_playlist.m3u8', // The media playlist
+//             'width' => 1280,
+//             'height' => 720,
+//             'frameRate' => 30.0,
+//             'bandwidth' => 2287548, // The peak bit rate, in bits per second
+//             'averageBandwidth' => 1946342, // The average bit rate, in bits per second
+//             'codecs' => 'avc1.64001f,mp4a.40.2',
+//         ],
+//         // ...
+//     ],
+// ]
+```
+
+#### Playing the Stream
+
+Safari plays HLS natively. Other browsers play it through [hls.js](https://github.com/video-dev/hls.js), which most video players are built on:
+
+```blade
+<video id="video" controls></video>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<script>
+    const video = document.getElementById('video');
+    const url = @js($media->getUrl(conversion: 'hls'));
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+    } else if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+    }
+</script>
 ```
 
 ### Video Sprite Sheets
