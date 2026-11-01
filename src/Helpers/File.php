@@ -114,4 +114,15 @@ class File
             dictionary: ['@' => 'at', '+' => '_']
         );
     }
+
+    /**
+     * Sanitizes the name of a file while keeping its extension, e.g. "My Video.mp4" becomes "my_video.mp4".
+     */
+    public static function sanitizeBasename(string $basename): string
+    {
+        $name = static::sanitizeFilename(pathinfo($basename, PATHINFO_FILENAME));
+        $extension = pathinfo($basename, PATHINFO_EXTENSION);
+
+        return $extension ? "{$name}.{$extension}" : $name;
+    }
 }

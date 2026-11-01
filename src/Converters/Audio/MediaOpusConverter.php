@@ -7,6 +7,7 @@ namespace Elegantly\Media\Converters\Audio;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
+use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -39,6 +40,8 @@ class MediaOpusConverter extends MediaConverter
         public ?int $channels = 2,
     ) {
         parent::__construct($media);
+
+        $this->filename = File::sanitizeBasename($filename);
     }
 
     public function canExecute(Media $media, ?MediaConversion $parent): bool

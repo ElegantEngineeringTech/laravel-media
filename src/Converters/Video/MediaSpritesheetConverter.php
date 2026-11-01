@@ -40,7 +40,7 @@ class MediaSpritesheetConverter extends MediaConverter
      */
     public function __construct(
         Media $media,
-        public string $filename,
+        public string $filename = 'spritesheet.vtt',
         public string $format = 'jpg',
         public int|float|null $interval = null,
         public ?int $frames = null,
@@ -50,6 +50,8 @@ class MediaSpritesheetConverter extends MediaConverter
         public int $rows = 10,
     ) {
         parent::__construct($media);
+
+        $this->filename = File::sanitizeBasename($filename);
     }
 
     public function canExecute(Media $media, ?MediaConversion $parent): bool
@@ -71,8 +73,7 @@ class MediaSpritesheetConverter extends MediaConverter
             return $this->unsupportedConversion();
         }
 
-        // Stored files have sanitized names, which the WebVTT file must reference
-        $name = File::sanitizeFilename(pathinfo($this->filename, PATHINFO_FILENAME));
+        $name = pathinfo($this->filename, PATHINFO_FILENAME);
         $extension = pathinfo($this->filename, PATHINFO_EXTENSION);
 
         $input = $filesystem->path($file);
