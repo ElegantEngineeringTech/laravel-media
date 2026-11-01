@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media;
 
 use Elegantly\Media\Commands\GenerateMediaConversionsCommand;
+use Elegantly\Media\Commands\RegenerateMediaConversionsCommand;
 use Elegantly\Media\Commands\RetryMediaConversionsCommand;
 use Elegantly\Media\FFMpeg\FFMpeg;
 use Elegantly\Media\Helpers\Bitrate;
@@ -35,6 +36,7 @@ class MediaServiceProvider extends PackageServiceProvider
             ->hasMigration('add_additional_files_to_media_table')
             ->hasCommand(GenerateMediaConversionsCommand::class)
             ->hasCommand(RetryMediaConversionsCommand::class)
+            ->hasCommand(RegenerateMediaConversionsCommand::class)
             ->hasViews()
             ->hasTranslations();
     }

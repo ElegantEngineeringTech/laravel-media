@@ -825,6 +825,12 @@ You can also use the following command to retry failed conversions:
 php artisan media-conversions:retry
 ```
 
+To regenerate existing conversions, filtered by name, state and creation date (`--with-force-children` also re-generates their existing children):
+
+```bash
+php artisan media-conversions:regen --conversions=poster --states=succeeded --after=2026-01-01 --before=2026-06-01 --with-force-children
+```
+
 This provides a convenient way to process conversions in bulk or automate them within your workflows.
 
 ### Format Media URLs

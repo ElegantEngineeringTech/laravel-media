@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Laravel\Prompts\Progress;
 
 use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\info;
 
 class GenerateMediaConversionsCommand extends Command
 {
@@ -78,6 +79,12 @@ class GenerateMediaConversionsCommand extends Command
             );
 
         $count = $query->count();
+
+        if ($count === 0) {
+            info('Nothing to dispatch.');
+
+            return self::SUCCESS;
+        }
 
         if (! confirm("{$count} Media found. Continue?")) {
             return self::SUCCESS;
