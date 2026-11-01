@@ -256,6 +256,7 @@ This package provides common converter to simplify your work:
 - `MediaImageConverter`: This converter optimizes, resizes, or converts any image using `spatie/image`.
 - `MediaMp4Converter`: This conversion optimizes, resizes, or converts any video or gif to mp4 video using `ffmpeg`.
 - `MediaWebmConverter`: This conversion optimizes, resizes, or converts any video or gif to webm video using `ffmpeg`.
+- `MediaAv1Converter`: This conversion optimizes, resizes, or converts any video or gif to AV1 video (in an mp4 or webm container) using `ffmpeg`.
 - `MediaWavConverter`: This conversion optimizes, resizes, converts or extract any audio in wav format using `ffmpeg`.
 - `MediaMp3Converter`: This conversion optimizes, resizes, converts or extract any audio in mp3 format using `ffmpeg`.
 - `MediaOpusConverter`: This conversion optimizes, resizes, converts or extract any audio in opus format using `ffmpeg`.

@@ -315,6 +315,98 @@ class Video extends FFMpeg
     }
 
     /**
+     * Transcodes a video file to AV1/Opus using FFmpeg, in an MP4 or WebM container depending on the output extension.
+     *
+     * The video is encoded with SVT-AV1 in capped CRF: the crf sets the targeted quality,
+     * while complex scenes are capped to the maxrate of the av1 video rendition closest in size (and to the source bitrate).
+     * The seek index is written at the start of the file, so it can be played progressively.
+     *
+     * @param  string  $input  The absolute path to the source video file.
+     * @param  string  $output  The absolute path for the output .mp4 or .webm file.
+     * @param  int|null  $width  The maximum width in pixels, keeping the aspect ratio.
+     * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
+     * @param  bool  $upscale  Whether the video can be larger than the source.
+     * @param  int|null  $fps  Maximum frame rate, never raising the source frame rate.
+     * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
+     * @param  int  $crf  The SVT-AV1 Constant Rate Factor (0–63), the targeted quality.
+     *                    Lower is higher quality; 35 is the SVT-AV1 default.
+     * @param  int  $preset  The compression speed (0–13).
+     *                       Lower presets result in better compression/smaller files but are much slower.
+     *                       6 is a good balance for video on demand, 8 and above for faster encodes.
+     * @param  bool  $stripMetadata  Remove the source metadata (e.g. location, device, dates) from the output.
+     */
+    public function av1(
+        string $input,
+        string $output,
+        ?int $width = null,
+        ?int $height = null,
+        bool $upscale = true,
+        ?int $fps = null,
+        int|float $keyframeInterval = 2,
+        int $crf = 35,
+        int $preset = 6,
+        bool $stripMetadata = true,
+    ): string {
+
+        $streams = $this->decodableStreams($input);
+
+        $video = $streams->defaultVideo();
+
+        if (! $video) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
+
+        $audio = $streams->defaultAudio();
+
+        $dimension = $video->dimension()->scale($width, $height, $upscale);
+
+        $rendition = MediaServiceProvider::getVideoRenditions('av1')
+            ->getClosestBy($dimension)
+            ?->setMaxBitrate($video->bitrate())
+            ->setMaxAudioBitrate($audio?->bitrate());
+
+        $filters = implode(',', [
+            $this->sdrFilter($video),
+            $this->fpsFilter($fps),
+            $this->scaleFilter($width, $height, $upscale),
+        ]);
+
+        $extension = strtolower(pathinfo($output, PATHINFO_EXTENSION));
+
+        $isWebm = $extension === 'webm';
+
+        return $this->ffmpeg([
+            '-i', $input,
+            '-map', "0:{$video->index()}",
+            ...($audio ? [
+                '-map', "0:{$audio->index()}",
+            ] : []),
+            '-vf', $filters,
+            '-c:v', 'libsvtav1',
+            '-crf', (string) $crf,
+            '-preset', (string) $preset,
+            '-force_key_frames', "expr:gte(t,n_forced*{$keyframeInterval})",
+            ...($rendition ? [
+                '-maxrate', $rendition->maxrate->format(),
+                '-bufsize', $rendition->bufsize->format(),
+                '-b:a', $rendition->audioBitrate->format(),
+            ] : [
+                '-b:a', '96k',
+            ]),
+            '-c:a', 'libopus',
+            '-ac', '2', // Stereo
+            // Seek index at the start, for faster playback start and seeking
+            ...($isWebm ? [
+                '-cues_to_front', '1',
+            ] : [
+                '-movflags', '+faststart',
+            ]),
+            ...($stripMetadata ? ['-map_metadata', '-1'] : []),
+            $output,
+        ]);
+    }
+
+    /**
      * Generate a production-ready HLS VOD playlist with adaptive m3u8 variants.
      *
      * The output directory will contain a master playlist and one media playlist per generated resolution.

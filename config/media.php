@@ -124,6 +124,19 @@ return [
                 ['size' => 1440, 'maxrate' => '5136k', 'bufsize' => '7704k', 'audioBitrate' => '96k'],
                 ['size' => 2160, 'maxrate' => '16050k', 'bufsize' => '24075k', 'audioBitrate' => '96k'],
             ],
+            /**
+             * AV1/Opus, used by the AV1 converter.
+             * AV1 reaches the quality of VP9 with ~30% fewer bits.
+             */
+            'av1' => [
+                ['size' => 240, 'maxrate' => '270k', 'bufsize' => '405k', 'audioBitrate' => '96k'],
+                ['size' => 360, 'maxrate' => '360k', 'bufsize' => '540k', 'audioBitrate' => '96k'],
+                ['size' => 480, 'maxrate' => '629k', 'bufsize' => '944k', 'audioBitrate' => '96k'],
+                ['size' => 720, 'maxrate' => '1259k', 'bufsize' => '1889k', 'audioBitrate' => '96k'],
+                ['size' => 1080, 'maxrate' => '2247k', 'bufsize' => '3371k', 'audioBitrate' => '96k'],
+                ['size' => 1440, 'maxrate' => '3595k', 'bufsize' => '5393k', 'audioBitrate' => '96k'],
+                ['size' => 2160, 'maxrate' => '11235k', 'bufsize' => '16853k', 'audioBitrate' => '96k'],
+            ],
         ],
         /**
          * The HLS renditions, among the mp4 sizes, or as rendition arrays.
