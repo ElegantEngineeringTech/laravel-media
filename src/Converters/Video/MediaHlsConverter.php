@@ -15,7 +15,6 @@ use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Support\Str;
 
 /**
  * Encodes a video into an adaptive HLS stream, with one variant per rendition the source supports.
@@ -73,16 +72,11 @@ class MediaHlsConverter extends MediaConverter
             return $this->unsupportedConversion();
         }
 
-        $outputId = Str::random(6);
-
-        $input = $filesystem->path($file);
-        $output = $filesystem->path($outputId);
-
         $ffmpeg = FFMpeg::video();
 
         $hls = $ffmpeg->hls(
-            input: $input,
-            output: $output,
+            input: $filesystem->path($file),
+            output: $temporaryDirectory->path(),
             playlist: $this->playlist,
             fps: $this->fps,
             segmentLength: $this->segmentLength,
@@ -97,12 +91,12 @@ class MediaHlsConverter extends MediaConverter
         }
 
         return $media->addConversion(
-            file: $filesystem->path("{$outputId}/{$this->playlist}"),
+            file: $filesystem->path($this->playlist),
             conversionName: $this->conversion,
             parent: $parent,
             metadata: $hls->toArray(),
             additionalFiles: array_map(
-                fn ($file) => $filesystem->path("{$outputId}/{$file}"),
+                fn ($file) => $filesystem->path($file),
                 $hls->files(),
             ),
         );
