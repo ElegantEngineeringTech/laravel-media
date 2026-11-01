@@ -153,15 +153,16 @@ class Video extends FFMpeg
      * each multiple of the interval, and repeats the first frame when the video starts after the audio.
      * Frames are extracted first, so their exact number is known, then tiled row by row into sheets.
      *
-     * The first sheet is written at $output and the following ones are suffixed with their index (e.g. sprites_1.jpg).
-     * The WebVTT file is named after the first sheet (e.g. sprites.vtt) and references the sheets by their file name.
+     * Like an HLS playlist, the WebVTT file is written at $output and references the sheets by their file name.
+     * The sheets are written next to it, named after it with their index (e.g. sprites_0.jpg, sprites_1.jpg for sprites.vtt).
      * The grid shrinks to the frames when they don't fill a single sheet.
      *
      * Every frame has the same even size, as the sheets need equal tiles. Videos changing resolution midway
      * are stretched to it, rather than resetting the filters, which would put the frames out of sync with the timeline.
      *
      * @param  string  $input  The absolute path to the source video file.
-     * @param  string  $output  The absolute path of the first sheet. Use a .jpg, .webp or .png extension.
+     * @param  string  $output  The absolute path of the WebVTT file. Use a .vtt extension.
+     * @param  string  $format  The image format of the sheets: jpg, webp or png.
      * @param  int|float|null  $interval  The time between two frames in seconds, e.g. 2 for a frame every 2 seconds.
      *                                    null spreads the frames evenly over the whole video.
      *                                    Never shorter than the time between two frames of the video.
@@ -177,6 +178,7 @@ class Video extends FFMpeg
     public function spritesheet(
         string $input,
         string $output,
+        string $format = 'jpg',
         int|float|null $interval = null,
         ?int $frames = null,
         ?int $width = 160,
@@ -188,14 +190,14 @@ class Video extends FFMpeg
 
         $directory = dirname($output);
         $name = pathinfo($output, PATHINFO_FILENAME);
-        $extension = strtolower(pathinfo($output, PATHINFO_EXTENSION));
+        $format = strtolower($format);
 
-        $encoder = match ($extension) {
+        $encoder = match ($format) {
             'jpg', 'jpeg' => 'mjpeg',
             'png' => 'png',
             // The default WebP encoder makes a single animated image of all the sheets
             'webp' => 'libwebp',
-            default => throw new InvalidArgumentException("Sprite sheets can't be written as .{$extension} files, use a .jpg, .webp or .png extension."),
+            default => throw new InvalidArgumentException("Sprite sheets can't be written as {$format} files, use jpg, webp or png."),
         };
 
         $metadata = $this->metadata($input);
@@ -229,7 +231,7 @@ class Video extends FFMpeg
         );
 
         return TemporaryDirectory::callback(function ($temporaryDirectory) use (
-            $input, $video, $duration, $interval, $frames, $dimension, $columns, $rows, $directory, $name, $extension, $encoder
+            $input, $output, $format, $video, $duration, $interval, $frames, $dimension, $columns, $rows, $directory, $name, $encoder
         ) {
             $path = $temporaryDirectory->path();
 
@@ -279,19 +281,14 @@ class Video extends FFMpeg
                 // One file per sheet
                 '-f', 'image2',
                 '-start_number', '0',
-                "{$directory}/{$name}_%d.{$extension}",
+                "{$directory}/{$name}_%d.{$format}",
             ]);
 
-            $sheets = array_map(
-                fn ($index) => $index === 0 ? "{$name}.{$extension}" : "{$name}_{$index}.{$extension}",
-                range(0, (int) ceil($count / ($columns * $rows)) - 1),
-            );
-
-            File::move("{$directory}/{$name}_0.{$extension}", "{$directory}/{$sheets[0]}");
-
             $spritesheet = new Spritesheet(
-                sheets: $sheets,
-                vtt: "{$name}.vtt",
+                sheets: array_map(
+                    fn ($index) => "{$name}_{$index}.{$format}",
+                    range(0, (int) ceil($count / ($columns * $rows)) - 1),
+                ),
                 frames: $count,
                 interval: (float) $interval,
                 columns: $columns,
@@ -299,7 +296,7 @@ class Video extends FFMpeg
                 dimension: $dimension,
             );
 
-            File::put("{$directory}/{$spritesheet->vtt}", $spritesheet->toVtt($duration ?: null));
+            File::put($output, $spritesheet->toVtt($duration ?: null));
 
             return $spritesheet;
         });

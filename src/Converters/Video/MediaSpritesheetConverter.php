@@ -17,8 +17,8 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 /**
  * Tiles frames of a video into sprite sheets, for timeline previews in video players or previews scrubbed on hover.
  *
- * The first sheet is the conversion file. The following sheets, when the frames don't fit in one,
- * and the WebVTT file mapping each time range to its frame are additional files stored next to it.
+ * Like an HLS playlist, the WebVTT file mapping each time range to its frame is the conversion file,
+ * and the sheets it references are additional files stored next to it.
  * The layout is stored in the conversion metadata, see Spritesheet::toArray().
  *
  * @see Spritesheet
@@ -26,8 +26,9 @@ use Illuminate\Contracts\Filesystem\Filesystem;
 class MediaSpritesheetConverter extends MediaConverter
 {
     /**
-     * @param  string  $filename  The first sheet, also naming the following ones and the WebVTT file.
-     *                            Use a .jpg, .webp or .png extension.
+     * @param  string  $filename  The WebVTT file, also naming the sheets (e.g. sprites_0.jpg, sprites_1.jpg for sprites.vtt).
+     *                            Use a .vtt extension.
+     * @param  string  $format  The image format of the sheets: jpg, webp or png.
      * @param  int|float|null  $interval  The time between two frames in seconds, e.g. 2 for a frame every 2 seconds.
      *                                    null spreads the frames evenly over the whole video.
      * @param  int|null  $frames  The maximum number of frames, the interval being widened on long videos to stay under it.
@@ -40,6 +41,7 @@ class MediaSpritesheetConverter extends MediaConverter
     public function __construct(
         Media $media,
         public string $filename,
+        public string $format = 'jpg',
         public int|float|null $interval = null,
         public ?int $frames = null,
         public ?int $width = 160,
@@ -85,6 +87,7 @@ class MediaSpritesheetConverter extends MediaConverter
         $spritesheet = $ffmpeg->spritesheet(
             input: $input,
             output: $output,
+            format: $this->format,
             interval: $this->interval,
             frames: $this->frames,
             width: $this->width,
@@ -104,8 +107,8 @@ class MediaSpritesheetConverter extends MediaConverter
             parent: $parent,
             metadata: $spritesheet->toArray(),
             additionalFiles: array_map(
-                fn ($fileName) => $filesystem->path($fileName),
-                [...array_slice($spritesheet->sheets, 1), $spritesheet->vtt],
+                fn ($sheet) => $filesystem->path($sheet),
+                $spritesheet->sheets,
             ),
         );
 

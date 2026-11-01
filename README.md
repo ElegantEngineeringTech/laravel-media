@@ -931,7 +931,7 @@ $base64Image = $placeholder?->contents;
 
 A sprite sheet is a single image tiling many frames of a video in a grid. It powers the previews shown when hovering the timeline of a video player, or when scrubbing a video card with the mouse, with a single request.
 
-The `MediaSpritesheetConverter` extracts frames at a regular interval, tiles them into one or several sheets, and writes the WebVTT file video players read timeline thumbnails from.
+The `MediaSpritesheetConverter` extracts frames at a regular interval, tiles them into one or several sheets, and writes the WebVTT file video players read timeline thumbnails from. Like an HLS playlist, the WebVTT file is the conversion file and references the sheets stored next to it.
 
 #### Defining the Sprite Sheet Conversion
 
@@ -946,7 +946,7 @@ new MediaCollection(
             name: 'sprites',
             converter: fn ($media) => new MediaSpritesheetConverter(
                 media: $media,
-                filename: 'sprites.jpg',
+                filename: 'sprites.vtt',
             ),
         ),
         // A frame every 2 seconds, in as many 10x10 sheets as needed
@@ -954,7 +954,8 @@ new MediaCollection(
             name: 'timeline',
             converter: fn ($media) => new MediaSpritesheetConverter(
                 media: $media,
-                filename: 'timeline.webp',
+                filename: 'timeline.vtt',
+                format: 'webp',
                 interval: 2,
                 width: 240,
             ),
@@ -965,7 +966,8 @@ new MediaCollection(
 
 | Parameter          | Default        | Description                                                                                                                                           |
 | ------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `filename`         |                | The first sheet, also naming the following ones (`sprites_1.jpg`...) and the WebVTT file (`sprites.vtt`). Use a `.jpg`, `.webp` or `.png` extension. |
+| `filename`         |                | The WebVTT file, also naming the sheets (`sprites_0.jpg`, `sprites_1.jpg`... for `sprites.vtt`). Use a `.vtt` extension.                               |
+| `format`           | `jpg`          | The image format of the sheets: `jpg`, `webp` or `png`.                                                                                               |
 | `interval`         | `null`         | The time between two frames in seconds. `null` spreads the frames evenly over the whole video.                                                       |
 | `frames`           | `null`         | The maximum number of frames, the interval being widened on long videos. Defaults to a single sheet (`columns` × `rows`) without interval, and to no limit otherwise. |
 | `width`, `height`  | `160`, `null`  | The maximum size of a frame, keeping the aspect ratio. Frames are never upscaled.                                                                     |
@@ -973,12 +975,12 @@ new MediaCollection(
 
 #### Stored Files and Layout
 
-The conversion file is the first sheet. The following sheets and the WebVTT file are stored as additional files next to it, and the layout is saved in the conversion metadata:
+Like an HLS playlist, the conversion file is the WebVTT file. The sheets are stored as additional files next to it, and the layout is saved in the conversion metadata:
 
 ```php
 $sprites = $media->getConversion('sprites');
 
-$sprites->getUrl(); // The first sheet
+$sprites->getUrl(); // The WebVTT file
 
 $sprites->metadata;
 // [
@@ -988,8 +990,7 @@ $sprites->metadata;
 //     'rows' => 10, // The number of rows per sheet
 //     'width' => 160, // The width of a frame
 //     'height' => 90, // The height of a frame
-//     'sheets' => ['sprites.jpg'],
-//     'vtt' => 'sprites.vtt',
+//     'sheets' => ['sprites_0.jpg'],
 // ]
 ```
 
@@ -997,12 +998,10 @@ Frame `n` shows the video at `n × interval` seconds. It is in the sheet `floor(
 
 #### Timeline Previews in Video Players
 
-Most video players (Vidstack, Video.js, Plyr, Media Chrome...) display timeline thumbnails from a WebVTT file. Each cue references its frame with a media fragment (e.g. `sprites.jpg#xywh=160,0,160,90`), relative to the WebVTT file:
+Most video players (Vidstack, Video.js, Plyr, Media Chrome...) display timeline thumbnails from a WebVTT file. Each cue references its frame with a media fragment (e.g. `sprites_0.jpg#xywh=160,0,160,90`), relative to the WebVTT file, so give the player its URL:
 
 ```php
-$vtt = $media->getConversion('timeline')?->additional_files?->firstWhere('extension', 'vtt');
-
-$url = $vtt?->getDisk()->url($vtt->path);
+$url = $media->getUrl(conversion: 'timeline');
 ```
 
 #### Hover Previews
@@ -1012,6 +1011,7 @@ To scrub a video card with the mouse, the metadata is enough to display the righ
 ```blade
 @php
     $sprites = $media->getConversion('sprites');
+    $sheet = $sprites->additional_files->first();
     ['frames' => $frames, 'columns' => $columns, 'width' => $width, 'height' => $height] = $sprites->metadata;
 @endphp
 
@@ -1019,9 +1019,11 @@ To scrub a video card with the mouse, the metadata is enough to display the righ
     x-data="{ frame: 0 }"
     x-on:mousemove="frame = Math.min({{ $frames - 1 }}, Math.floor($event.offsetX / $el.clientWidth * {{ $frames }}))"
     x-bind:style="{ backgroundPosition: `-${frame % {{ $columns }} * {{ $width }}}px -${Math.floor(frame / {{ $columns }}) * {{ $height }}}px` }"
-    style="width: {{ $width }}px; height: {{ $height }}px; background-image: url('{{ $sprites->getUrl() }}')"
+    style="width: {{ $width }}px; height: {{ $height }}px; background-image: url('{{ $sheet->getDisk()->url($sheet->path) }}')"
 ></div>
 ```
+
+In JavaScript, the sheets can also be resolved from the URL of the WebVTT file: `new URL(metadata.sheets[0], url)`.
 
 ## Customization
 

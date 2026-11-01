@@ -13,13 +13,12 @@ use Illuminate\Contracts\Support\Arrayable;
  * Frames fill the sheets row by row, from left to right. Every sheet has the same grid,
  * the tiles left empty in the last one being black.
  *
- * @implements Arrayable<string, int|float|string|string[]>
+ * @implements Arrayable<string, int|float|string[]>
  */
 class Spritesheet implements Arrayable
 {
     /**
      * @param  string[]  $sheets  The file names of the sheets, in order.
-     * @param  string  $vtt  The file name of the WebVTT file mapping each time range to its frame.
      * @param  int  $frames  The number of frames.
      * @param  float  $interval  The time between two frames, in seconds.
      * @param  int  $columns  The number of frames per row.
@@ -28,7 +27,6 @@ class Spritesheet implements Arrayable
      */
     public function __construct(
         public readonly array $sheets,
-        public readonly string $vtt,
         public readonly int $frames,
         public readonly float $interval,
         public readonly int $columns,
@@ -57,7 +55,7 @@ class Spritesheet implements Arrayable
 
     /**
      * The WebVTT file used by video players for timeline previews.
-     * Each cue references its frame with a media fragment (e.g. "sprites.jpg#xywh=160,0,160,90"),
+     * Each cue references its frame with a media fragment (e.g. "sprites_0.jpg#xywh=160,0,160,90"),
      * the sheet file name being relative to the WebVTT file.
      *
      * @param  null|float  $duration  The duration of the video in seconds, the last frame then standing for the time range until the end.
@@ -100,7 +98,7 @@ class Spritesheet implements Arrayable
     }
 
     /**
-     * @return array{ frames: int, interval: float, columns: int, rows: int, width: int, height: int, sheets: string[], vtt: string }
+     * @return array{ frames: int, interval: float, columns: int, rows: int, width: int, height: int, sheets: string[] }
      */
     public function toArray(): array
     {
@@ -112,7 +110,6 @@ class Spritesheet implements Arrayable
             'width' => $this->dimension->width,
             'height' => $this->dimension->height,
             'sheets' => $this->sheets,
-            'vtt' => $this->vtt,
         ];
     }
 }
