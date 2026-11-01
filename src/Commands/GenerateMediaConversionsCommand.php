@@ -42,7 +42,10 @@ class GenerateMediaConversionsCommand extends Command
         /** @var string[] $conversions */
         $conversions = (array) $this->option('conversions');
         /** @var string[] $models */
-        $models = (array) $this->option('models');
+        $models = array_map(
+            fn (string $model): string => ltrim($model, '\\'),
+            (array) $this->option('models'),
+        );
         /** @var string[] $collections */
         $collections = (array) $this->option('collections');
 
