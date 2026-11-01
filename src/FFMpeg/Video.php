@@ -10,10 +10,13 @@ use Elegantly\Media\FFMpeg\Exceptions\VideoStreamNotFoundException;
 use Elegantly\Media\FFMpeg\ValueObjects\Stream;
 use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\Dimension;
+use Elegantly\Media\Helpers\Spritesheet;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\MediaServiceProvider;
+use Elegantly\Media\TemporaryDirectory;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use InvalidArgumentException;
 
 class Video extends FFMpeg
 {
@@ -140,6 +143,166 @@ class Video extends FFMpeg
             ],
             stripMetadata: $stripMetadata,
         );
+    }
+
+    /**
+     * Tile frames taken at a regular interval into sprite sheets, along with a WebVTT file mapping
+     * each time range to its frame, as used by video players for timeline previews.
+     *
+     * Frame n is the one displayed at n × interval seconds: the fps filter keeps the last frame starting at or before
+     * each multiple of the interval, and repeats the first frame when the video starts after the audio.
+     * Frames are extracted first, so their exact number is known, then tiled row by row into sheets.
+     *
+     * The first sheet is written at $output and the following ones are suffixed with their index (e.g. sprites_1.jpg).
+     * The WebVTT file is named after the first sheet (e.g. sprites.vtt) and references the sheets by their file name.
+     * The grid shrinks to the frames when they don't fill a single sheet.
+     *
+     * Every frame has the same even size, as the sheets need equal tiles. Videos changing resolution midway
+     * are stretched to it, rather than resetting the filters, which would put the frames out of sync with the timeline.
+     *
+     * @param  string  $input  The absolute path to the source video file.
+     * @param  string  $output  The absolute path of the first sheet. Use a .jpg, .webp or .png extension.
+     * @param  int|float|null  $interval  The time between two frames in seconds, e.g. 2 for a frame every 2 seconds.
+     *                                    null spreads the frames evenly over the whole video.
+     *                                    Never shorter than the time between two frames of the video.
+     * @param  int|null  $frames  The maximum number of frames, the interval being widened on long videos to stay under it.
+     *                            Defaults to a single sheet (columns × rows) without interval, and to no limit otherwise.
+     * @param  int|null  $width  The maximum width of a frame in pixels, keeping the aspect ratio.
+     * @param  int|null  $height  The maximum height of a frame in pixels, keeping the aspect ratio.
+     * @param  bool  $upscale  Whether the frames can be larger than the source.
+     * @param  int  $columns  The number of frames per row.
+     * @param  int  $rows  The maximum number of rows of a sheet, the following frames going to a new sheet.
+     * @return false|Spritesheet false when no frame can be extracted
+     */
+    public function spritesheet(
+        string $input,
+        string $output,
+        int|float|null $interval = null,
+        ?int $frames = null,
+        ?int $width = 160,
+        ?int $height = null,
+        bool $upscale = true,
+        int $columns = 10,
+        int $rows = 10,
+    ): false|Spritesheet {
+
+        $directory = dirname($output);
+        $name = pathinfo($output, PATHINFO_FILENAME);
+        $extension = pathinfo($output, PATHINFO_EXTENSION);
+
+        $encoder = match (strtolower($extension)) {
+            'jpg', 'jpeg' => 'mjpeg',
+            'png' => 'png',
+            // The default WebP encoder makes a single animated image of all the sheets
+            'webp' => 'libwebp',
+            default => throw new InvalidArgumentException("Sprite sheets can't be written as .{$extension} files, use a .jpg, .webp or .png extension."),
+        };
+
+        $metadata = $this->metadata($input);
+
+        $video = $metadata->streams()->decodable($this->decodableCodecs())->defaultVideo();
+
+        if (! $video) {
+            throw VideoStreamNotFoundException::atPath($input);
+        }
+
+        $duration = ($metadata->duration() ?? $video->duration() ?? 0) / 1_000;
+
+        if ($interval === null) {
+            $frames ??= $columns * $rows;
+            $interval = $duration / $frames;
+        } elseif ($frames) {
+            $interval = max($interval, $duration / $frames);
+        }
+
+        // Sampling faster than the video would only repeat its frames
+        if ($frameRate = $video->frameRate()) {
+            $interval = max($interval, 1 / $frameRate);
+        }
+
+        $dimension = $video->dimension()->scale($width, $height, $upscale);
+
+        // Even sizes keep each frame on its own chroma samples in 4:2:0 sheets
+        $dimension = new Dimension(
+            max(2, $dimension->width - $dimension->width % 2),
+            max(2, $dimension->height - $dimension->height % 2),
+        );
+
+        return TemporaryDirectory::callback(function ($temporaryDirectory) use (
+            $input, $video, $duration, $interval, $frames, $dimension, $columns, $rows, $directory, $name, $extension, $encoder
+        ) {
+            $path = $temporaryDirectory->path();
+
+            $filters = implode(',', [
+                'fps='.implode(':', [
+                    "fps=1/{$interval}",
+                    'round=up',
+                    'start_time=0',
+                ]),
+                $this->sdrFilter($video),
+                'scale='.implode(':', [
+                    "w={$dimension->width}",
+                    "h={$dimension->height}",
+                    'reset_sar=1',
+                    'flags=lanczos',
+                ]),
+            ]);
+
+            $this->ffmpeg([
+                // Keep the fps filter state when the resolution changes
+                '-reinit_filter', '0',
+                '-i', $input,
+                '-map', "0:{$video->index()}",
+                '-vf', $filters,
+                '-fps_mode', 'passthrough',
+                ...($frames ? ['-frames:v', (string) $frames] : []),
+                '-map_metadata', '-1',
+                '-start_number', '0',
+                "{$path}/%06d.png",
+            ]);
+
+            $count = count(File::files($path));
+
+            if ($count === 0) {
+                return false;
+            }
+
+            $columns = min($columns, $count);
+            $rows = min($rows, (int) ceil($count / $columns));
+
+            $this->ffmpeg([
+                '-start_number', '0',
+                '-i', "{$path}/%06d.png",
+                '-vf', "tile={$columns}x{$rows}",
+                '-fps_mode', 'passthrough',
+                '-c:v', $encoder,
+                // One file per sheet
+                '-f', 'image2',
+                '-start_number', '0',
+                "{$directory}/{$name}_%d.{$extension}",
+            ]);
+
+            $sheets = array_map(
+                fn ($index) => $index === 0 ? "{$name}.{$extension}" : "{$name}_{$index}.{$extension}",
+                range(0, (int) ceil($count / ($columns * $rows)) - 1),
+            );
+
+            File::move("{$directory}/{$name}_0.{$extension}", "{$directory}/{$sheets[0]}");
+
+            $spritesheet = new Spritesheet(
+                sheets: $sheets,
+                vtt: "{$name}.vtt",
+                frames: $count,
+                interval: (float) $interval,
+                columns: $columns,
+                rows: $rows,
+                dimension: $dimension,
+            );
+
+            File::put("{$directory}/{$spritesheet->vtt}", $spritesheet->toVtt($duration ?: null));
+
+            return $spritesheet;
+        });
     }
 
     /**

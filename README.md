@@ -46,6 +46,7 @@ I developed this package with the highest degree of flexibility possible and I h
 
 1. [Conversions Presets](#conversions-presets)
     - [Image Placeholder](#image-placeholder)
+    - [Video Sprite Sheets](#video-sprite-sheets)
 
 1. [Customization](#customization)
     - [Custom Media Model](#custom-media-model)
@@ -262,6 +263,7 @@ This package provides common converter to simplify your work:
 - `MediaOpusConverter`: This conversion optimizes, resizes, converts or extract any audio in opus format using `ffmpeg`.
 - `MediaFrameConverter`: This conversion extracts a frame from a video using `ffmpeg`.
 - `MediaThumbnailConverter`: This conversion smartly extracts the best thumbnail from a video using `ffmpeg`.
+- `MediaSpritesheetConverter`: This conversion tiles frames of a video or gif into sprite sheets, with a WebVTT file for timeline previews, using `ffmpeg`. See [Video Sprite Sheets](#video-sprite-sheets).
 - `MediaPdfToImageConverter`: This conversion extracts an image from the PDF using `spatie/pdf-to-image`.
 
 ```php
@@ -739,7 +741,7 @@ class MediaImageConverter extends MediaConverter
     ): ?MediaConversion {
 
         if (! $file) {
-            return null;
+            return $this->unsupportedConversion();
         }
 
         $input = $filesystem->path($file);
@@ -923,6 +925,102 @@ If you need to manually work with the placeholder (e.g., for API responses or in
 $placeholder = $media->getConversion('placeholder');
 
 $base64Image = $placeholder?->contents;
+```
+
+### Video Sprite Sheets
+
+A sprite sheet is a single image tiling many frames of a video in a grid. It powers the previews shown when hovering the timeline of a video player, or when scrubbing a video card with the mouse, with a single request.
+
+The `MediaSpritesheetConverter` extracts frames at a regular interval, tiles them into one or several sheets, and writes the WebVTT file video players read timeline thumbnails from.
+
+#### Defining the Sprite Sheet Conversion
+
+```php
+use Elegantly\Media\Converters\Video\MediaSpritesheetConverter;
+
+new MediaCollection(
+    name: 'videos',
+    conversions: [
+        // 100 frames spread evenly over the video, in a single 10x10 sheet
+        new MediaConversionDefinition(
+            name: 'sprites',
+            converter: fn ($media) => new MediaSpritesheetConverter(
+                media: $media,
+                filename: 'sprites.jpg',
+            ),
+        ),
+        // A frame every 2 seconds, in as many 10x10 sheets as needed
+        new MediaConversionDefinition(
+            name: 'timeline',
+            converter: fn ($media) => new MediaSpritesheetConverter(
+                media: $media,
+                filename: 'timeline.webp',
+                interval: 2,
+                width: 240,
+            ),
+        ),
+    ]
+);
+```
+
+| Parameter          | Default        | Description                                                                                                                                           |
+| ------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `filename`         |                | The first sheet, also naming the following ones (`sprites_1.jpg`...) and the WebVTT file (`sprites.vtt`). Use a `.jpg`, `.webp` or `.png` extension. |
+| `interval`         | `null`         | The time between two frames in seconds. `null` spreads the frames evenly over the whole video.                                                       |
+| `frames`           | `null`         | The maximum number of frames, the interval being widened on long videos. Defaults to a single sheet (`columns` × `rows`) without interval, and to no limit otherwise. |
+| `width`, `height`  | `160`, `null`  | The maximum size of a frame, keeping the aspect ratio. Frames are never upscaled.                                                                     |
+| `columns`, `rows`  | `10`, `10`     | The grid of a sheet, the following frames going to a new sheet. The grid shrinks when the frames don't fill a single sheet.                           |
+
+#### Stored Files and Layout
+
+The conversion file is the first sheet. The following sheets and the WebVTT file are stored as additional files next to it, and the layout is saved in the conversion metadata:
+
+```php
+$sprites = $media->getConversion('sprites');
+
+$sprites->getUrl(); // The first sheet
+
+$sprites->metadata;
+// [
+//     'frames' => 100, // The number of frames
+//     'interval' => 1.2, // The time between two frames, in seconds
+//     'columns' => 10, // The number of frames per row
+//     'rows' => 10, // The number of rows per sheet
+//     'width' => 160, // The width of a frame
+//     'height' => 90, // The height of a frame
+//     'sheets' => ['sprites.jpg'],
+//     'vtt' => 'sprites.vtt',
+// ]
+```
+
+Frame `n` shows the video at `n × interval` seconds. It is in the sheet `floor(n / (columns × rows))`, at `x = (n % columns) × width` and `y = floor(n % (columns × rows) / columns) × height`.
+
+#### Timeline Previews in Video Players
+
+Most video players (Vidstack, Video.js, Plyr, Media Chrome...) display timeline thumbnails from a WebVTT file. Each cue references its frame with a media fragment (e.g. `sprites.jpg#xywh=160,0,160,90`), relative to the WebVTT file:
+
+```php
+$vtt = $media->getConversion('timeline')?->additional_files?->firstWhere('extension', 'vtt');
+
+$url = $vtt?->getDisk()->url($vtt->path);
+```
+
+#### Hover Previews
+
+To scrub a video card with the mouse, the metadata is enough to display the right frame of a single sheet:
+
+```blade
+@php
+    $sprites = $media->getConversion('sprites');
+    ['frames' => $frames, 'columns' => $columns, 'width' => $width, 'height' => $height] = $sprites->metadata;
+@endphp
+
+<div
+    x-data="{ frame: 0 }"
+    x-on:mousemove="frame = Math.min({{ $frames - 1 }}, Math.floor($event.offsetX / $el.clientWidth * {{ $frames }}))"
+    x-bind:style="{ backgroundPosition: `-${frame % {{ $columns }} * {{ $width }}}px -${Math.floor(frame / {{ $columns }}) * {{ $height }}}px` }"
+    style="width: {{ $width }}px; height: {{ $height }}px; background-image: url('{{ $sprites->getUrl() }}')"
+></div>
 ```
 
 ## Customization

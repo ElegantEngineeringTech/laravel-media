@@ -98,6 +98,28 @@ class Stream
         return null;
     }
 
+    /**
+     * The average frame rate, from ffprobe "numerator/denominator" format (e.g. "30000/1001").
+     * null when unknown (e.g. "0/0").
+     */
+    public function frameRate(): ?float
+    {
+        $value = $this->getString('avg_frame_rate') ?? '';
+
+        if (! preg_match('/^(?<numerator>\d+)\/(?<denominator>\d+)$/', $value, $matches)) {
+            return null;
+        }
+
+        $numerator = (int) $matches['numerator'];
+        $denominator = (int) $matches['denominator'];
+
+        if ($numerator === 0 || $denominator === 0) {
+            return null;
+        }
+
+        return $numerator / $denominator;
+    }
+
     public function width(): int
     {
         return $this->getInt('width') ?? 0;
