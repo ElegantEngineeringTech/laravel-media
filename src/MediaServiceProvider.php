@@ -12,6 +12,7 @@ use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\VideoRendition;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\Jobs\DeleteMediaFileJob;
+use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use LogicException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -134,5 +135,16 @@ class MediaServiceProvider extends PackageServiceProvider
         }
 
         return $renditions;
+    }
+
+    /**
+     * @return class-string<AbstractUrlFormatter>
+     */
+    public static function getDefaultUrlFormatter(): string
+    {
+        /** @var class-string<AbstractUrlFormatter> */
+        $formatter = config()->string('media.default_url_formatter');
+
+        return $formatter;
     }
 }

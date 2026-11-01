@@ -12,6 +12,7 @@ use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Elegantly\Media\Helpers\File;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\PathGenerators\AbstractPathGenerator;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
@@ -41,17 +42,6 @@ use Illuminate\Support\Str;
  */
 trait HasFile
 {
-    /**
-     * @return class-string<AbstractUrlFormatter>
-     */
-    protected function getDefaultUrlFormatter(): string
-    {
-        /** @var class-string<AbstractUrlFormatter> */
-        $formatter = config()->string('media.default_url_formatter');
-
-        return $formatter;
-    }
-
     public function dirname(): ?string
     {
         return $this->path ? dirname($this->path) : null;
@@ -77,7 +67,7 @@ trait HasFile
         $url = $this->getDisk()?->url($this->path);
 
         if ($url) {
-            $formatter ??= $this->getDefaultUrlFormatter();
+            $formatter ??= MediaServiceProvider::getDefaultUrlFormatter();
 
             return (new $formatter)->format($url, $parameters);
         }
@@ -103,7 +93,7 @@ trait HasFile
         $url = $this->getDisk()?->temporaryUrl($this->path, $expiration, $options);
 
         if ($url) {
-            $formatter ??= $this->getDefaultUrlFormatter();
+            $formatter ??= MediaServiceProvider::getDefaultUrlFormatter();
 
             return (new $formatter)->format($url, $parameters);
         }

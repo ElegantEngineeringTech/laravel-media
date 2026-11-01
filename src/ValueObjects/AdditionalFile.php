@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\ValueObjects;
 
+use DateTimeInterface;
+use Elegantly\Media\MediaServiceProvider;
+use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +56,55 @@ class AdditionalFile implements Arrayable, JsonSerializable
     public function delete(): bool
     {
         return (bool) $this->getDisk()->delete($this->path);
+    }
+
+    /**
+     * @param  null|array<array-key, mixed>  $parameters
+     * @param  null|class-string<AbstractUrlFormatter>  $formatter
+     */
+    public function getUrl(
+        ?array $parameters = null,
+        ?string $formatter = null
+    ): ?string {
+        if (! $this->path) {
+            return null;
+        }
+
+        $url = $this->getDisk()->url($this->path);
+
+        if ($url) {
+            $formatter ??= MediaServiceProvider::getDefaultUrlFormatter();
+
+            return (new $formatter)->format($url, $parameters);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $options
+     * @param  null|array<array-key, mixed>  $parameters
+     * @param  null|class-string<AbstractUrlFormatter>  $formatter
+     */
+    public function getTemporaryUrl(
+        DateTimeInterface $expiration,
+        array $options = [],
+        ?array $parameters = null,
+        ?string $formatter = null,
+    ): ?string {
+        if (! $this->path) {
+            return null;
+        }
+
+        $url = $this->getDisk()->temporaryUrl($this->path, $expiration, $options);
+
+        if ($url) {
+            $formatter ??= MediaServiceProvider::getDefaultUrlFormatter();
+
+            return (new $formatter)->format($url, $parameters);
+        }
+
+        return null;
     }
 
     /**
