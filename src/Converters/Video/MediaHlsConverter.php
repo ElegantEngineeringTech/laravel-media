@@ -58,7 +58,7 @@ class MediaHlsConverter extends MediaConverter
     ): ?MediaConversion {
 
         if (! $file) {
-            return null;
+            return $this->unsupportedConversion();
         }
 
         $outputId = Str::random(6);

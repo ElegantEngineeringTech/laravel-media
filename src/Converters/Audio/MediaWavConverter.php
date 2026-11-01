@@ -47,7 +47,7 @@ class MediaWavConverter extends MediaConverter
     ): ?MediaConversion {
 
         if (! $file) {
-            return null;
+            return $this->unsupportedConversion();
         }
 
         $input = $filesystem->path($file);
