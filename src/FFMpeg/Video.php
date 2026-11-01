@@ -188,9 +188,9 @@ class Video extends FFMpeg
 
         $directory = dirname($output);
         $name = pathinfo($output, PATHINFO_FILENAME);
-        $extension = pathinfo($output, PATHINFO_EXTENSION);
+        $extension = strtolower(pathinfo($output, PATHINFO_EXTENSION));
 
-        $encoder = match (strtolower($extension)) {
+        $encoder = match ($extension) {
             'jpg', 'jpeg' => 'mjpeg',
             'png' => 'png',
             // The default WebP encoder makes a single animated image of all the sheets
