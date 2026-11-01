@@ -73,13 +73,16 @@ class FFMpeg
     /**
      * Probe the media format and streams with ffprobe.
      */
-    public function metadata(string $input): Metadata
-    {
+    public function metadata(
+        string $input,
+        array $arguments = [],
+    ): Metadata {
         $output = $this->ffprobe([
             '-v', 'error',
             '-show_format',
             '-show_streams',
             '-print_format', 'json',
+            ...$arguments,
             $input,
         ]);
 
@@ -219,14 +222,45 @@ class FFMpeg
     }
 
     /**
+     * The duration from the header, or from the packet timestamps when the header has none.
+     *
      * @return float The duration in milliseconds
      */
     public function duration(string $input): float
     {
-        if ($duration = $this->metadata($input)->duration()) {
-            return $duration;
+        return $this->metadata($input)->duration() ?? $this->packetsDuration($input) ?? 0.0;
+    }
+
+    /**
+     * The end of the last packet, for files whose header has no duration.
+     *
+     * Notes:
+     * - Recorders writing the file as they go (e.g. MediaRecorder WebM from browsers, live captures, interrupted MKV recordings)
+     *   can't go back to write the duration in the header, and ffprobe only reads the start of the file.
+     * - Packets are read without being decoded, about as fast as reading the file.
+     *
+     * @return float|null The duration in milliseconds
+     */
+    protected function packetsDuration(string $input): ?float
+    {
+        $output = $this->ffprobe([
+            '-v', 'error',
+            '-show_entries', 'packet=pts_time,duration_time',
+            '-print_format', 'csv=print_section=0',
+            $input,
+        ]);
+
+        $end = 0.0;
+
+        foreach (explode("\n", $output) as $line) {
+            // Packets with side data have an extra field
+            [$pts, $duration] = explode(',', $line) + [null, null];
+
+            if (is_numeric($pts)) {
+                $end = max($end, (float) $pts + (is_numeric($duration) ? (float) $duration : 0.0));
+            }
         }
 
-        return 0.0;
+        return $end > 0 ? $end * 1_000 : null;
     }
 }

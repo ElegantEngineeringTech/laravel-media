@@ -208,7 +208,7 @@ class Video extends FFMpeg
             throw VideoStreamNotFoundException::atPath($input);
         }
 
-        $duration = ($metadata->duration() ?? $video->duration() ?? 0) / 1_000;
+        $duration = $this->duration($input) / 1_000;
 
         if ($interval === null) {
             $frames ??= $columns * $rows;
