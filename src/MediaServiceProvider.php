@@ -185,4 +185,17 @@ class MediaServiceProvider extends PackageServiceProvider
 
         return $value;
     }
+
+    /**
+     * @return string The absolute path of media.temporary_storage_path
+     */
+    public static function getTemporaryStoragePath(): string
+    {
+        return storage_path(config()->string('media.temporary_storage_path', 'app/tmp/media'));
+    }
+
+    public static function getZipBinaries(): string
+    {
+        return config()->string('media.zip.zip_binaries', 'zip');
+    }
 }

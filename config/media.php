@@ -172,4 +172,14 @@ return [
          */
         'timeout' => null,
     ],
+
+    /**
+     * Configuration for the native zip archiver (NativeMediaZipper).
+     */
+    'zip' => [
+        /**
+         * The binary path to the zip executable.
+         */
+        'zip_binaries' => env('ZIP_BINARIES', 'zip'),
+    ],
 ];

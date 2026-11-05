@@ -12,6 +12,16 @@ use Spatie\TemporaryDirectory\TemporaryDirectory as SpatieTemporaryDirectory;
 class TemporaryDirectory extends SpatieTemporaryDirectory
 {
     /**
+     * Create the directory, by default in media.temporary_storage_path.
+     */
+    public static function make(?string $location = null): static
+    {
+        return parent::make(
+            $location ?? MediaServiceProvider::getTemporaryStoragePath()
+        );
+    }
+
+    /**
      * @template TValue
      *
      * @param  Closure(static $temporaryDirectory):TValue  $callback
@@ -22,11 +32,7 @@ class TemporaryDirectory extends SpatieTemporaryDirectory
         ?string $location = null
     ): mixed {
 
-        $location ??= storage_path(config()->string('media.temporary_storage_path', 'app/tmp/media'));
-
-        $temporaryDirectory = (new static)
-            ->location($location)
-            ->create();
+        $temporaryDirectory = static::make($location);
 
         try {
             $value = $callback($temporaryDirectory);
