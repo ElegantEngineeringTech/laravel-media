@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Elegantly\Media\Concerns;
 
 use Elegantly\Media\Events\MediaAddedEvent;
+use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\Exceptions\InvalidMimeTypeException;
 use Elegantly\Media\Helpers\File as HelpersFile;
 use Elegantly\Media\MediaCollection;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\Media;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
+use Throwable;
 
 /**
  * @mixin Model
@@ -69,7 +72,7 @@ trait HasMedia
     public function media(): MorphMany
     {
         return $this
-            ->morphMany(config('media.model'), 'model')
+            ->morphMany(MediaServiceProvider::getMediaModel(), 'model')
             ->chaperone()
             ->orderByRaw('-order_column DESC')
             ->orderBy('id', 'asc');
@@ -169,7 +172,7 @@ trait HasMedia
         $disk ??= $collection?->disk;
 
         /** @var class-string<TMedia> */
-        $model = config('media.model');
+        $model = MediaServiceProvider::getMediaModel();
 
         $media = new $model([
             ...$attributes,
@@ -181,30 +184,51 @@ trait HasMedia
 
         $media->model()->associate($this);
 
-        $media->storeFile(
-            file: $file,
-            name: $name,
-            disk: $disk,
-            before: function ($file, $temporaryDirectory) use ($collection) {
-                if ($acceptedMimeTypes = $collection?->acceptedMimeTypes) {
-                    $mime = HelpersFile::mimeType($file);
+        /**
+         * All files are stored before the model is saved,
+         * so a partial upload can never be saved.
+         */
+        try {
+            $media->storeFile(
+                file: $file,
+                name: $name,
+                disk: $disk,
+                before: function ($file, $temporaryDirectory) use ($collection) {
+                    if ($acceptedMimeTypes = $collection?->acceptedMimeTypes) {
+                        $mime = HelpersFile::mimeType($file);
 
-                    if (! in_array($mime, $acceptedMimeTypes)) {
-                        throw InvalidMimeTypeException::notAccepted($mime, $acceptedMimeTypes);
+                        if (! in_array($mime, $acceptedMimeTypes)) {
+                            throw InvalidMimeTypeException::notAccepted($mime, $acceptedMimeTypes);
+                        }
                     }
-                }
 
-                if ($transform = $collection?->transform) {
-                    return $transform($file, $temporaryDirectory);
-                }
+                    if ($transform = $collection?->transform) {
+                        return $transform($file, $temporaryDirectory);
+                    }
 
-                return $file;
+                    return $file;
+                }
+            );
+
+            foreach ($additionalFiles as $additionalFile) {
+                $media->storeAdditionalFile($additionalFile);
             }
-        );
 
-        foreach ($additionalFiles as $additionalFile) {
-            $media->storeAdditionalFile($additionalFile);
+            $media->save();
+        } catch (Throwable $th) {
+            /**
+             * An exception can be thrown after the save (ex: by a saved event listener),
+             * in which case the files belong to a saved media and must be kept.
+             */
+            if (! $media->exists) {
+                rescue(fn () => $media->deleteFile());
+                rescue(fn () => $media->deleteAdditionalFiles());
+            }
+
+            throw $th;
         }
+
+        event(new MediaFileStoredEvent($media));
 
         if ($this->relationLoaded('media')) {
             $this->media->push($media);

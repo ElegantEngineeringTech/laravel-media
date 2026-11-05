@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Commands;
 
 use Elegantly\Media\Enums\MediaConversionState;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Console\Command;
 use Laravel\Prompts\Progress;
@@ -41,8 +42,7 @@ class RetryMediaConversionsCommand extends Command
         $queue = $this->option('queue');
         $withForceChildren = (bool) $this->option('with-force-children');
 
-        /** @var class-string<MediaConversion> */
-        $model = config()->string('media.media_conversion_model');
+        $model = MediaServiceProvider::getMediaConversionModel();
 
         $query = $model::query()
             ->with(['media.model'])

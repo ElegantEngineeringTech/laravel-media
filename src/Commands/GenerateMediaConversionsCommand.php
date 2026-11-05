@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Commands;
 
 use Elegantly\Media\Enums\MediaConversionState;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\Media;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
@@ -50,10 +51,7 @@ class GenerateMediaConversionsCommand extends Command
         /** @var string[] $collections */
         $collections = (array) $this->option('collections');
 
-        /**
-         * @var class-string<Media> $model
-         */
-        $model = config('media.model');
+        $model = MediaServiceProvider::getMediaModel();
 
         $query = $model::query()
             ->when($ids, fn (Builder $query) => $query->whereIn('id', $ids))

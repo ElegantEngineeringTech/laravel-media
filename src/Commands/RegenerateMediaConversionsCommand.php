@@ -6,6 +6,7 @@ namespace Elegantly\Media\Commands;
 
 use Carbon\Carbon;
 use Elegantly\Media\Enums\MediaConversionState;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\MediaConversion;
 use Illuminate\Console\Command;
 use Laravel\Prompts\Progress;
@@ -53,8 +54,7 @@ class RegenerateMediaConversionsCommand extends Command
             $states,
         );
 
-        /** @var class-string<MediaConversion> */
-        $model = config()->string('media.media_conversion_model');
+        $model = MediaServiceProvider::getMediaConversionModel();
 
         $query = $model::query()->with(['media.model']);
 

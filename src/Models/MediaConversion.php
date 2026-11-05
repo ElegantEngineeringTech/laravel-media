@@ -129,10 +129,7 @@ class MediaConversion extends Model implements InteractWithFiles
      */
     public function media(): BelongsTo
     {
-        /** @var class-string<Media> */
-        $class = config('media.model', Media::class);
-
-        return $this->belongsTo($class);
+        return $this->belongsTo(MediaServiceProvider::getMediaModel());
     }
 
     /**

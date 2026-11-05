@@ -8,12 +8,10 @@ use Carbon\CarbonInterval;
 use Closure;
 use DateTimeInterface;
 use Elegantly\Media\Enums\MediaType;
-use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaServiceProvider;
-use Elegantly\Media\PathGenerators\AbstractPathGenerator;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -253,8 +251,7 @@ trait HasFile
         ?string $disk = null,
         ?Closure $before = null,
     ): static {
-        /** @var class-string<AbstractPathGenerator> */
-        $pathGenerator = config('media.default_path_generator');
+        $pathGenerator = MediaServiceProvider::getDefaultPathGenerator();
 
         $destination ??= (new $pathGenerator)->source($this)->value();
         $name ??= File::name($file) ?? Str::random(6);
@@ -271,11 +268,7 @@ trait HasFile
                 name: $name,
             );
 
-            $this->save();
-
         });
-
-        event(new MediaFileStoredEvent($this));
 
         return $this;
     }

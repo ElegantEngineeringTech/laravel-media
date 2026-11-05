@@ -14,6 +14,7 @@ use Elegantly\Media\Database\Factories\MediaFactory;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
+use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Traits\HasUuid;
@@ -34,6 +35,8 @@ use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * @property int $id
@@ -144,10 +147,7 @@ class Media extends Model implements InteractWithFiles
      */
     public function conversions(): HasMany
     {
-        /** @var class-string<MediaConversion> */
-        $mediaConversionModel = config()->string('media.media_conversion_model');
-
-        return $this->hasMany($mediaConversionModel)->chaperone();
+        return $this->hasMany(MediaServiceProvider::getMediaConversionModel())->chaperone();
     }
 
     // Managing Conversions ----------------------------------------------------------
@@ -403,22 +403,19 @@ class Media extends Model implements InteractWithFiles
      */
     public function getChildrenConversions(string $name): EloquentCollection
     {
-        return $this
-            ->conversions
-            ->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
+        return $this->conversions->filter(fn ($conversion) => str_starts_with($conversion->conversion_name, "{$name}."));
     }
 
     /**
+     * Save a conversion in place of the existing one with the same name
+     *
      * @param  array<string, mixed>|MediaConversion  $conversion
      */
     public function replaceConversion(array|MediaConversion $conversion): MediaConversion
     {
-        /**
-         * @var class-string<MediaConversion> $model
-         */
-        $model = config()->string('media.media_conversion_model');
+        $mediaConversionModel = MediaServiceProvider::getMediaConversionModel();
 
-        $conversion = is_array($conversion) ? new $model($conversion) : $conversion;
+        $conversion = is_array($conversion) ? new $mediaConversionModel($conversion) : $conversion;
 
         $existingConversion = $this->getConversion($conversion->conversion_name);
 
@@ -426,16 +423,24 @@ class Media extends Model implements InteractWithFiles
             return $conversion;
         }
 
-        if ($existingConversion) {
-            $existingConversion->forceDelete();
-            $this->setRelation(
-                'conversions',
-                $this->conversions->except([$existingConversion->id])
-            );
-        }
+        /**
+         * The existing conversion is only deleted if the new one is saved,
+         * and its files once committed (see DeleteMediaFileJob::afterCommit)
+         */
+        DB::transaction(function () use ($conversion, $existingConversion) {
+            $existingConversion?->forceDelete();
+            $this->conversions()->save($conversion);
+        });
 
-        $this->conversions()->save($conversion);
-        $this->conversions->push($conversion);
+        $this->setRelation(
+            'conversions',
+            $this->conversions
+                ->push($conversion)
+                ->when(
+                    $existingConversion,
+                    fn ($conversions, $value) => $conversions->except([$value->id])
+                )
+        );
 
         return $conversion;
     }
@@ -462,26 +467,9 @@ class Media extends Model implements InteractWithFiles
     ): MediaConversion {
         $disk ??= $this->disk;
 
-        /**
-         * Prefix name with parent if not already done
-         */
-        if ($parent && ! str_contains($conversionName, '.')) {
-            $conversionName = "{$parent->conversion_name}.{$conversionName}";
-        }
+        $conversionName = $parent ? Str::start($conversionName, "{$parent->conversion_name}.") : $conversionName;
 
-        /**
-         * Delete existing conversion
-         */
-        if ($existingConversion = $this->getConversion($conversionName)) {
-            $existingConversion->forceDelete();
-            $this->setRelation(
-                'conversions',
-                $this->conversions->except([$existingConversion->id])
-            );
-        }
-
-        /** @var class-string<MediaConversion> */
-        $mediaConversionModel = config()->string('media.media_conversion_model');
+        $mediaConversionModel = MediaServiceProvider::getMediaConversionModel();
 
         $conversion = new $mediaConversionModel([
             ...$attributes,
@@ -492,23 +480,40 @@ class Media extends Model implements InteractWithFiles
 
         $conversion->media()->associate($this);
 
-        $conversion->storeFile(
-            file: $file,
-            destination: $destination,
-            name: $name,
-            disk: $disk,
-        );
+        /**
+         * All files are stored before the model is saved, and the existing conversion
+         * is kept until then, so a partial upload can never replace it.
+         */
+        try {
+            $conversion->storeFile(
+                file: $file,
+                destination: $destination,
+                name: $name,
+                disk: $disk,
+            );
 
-        foreach ($additionalFiles as $additionalFile) {
-            $conversion->storeAdditionalFile($additionalFile);
+            foreach ($additionalFiles as $additionalFile) {
+                $conversion->storeAdditionalFile($additionalFile);
+            }
+
+            $this->replaceConversion($conversion);
+        } catch (Throwable $th) {
+            /**
+             * An exception can be thrown after the commit (ex: by an afterCommit callback),
+             * in which case the files belong to a saved conversion and must be kept.
+             */
+            if (! $conversion->exists) {
+                rescue(fn () => $conversion->deleteAllFiles());
+            }
+
+            throw $th;
         }
-
-        $this->conversions->push($conversion);
 
         if ($deleteChildren) {
             $this->deleteChildrenConversions($conversionName);
         }
 
+        event(new MediaFileStoredEvent($conversion));
         event(new MediaConversionAddedEvent($conversion));
 
         return $conversion;
@@ -568,7 +573,7 @@ class Media extends Model implements InteractWithFiles
                         withChildren: $withChildren,
                         withForceChildren: $withForceChildren,
                     );
-                } catch (\Throwable $th) {
+                } catch (Throwable $th) {
                     report($th);
                 }
 

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Concerns;
 
+use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Elegantly\Media\FileDownloaders\HttpFileDownloader;
 use Elegantly\Media\Helpers\File;
-use Elegantly\Media\PathGenerators\AbstractPathGenerator;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\TemporaryDirectory;
 use Elegantly\Media\ValueObjects\AdditionalFile;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +29,7 @@ trait HasAdditionalFiles
         string $destination,
         UploadedFile|HttpFile $file,
         string $name,
-    ): ?AdditionalFile {
+    ): AdditionalFile {
 
         $destination = Str::rtrim($destination, '/');
         $extension = File::extension($file);
@@ -40,7 +41,7 @@ trait HasAdditionalFiles
         $path = Storage::disk($disk)->putFileAs($destination, $file, $fileName);
 
         if (! $path) {
-            return null;
+            throw MediaFileStorageException::storeFailed($file->getPath(), $disk, $destination);
         }
 
         return new AdditionalFile([
@@ -60,8 +61,7 @@ trait HasAdditionalFiles
         ?string $name = null,
         ?string $disk = null,
     ): static {
-        /** @var class-string<AbstractPathGenerator> */
-        $pathGenerator = config('media.default_path_generator');
+        $pathGenerator = MediaServiceProvider::getDefaultPathGenerator();
 
         $destination ??= (new $pathGenerator)->source($this)->value();
         $name ??= File::name($file) ?? Str::random(6);
@@ -74,11 +74,7 @@ trait HasAdditionalFiles
             name: $name,
         );
 
-        if ($additionalFile) {
-            $this->additional_files = collect($this->additional_files)->add($additionalFile);
-
-            $this->save();
-        }
+        $this->additional_files = collect($this->additional_files)->add($additionalFile);
 
         return $this;
     }

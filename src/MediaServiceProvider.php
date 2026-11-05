@@ -12,6 +12,9 @@ use Elegantly\Media\Helpers\Bitrate;
 use Elegantly\Media\Helpers\VideoRendition;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\Jobs\DeleteMediaFileJob;
+use Elegantly\Media\Models\Media;
+use Elegantly\Media\Models\MediaConversion;
+use Elegantly\Media\PathGenerators\AbstractPathGenerator;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use LogicException;
 use Spatie\LaravelPackageTools\Package;
@@ -65,8 +68,10 @@ class MediaServiceProvider extends PackageServiceProvider
      */
     public static function getDeleteMediaFileJob(): string
     {
-        // @phpstan-ignore-next-line
-        return config('media.delete_media_file_job');
+        /** @var class-string<DeleteMediaFileJob> */
+        $value = config()->string('media.delete_media_file_job');
+
+        return $value;
     }
 
     /**
@@ -143,8 +148,41 @@ class MediaServiceProvider extends PackageServiceProvider
     public static function getDefaultUrlFormatter(): string
     {
         /** @var class-string<AbstractUrlFormatter> */
-        $formatter = config()->string('media.default_url_formatter');
+        $value = config()->string('media.default_url_formatter');
 
-        return $formatter;
+        return $value;
+    }
+
+    /**
+     * @return class-string<MediaConversion>
+     */
+    public static function getMediaConversionModel(): string
+    {
+        /** @var class-string<MediaConversion> */
+        $value = config()->string('media.media_conversion_model');
+
+        return $value;
+    }
+
+    /**
+     * @return class-string<Media>
+     */
+    public static function getMediaModel(): string
+    {
+        /** @var class-string<Media> */
+        $value = config()->string('media.model');
+
+        return $value;
+    }
+
+    /**
+     * @return class-string<AbstractPathGenerator>
+     */
+    public static function getDefaultPathGenerator(): string
+    {
+        /** @var class-string<AbstractPathGenerator> */
+        $value = config()->string('media.default_path_generator');
+
+        return $value;
     }
 }
