@@ -6,7 +6,6 @@ namespace Elegantly\Media;
 
 use Elegantly\Media\Exceptions\MediaStreamNotReadableException;
 use Elegantly\Media\Models\Media;
-use Illuminate\Support\Collection;
 
 /**
  * Zip media using the native `zip` binary instead of PHP.
@@ -20,12 +19,10 @@ class NativeMediaZipper extends AbstractNativeZipper
 {
     /**
      * Media without a file are skipped.
-     *
-     * @return Collection<array-key, TMedia>
      */
-    protected function getItems(): Collection
+    protected function shouldIncludeItem(mixed $item): bool
     {
-        return $this->items->reject(fn ($media) => ! $media->path || ! $media->disk);
+        return $item->path && $item->disk;
     }
 
     protected function getItemName(mixed $item, int $index): string

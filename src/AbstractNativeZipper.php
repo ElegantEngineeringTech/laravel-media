@@ -58,13 +58,13 @@ abstract class AbstractNativeZipper implements Responsable
     abstract protected function placeItem(mixed $item, string $target): void;
 
     /**
-     * The items to put in the archive. Override to skip some of them.
+     * Whether the item is put in the archive. Override to skip some of them.
      *
-     * @return Collection<array-key, TItem>
+     * @param  TItem  $item
      */
-    protected function getItems(): Collection
+    protected function shouldIncludeItem(mixed $item): bool
     {
-        return $this->items;
+        return true;
     }
 
     public function getFolder(): string
@@ -149,7 +149,7 @@ abstract class AbstractNativeZipper implements Responsable
         $archive = $temporaryDirectory->path('archive.zip');
         $folder = $this->getFolder();
         $destination = $folder === '' ? $content : "{$content}/{$folder}";
-        $items = $this->getItems()->values();
+        $items = $this->items->filter(fn ($item) => $this->shouldIncludeItem($item))->values();
 
         if ($items->isEmpty()) {
             // zip refuses to create an empty archive: write the end of central directory record alone
