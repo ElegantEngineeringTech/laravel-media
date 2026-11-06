@@ -14,7 +14,7 @@ class MediaCollection
 {
     /**
      * @param  null|(string[])  $acceptedMimeTypes
-     * @param  null|string|(Closure(): null|string)  $fallback
+     * @param  null|string|(Closure(): ?string)  $fallback
      * @param  null|(Closure(UploadedFile|File $file, TemporaryDirectory $temporaryDirectory): (UploadedFile|File))  $transform
      * @param  null|(Closure(Media $media): void)  $onAdded
      * @param  MediaConversionDefinition[]  $conversions
