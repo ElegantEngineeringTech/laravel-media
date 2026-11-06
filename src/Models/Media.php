@@ -1121,16 +1121,23 @@ class Media extends Model implements InteractWithFiles
 
     /**
      * @param  string[]  $conversions
+     * @param  (string|MediaConversionState)[]  $states
      */
     public function loadConversions(
         array $conversions = [],
+        array $states = [],
     ): static {
 
         return $this->load([
-            'conversions' => fn ($query) => $query->when(
-                $conversions,
-                fn ($query) => $query->whereIn('conversion_name', $conversions),
-            ),
+            'conversions' => fn ($query) => $query
+                ->when(
+                    $conversions,
+                    fn ($query) => $query->whereIn('conversion_name', $conversions),
+                )
+                ->when(
+                    $states,
+                    fn ($query) => $query->whereIn('state', $states),
+                ),
         ]);
 
     }
@@ -1138,19 +1145,26 @@ class Media extends Model implements InteractWithFiles
     /**
      * @param  Builder<static>  $query
      * @param  string[]  $conversions
+     * @param  (string|MediaConversionState)[]  $states
      * @return Builder<static>
      */
     #[Scope]
     protected function withConversions(
         Builder $query,
         array $conversions = [],
+        array $states = [],
     ): Builder {
 
         return $query->with([
-            'conversions' => fn ($query) => $query->when(
-                $conversions,
-                fn ($query) => $query->whereIn('conversion_name', $conversions),
-            ),
+            'conversions' => fn ($query) => $query
+                ->when(
+                    $conversions,
+                    fn ($query) => $query->whereIn('conversion_name', $conversions),
+                )
+                ->when(
+                    $states,
+                    fn ($query) => $query->whereIn('state', $states),
+                ),
         ]);
 
     }

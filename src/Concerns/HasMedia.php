@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Concerns;
 
+use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Events\MediaAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
 use Elegantly\Media\Exceptions\InvalidMimeTypeException;
@@ -339,12 +340,14 @@ trait HasMedia
     /**
      * @param  string[]  $collections
      * @param  string[]  $conversions
+     * @param  (string|MediaConversionState)[]  $conversionsStates
      */
     #[Scope]
     protected function withMedia(
         Builder $query,
         array $collections = [],
         array $conversions = [],
+        array $conversionsStates = [],
     ): Builder {
 
         return $query->with([
@@ -356,7 +359,12 @@ trait HasMedia
                 ->when(
                     $conversions,
                     fn ($query) => $query->with([
-                        'conversions' => fn ($query) => $query->whereIn('conversion_name', $conversions),
+                        'conversions' => fn ($query) => $query
+                            ->whereIn('conversion_name', $conversions)
+                            ->when(
+                                $conversionsStates,
+                                fn ($query) => $query->whereIn('state', $conversionsStates)
+                            ),
                     ])
                 ),
         ]);
