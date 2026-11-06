@@ -1120,13 +1120,15 @@ class Media extends Model implements InteractWithFiles
     // End attributes getters ----------------------------------------------------------------------
 
     /**
-     * @param  string[]  $conversions
-     * @param  (string|MediaConversionState)[]  $states
+     * @param  string|string[]  $conversions
+     * @param  string|MediaConversionState|(string|MediaConversionState)[]  $states
      */
     public function loadConversions(
-        array $conversions = [],
-        array $states = [],
+        string|array $conversions = [],
+        string|MediaConversionState|array $states = [],
     ): static {
+        $conversions = Arr::wrap($conversions);
+        $states = Arr::wrap($states);
 
         return $this->load([
             'conversions' => fn ($query) => $query
@@ -1144,16 +1146,18 @@ class Media extends Model implements InteractWithFiles
 
     /**
      * @param  Builder<static>  $query
-     * @param  string[]  $conversions
-     * @param  (string|MediaConversionState)[]  $states
+     * @param  string|string[]  $conversions
+     * @param  string|MediaConversionState|(string|MediaConversionState)[]  $states
      * @return Builder<static>
      */
     #[Scope]
     protected function withConversions(
         Builder $query,
-        array $conversions = [],
-        array $states = [],
+        string|array $conversions = [],
+        string|MediaConversionState|array $states = [],
     ): Builder {
+        $conversions = Arr::wrap($conversions);
+        $states = Arr::wrap($states);
 
         return $query->with([
             'conversions' => fn ($query) => $query

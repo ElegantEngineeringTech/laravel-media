@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 use Throwable;
 
 /**
@@ -338,17 +339,20 @@ trait HasMedia
     }
 
     /**
-     * @param  string[]  $collections
-     * @param  string[]  $conversions
-     * @param  (string|MediaConversionState)[]  $conversionsStates
+     * @param  string|string[]  $collections
+     * @param  string|string[]  $conversions
+     * @param  string|MediaConversionState|(string|MediaConversionState)[]  $conversionsStates
      */
     #[Scope]
     protected function withMedia(
         Builder $query,
-        array $collections = [],
-        array $conversions = [],
-        array $conversionsStates = [],
+        string|array $collections = [],
+        string|array $conversions = [],
+        string|MediaConversionState|array $conversionsStates = [],
     ): Builder {
+        $collections = Arr::wrap($collections);
+        $conversions = Arr::wrap($conversions);
+        $conversionsStates = Arr::wrap($conversionsStates);
 
         return $query->with([
             'media' => fn ($query) => $query
