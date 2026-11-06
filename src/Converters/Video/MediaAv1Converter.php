@@ -24,6 +24,7 @@ class MediaAv1Converter extends MediaConverter
         public ?int $width = null,
         public ?int $height = null,
         public ?int $fps = null,
+        public int|float|null $duration = null,
         public int $crf = 35,
         public int $preset = 6,
     ) {
@@ -63,6 +64,7 @@ class MediaAv1Converter extends MediaConverter
             height: $this->height,
             upscale: false,
             fps: $this->fps,
+            duration: $this->duration,
             crf: $this->crf,
             preset: $this->preset,
         );

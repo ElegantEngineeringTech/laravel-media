@@ -318,6 +318,7 @@ class Video extends FFMpeg
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Maximum frame rate, never raising the source frame rate.
+     * @param  int|float|null  $duration  Maximum duration in seconds, keeping the start of the video. null keeps the whole video.
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the targeted quality.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for the web.
@@ -332,6 +333,7 @@ class Video extends FFMpeg
         ?int $height = null,
         bool $upscale = true,
         ?int $fps = null,
+        int|float|null $duration = null,
         int|float $keyframeInterval = 2,
         int $crf = 23,
         string $preset = 'slow',
@@ -362,6 +364,7 @@ class Video extends FFMpeg
         ]);
 
         return $this->ffmpeg([
+            ...($duration ? ['-t', (string) $duration] : []),
             '-i', $input,
             '-map', "0:{$video->index()}",
             ...($audio ? [
@@ -401,6 +404,7 @@ class Video extends FFMpeg
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Maximum frame rate, never raising the source frame rate.
+     * @param  int|float|null  $duration  Maximum duration in seconds, keeping the start of the video. null keeps the whole video.
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  Constant Rate Factor (0–63).
      *                    Lower is higher quality.
@@ -418,6 +422,7 @@ class Video extends FFMpeg
         ?int $height = null,
         bool $upscale = true,
         ?int $fps = null,
+        int|float|null $duration = null,
         int|float $keyframeInterval = 2,
         int $crf = 32,
         string $deadline = 'good',
@@ -449,6 +454,7 @@ class Video extends FFMpeg
         ]);
 
         return $this->ffmpeg([
+            ...($duration ? ['-t', (string) $duration] : []),
             '-i', $input,
             '-map', "0:{$video->index()}",
             ...($audio ? [
@@ -489,6 +495,7 @@ class Video extends FFMpeg
      * @param  int|null  $height  The maximum height in pixels, keeping the aspect ratio.
      * @param  bool  $upscale  Whether the video can be larger than the source.
      * @param  int|null  $fps  Maximum frame rate, never raising the source frame rate.
+     * @param  int|float|null  $duration  Maximum duration in seconds, keeping the start of the video. null keeps the whole video.
      * @param  int|float  $keyframeInterval  Time between keyframes in seconds.
      * @param  int  $crf  The SVT-AV1 Constant Rate Factor (0–63), the targeted quality.
      *                    Lower is higher quality; 35 is the SVT-AV1 default.
@@ -504,6 +511,7 @@ class Video extends FFMpeg
         ?int $height = null,
         bool $upscale = true,
         ?int $fps = null,
+        int|float|null $duration = null,
         int|float $keyframeInterval = 2,
         int $crf = 35,
         int $preset = 6,
@@ -538,6 +546,7 @@ class Video extends FFMpeg
         $isWebm = $extension === 'webm';
 
         return $this->ffmpeg([
+            ...($duration ? ['-t', (string) $duration] : []),
             '-i', $input,
             '-map', "0:{$video->index()}",
             ...($audio ? [
@@ -590,6 +599,7 @@ class Video extends FFMpeg
      * @param  string  $playlist  The master playlist filename.
      * @param  int|null  $fps  Maximum frame rate of every rendition, never raising the source frame rate.
      *                         Renditions share the same frame rate so their keyframes, and segments, stay aligned.
+     * @param  int|float|null  $duration  Maximum duration in seconds, keeping the start of the video. null keeps the whole video.
      * @param  int  $segmentLength  HLS segment length in seconds.
      * @param  int  $crf  The x264 Constant Rate Factor (0–51), the quality targeted by every rendition.
      *                    Lower is higher quality; 23 is the x264 default and a common choice for streaming.
@@ -610,6 +620,7 @@ class Video extends FFMpeg
         string $output,
         string $playlist = 'master.m3u8',
         ?int $fps = null,
+        int|float|null $duration = null,
         int $segmentLength = 6,
         int $crf = 23,
         string $preset = 'slow',
@@ -738,6 +749,7 @@ class Video extends FFMpeg
         File::ensureDirectoryExists($output);
 
         $this->ffmpeg([
+            ...($duration ? ['-t', (string) $duration] : []),
             '-i', $input,
             '-filter_complex', $filterComplex,
             ...$arguments,

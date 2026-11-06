@@ -32,6 +32,7 @@ class MediaHlsConverter extends MediaConverter
     public function __construct(
         Media $media,
         public ?int $fps = null,
+        public int|float|null $duration = null,
         public null|array|VideoRenditionCollection $renditions = null,
         public int $startingRendition = 720,
         public int $segmentLength = 6,
@@ -79,6 +80,7 @@ class MediaHlsConverter extends MediaConverter
             output: $temporaryDirectory->path(),
             playlist: $this->playlist,
             fps: $this->fps,
+            duration: $this->duration,
             segmentLength: $this->segmentLength,
             crf: $this->crf,
             preset: $this->preset,
