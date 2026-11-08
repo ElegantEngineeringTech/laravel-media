@@ -79,13 +79,16 @@ class MediaConversion extends Model implements InteractWithFiles
 
     public static function booted()
     {
-        static::creating(function (MediaConversion $conversion) {
-            $conversion->state_set_at ??= now();
-        });
-
-        static::updating(function (MediaConversion $conversion) {
+        /**
+         * Timestamp every state change, unless a timestamp is explicitly given with it
+         */
+        static::saving(function (MediaConversion $conversion) {
             if ($conversion->isDirty('state')) {
-                $conversion->state_set_at = now();
+
+                if ($conversion->state_set_at === null || ! $conversion->isDirty('state_set_at')) {
+                    $conversion->state_set_at = now();
+                }
+
             }
         });
 

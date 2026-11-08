@@ -74,7 +74,6 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             'conversion_name' => $this->conversion,
             'media_id' => $this->media->id,
             'state' => MediaConversionState::Skipped,
-            'state_set_at' => now(),
         ]);
     }
 
@@ -84,7 +83,6 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
             'conversion_name' => $this->conversion,
             'media_id' => $this->media->id,
             'state' => MediaConversionState::Unsupported,
-            'state_set_at' => now(),
         ]);
     }
 
@@ -97,7 +95,6 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
                 'conversion_name' => $this->conversion,
                 'media_id' => $this->media->id,
                 'state' => MediaConversionState::Failed,
-                'state_set_at' => now(),
                 'contents' => $exception ? ($exception->getCode().': '.$exception->getMessage()) : null,
             ]);
 
