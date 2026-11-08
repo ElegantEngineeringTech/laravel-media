@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Elegantly\Media\Jobs;
 
 use Elegantly\Media\Exceptions\MediaFileStorageException;
+use Elegantly\Media\MediaServiceProvider;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,14 +24,8 @@ class DeleteMediaFileJob implements ShouldBeUnique, ShouldQueue
         public string $disk,
         public string $path,
     ) {
-
-        /** @var ?string $connection */
-        $connection = config('media.queue_connection');
-        /** @var ?string $queue */
-        $queue = config('media.queue');
-
-        $this->onConnection($connection);
-        $this->onQueue($queue);
+        $this->onConnection(MediaServiceProvider::getQueueConnection());
+        $this->onQueue(MediaServiceProvider::getQueue());
         $this->afterCommit();
     }
 

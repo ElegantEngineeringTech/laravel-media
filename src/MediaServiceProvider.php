@@ -75,6 +75,28 @@ class MediaServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * @return ?string The queue connection of media jobs, null for the default connection
+     */
+    public static function getQueueConnection(): ?string
+    {
+        /** @var ?string */
+        $value = config('media.queue_connection');
+
+        return $value;
+    }
+
+    /**
+     * @return ?string The queue of media jobs, null for the default queue
+     */
+    public static function getQueue(): ?string
+    {
+        /** @var ?string */
+        $value = config('media.queue');
+
+        return $value;
+    }
+
+    /**
      * @param  string  $codec  The key of the renditions in media.videos.renditions (e.g. 'mp4' or 'webm').
      * @param  null|int[]  $only
      */

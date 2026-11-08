@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\Jobs;
 
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\Media;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -26,13 +27,8 @@ class DeleteModelMediaJob implements ShouldBeUnique, ShouldQueue
     {
         $this->media = $media->withoutRelations();
 
-        /** @var ?string $connection */
-        $connection = config('media.queue_connection');
-        /** @var ?string $queue */
-        $queue = config('media.queue');
-
-        $this->onConnection($connection);
-        $this->onQueue($queue);
+        $this->onConnection(MediaServiceProvider::getQueueConnection());
+        $this->onQueue(MediaServiceProvider::getQueue());
     }
 
     public function uniqueId(): string

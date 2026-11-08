@@ -7,6 +7,7 @@ namespace Elegantly\Media\Converters;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Events\MediaConverterExecutedEvent;
 use Elegantly\Media\MediaConversionDefinition;
+use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -36,10 +37,8 @@ abstract class MediaConverter implements ShouldBeUnique, ShouldQueue
     {
         $this->media = $media;
 
-        /** @var ?string */
-        $queue = config('media.queue');
-
-        $this->onQueue($queue);
+        $this->onConnection(MediaServiceProvider::getQueueConnection());
+        $this->onQueue(MediaServiceProvider::getQueue());
     }
 
     public function conversion(string $value): static
