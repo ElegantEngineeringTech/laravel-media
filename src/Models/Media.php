@@ -15,6 +15,7 @@ use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Events\MediaConversionAddedEvent;
 use Elegantly\Media\Events\MediaFileStoredEvent;
+use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Elegantly\Media\MediaConversionDefinition;
 use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Traits\HasUuid;
@@ -621,6 +622,37 @@ class Media extends Model implements InteractWithFiles
     }
 
     // \ Managing Conversions ----------------------------------------------------------
+
+    /**
+     * Moves the file, the additional files and the files of every conversion to another disk, keeping their paths.
+     * Each record is saved as soon as its files are moved, so a failed move can be resumed by calling it again.
+     *
+     * @throws MediaFileStorageException When one of the files can't be moved
+     */
+    public function move(string $disk): static
+    {
+        $conversions = $this
+            ->conversions()
+            ->withoutGlobalScope(SoftDeletingScope::class)
+            ->get();
+
+        try {
+            foreach ($conversions as $conversion) {
+                $conversion->move($disk);
+            }
+        } finally {
+            // The loaded conversions are other instances and would still point to the old disk
+            $this->unsetRelation('conversions');
+        }
+
+        $this->moveAdditionalFilesTo($disk);
+
+        if ($this->path) {
+            $this->moveFileTo($disk, $this->path);
+        }
+
+        return $this;
+    }
 
     /**
      * @param  array<array-key, int>  $keys

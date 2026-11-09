@@ -106,6 +106,32 @@ trait HasAdditionalFiles
         return $this->storeAdditionalFileFromHttpFile(new HttpFile($file), $destination, $name, $disk);
     }
 
+    /**
+     * Moves every additional file to another disk, keeping their paths.
+     *
+     * @throws MediaFileStorageException When one of the files can't be moved
+     */
+    public function moveAdditionalFilesTo(string $disk): static
+    {
+        if (
+            $this->additional_files === null ||
+            $this->additional_files->isEmpty()
+        ) {
+            return $this;
+        }
+
+        try {
+            foreach ($this->additional_files as $file) {
+                $file->moveTo($disk);
+            }
+        } finally {
+            // Persist the files already moved, even when a later one fails
+            $this->save();
+        }
+
+        return $this;
+    }
+
     public function deleteAdditionalFiles(): bool
     {
         if ($this->additional_files === null) {

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Elegantly\Media\ValueObjects;
 
 use DateTimeInterface;
+use Elegantly\Media\Exceptions\MediaFileStorageException;
+use Elegantly\Media\Helpers\File;
 use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\UrlFormatters\AbstractUrlFormatter;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -56,6 +58,24 @@ class AdditionalFile implements Arrayable, JsonSerializable
     public function delete(): bool
     {
         return (bool) $this->getDisk()->delete($this->path);
+    }
+
+    /**
+     * Moves the file to another disk, keeping the same path.
+     *
+     * @throws MediaFileStorageException When the destination already exists or the move fails
+     */
+    public function moveTo(string $disk): static
+    {
+        if ($disk === $this->disk) {
+            return $this;
+        }
+
+        File::move($this->disk, $this->path, $disk, $this->path);
+
+        $this->disk = $disk;
+
+        return $this;
     }
 
     /**

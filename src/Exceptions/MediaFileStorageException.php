@@ -18,13 +18,13 @@ class MediaFileStorageException extends Exception
         return new self("Storing Media File '{$path}' to disk '{$disk}' at '{$destination}' failed.");
     }
 
-    public static function renameFailed(string $path, string $disk, string $destination): self
+    public static function moveFailed(string $path, string $disk, string $destination, string $destinationDisk): self
     {
-        return new self("Renaming Media File '{$path}' to '{$destination}' on disk '{$disk}' failed.");
+        return new self("Moving Media File '{$path}' from disk '{$disk}' to '{$destination}' on disk '{$destinationDisk}' failed.");
     }
 
-    public static function renameTargetExists(string $path, string $disk, string $destination): self
+    public static function moveTargetExists(string $path, string $disk, string $destination, string $destinationDisk): self
     {
-        return new self("Renaming Media File '{$path}' on disk '{$disk}' failed: '{$destination}' already exists.");
+        return new self("Moving Media File '{$path}' from disk '{$disk}' failed: '{$destination}' already exists on disk '{$destinationDisk}'.");
     }
 }

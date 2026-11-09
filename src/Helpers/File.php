@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Elegantly\Media\Helpers;
 
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Illuminate\Http\File as HttpFile;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class File
@@ -124,5 +126,46 @@ class File
         $extension = pathinfo($basename, PATHINFO_EXTENSION);
 
         return $extension ? "{$name}.{$extension}" : $name;
+    }
+
+    /**
+     * Moves a stored file to another path, on the same disk or on another one.
+     *
+     * @throws MediaFileStorageException When the destination already exists or the move fails
+     */
+    public static function move(
+        string $disk,
+        string $path,
+        string $destinationDisk,
+        string $destination,
+    ): void {
+        $source = Storage::disk($disk);
+        $target = Storage::disk($destinationDisk);
+
+        if ($target->exists($destination)) {
+            throw MediaFileStorageException::moveTargetExists($path, $disk, $destination, $destinationDisk);
+        }
+
+        if ($disk === $destinationDisk) {
+
+            if (! $source->move($path, $destination)) {
+                throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
+            }
+
+        } else {
+            $stream = $source->readStream($path);
+            $moved = $stream && $target->writeStream($destination, $stream);
+
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+
+            if ($moved) {
+                rescue(fn () => $source->delete($path));
+            } else {
+                throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
+            }
+        }
+
     }
 }

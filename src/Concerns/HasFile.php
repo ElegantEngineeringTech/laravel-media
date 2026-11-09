@@ -159,25 +159,39 @@ trait HasFile
 
         $fileName = $this->extension ? "{$name}.{$this->extension}" : $name;
         $dirname = dirname($path);
-        $to = $dirname === '.' ? $fileName : "{$dirname}/{$fileName}";
 
-        if ($to === $path) {
+        return $this->moveFileTo(
+            disk: $disk,
+            path: $dirname === '.' ? $fileName : "{$dirname}/{$fileName}",
+        );
+    }
+
+    /**
+     * Move the file to a path on the same disk or on another one.
+     * The name, file_name and extension are taken from the new path.
+     *
+     * @throws MediaFileStorageException When the destination already exists or the move fails
+     */
+    public function moveFileTo(string $disk, string $path): static
+    {
+        $fromDisk = $this->disk;
+        $fromPath = $this->path;
+
+        if (! $fromDisk || ! $fromPath) {
             return $this;
         }
 
-        $filesystem = Storage::disk($disk);
-
-        if ($filesystem->exists($to)) {
-            throw MediaFileStorageException::renameTargetExists($path, $disk, $to);
+        if ($disk === $fromDisk && $path === $fromPath) {
+            return $this;
         }
 
-        if (! $filesystem->move($path, $to)) {
-            throw MediaFileStorageException::renameFailed($path, $disk, $to);
-        }
+        File::move($fromDisk, $fromPath, $disk, $path);
 
-        $this->name = $name;
-        $this->file_name = $fileName;
-        $this->path = $to;
+        $this->disk = $disk;
+        $this->path = $path;
+        $this->file_name = basename($path);
+        $this->name = pathinfo($path, PATHINFO_FILENAME);
+        $this->extension = pathinfo($path, PATHINFO_EXTENSION) ?: null;
 
         $this->save();
 
@@ -307,35 +321,6 @@ trait HasFile
         $result = $filesystem->writeStream($path, $stream);
 
         return $result ? $path : null;
-    }
-
-    /**
-     * @return ?string The new file path on success, null on failure
-     */
-    public function moveFileTo(
-        string $disk,
-        string $path,
-    ): ?string {
-
-        if ($disk === $this->disk && $path === $this->path) {
-            return $path;
-        }
-
-        if ($this->copyFileTo($disk, $path)) {
-            try {
-                $this->deleteFile();
-            } catch (\Throwable $th) {
-                report($th);
-            }
-
-            $this->disk = $disk;
-            $this->path = $path;
-            $this->save();
-
-            return $path;
-        }
-
-        return null;
     }
 
     /**

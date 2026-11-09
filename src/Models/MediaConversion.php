@@ -11,6 +11,7 @@ use Elegantly\Media\Contracts\InteractWithFiles;
 use Elegantly\Media\Database\Factories\MediaConversionFactory;
 use Elegantly\Media\Enums\MediaConversionState;
 use Elegantly\Media\Enums\MediaType;
+use Elegantly\Media\Exceptions\MediaFileStorageException;
 use Elegantly\Media\MediaServiceProvider;
 use Elegantly\Media\Traits\HasUuid;
 use Elegantly\Media\ValueObjects\AdditionalFile;
@@ -117,6 +118,22 @@ class MediaConversion extends Model implements InteractWithFiles
             }
 
         });
+    }
+
+    /**
+     * Moves the file and the additional files to another disk, keeping their paths.
+     *
+     * @throws MediaFileStorageException When one of the files can't be moved
+     */
+    public function move(string $disk): static
+    {
+        $this->moveAdditionalFilesTo($disk);
+
+        if ($this->path) {
+            $this->moveFileTo($disk, $this->path);
+        }
+
+        return $this;
     }
 
     public function deleteAllFiles(): bool

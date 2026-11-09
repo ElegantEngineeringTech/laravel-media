@@ -35,6 +35,8 @@ interface InteractWithFiles
 
     public function rename(string $name): static;
 
+    public function moveFileTo(string $disk, string $path): static;
+
     /**
      * @return string The new file path
      */
@@ -73,14 +75,6 @@ interface InteractWithFiles
      */
     public function copyFileTo(
         string|Filesystem $disk,
-        string $path,
-    ): ?string;
-
-    /**
-     * @return ?string The new file path on success, null on failure
-     */
-    public function moveFileTo(
-        string $disk,
         string $path,
     ): ?string;
 
