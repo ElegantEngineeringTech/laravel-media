@@ -21,6 +21,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 /**
  * @property ?MediaType $type
@@ -143,29 +144,44 @@ trait HasFile
 
     public function rename(string $name): static
     {
-        if (! $this->path) {
+        $path = $this->path;
+        $disk = $this->disk;
+
+        if (! $path || ! $disk) {
             return $this;
         }
 
-        $name = str($name)->slug()->value();
-        $fileName = "{$name}.{$this->extension}";
+        $name = File::sanitizeFilename($name);
 
-        $to = str($this->path)->dirname()->finish('/')->append($fileName)->value();
+        if ($name === '') {
+            throw new InvalidArgumentException('The new file name is empty after sanitization.');
+        }
 
-        if ($this->path === $to) {
+        $fileName = $this->extension ? "{$name}.{$this->extension}" : $name;
+        $dirname = dirname($path);
+        $to = $dirname === '.' ? $fileName : "{$dirname}/{$fileName}";
+
+        if ($to === $path) {
             return $this;
         }
 
-        if ($moved = $this->getDisk()?->move($this->path, $to)) {
-            $this->name = $name;
-            $this->file_name = $fileName;
-            $this->path = $to;
+        $filesystem = Storage::disk($disk);
 
-            $this->save();
+        if ($filesystem->exists($to)) {
+            throw MediaFileStorageException::renameTargetExists($path, $disk, $to);
         }
+
+        if (! $filesystem->move($path, $to)) {
+            throw MediaFileStorageException::renameFailed($path, $disk, $to);
+        }
+
+        $this->name = $name;
+        $this->file_name = $fileName;
+        $this->path = $to;
+
+        $this->save();
 
         return $this;
-
     }
 
     /**
