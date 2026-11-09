@@ -264,6 +264,14 @@ class Stream
         return $dimension;
     }
 
+    /**
+     * The YCbCr matrix coefficients (e.g. "bt709", "bt2020nc"), null when unspecified.
+     */
+    public function colorSpace(): ?string
+    {
+        return $this->getString('color_space');
+    }
+
     public function colorTransfer(): ?string
     {
         return $this->getString('color_transfer');

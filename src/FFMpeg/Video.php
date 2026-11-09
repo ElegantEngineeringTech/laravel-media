@@ -845,6 +845,11 @@ class Video extends FFMpeg
      * HDR highlights are compressed in between with the Möbius curve, which keeps SDR-range content almost unchanged.
      * Its peak defaults to 1000 nits, the BT.2100 nominal peak of HLG (e.g. iPhone videos) and the usual HDR10 mastering peak.
      *
+     * zscale cannot convert from an unspecified matrix, primaries or transfer ("no path between colorspaces"),
+     * so the ones missing from the source (e.g. "yuv420p(tv, unknown/bt2020/arib-std-b67)") are set beforehand:
+     * BT.2020 primaries (required by BT.2100 for HDR), the BT.709 transfer (also used by BT.2020 SDR)
+     * and the matrix derived from the primaries (BT.2020 non-constant luminance or BT.709).
+     *
      * Other SDR videos are only converted to 8-bit 4:2:0, keeping their colors untouched.
      */
     protected function sdrFilter(Stream $stream): string
@@ -856,7 +861,14 @@ class Video extends FFMpeg
             return 'format=yuv420p';
         }
 
+        $unspecified = array_filter([
+            $stream->colorSpace() === null ? 'colorspace=chroma-derived-nc' : null,
+            $stream->colorPrimaries() === null ? 'color_primaries=bt2020' : null,
+            $stream->colorTransfer() === null ? 'color_trc=bt709' : null,
+        ]);
+
         return implode(',', array_filter([
+            $unspecified ? 'setparams='.implode(':', $unspecified) : null,
             'zscale=transfer=linear:npl=100',
             'format=gbrpf32le',
             'zscale=primaries=bt709',
