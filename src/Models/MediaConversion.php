@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @template TMedia of Media = Media
+ *
  * @property int $id
  * @property string $uuid
  * @property string $conversion_name
@@ -43,7 +45,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ?string $contents Arbitrary stored value
  * @property ?array<array-key, mixed> $metadata
  * @property int $media_id
- * @property Media $media
+ * @property TMedia $media
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read ?string $url
@@ -145,11 +147,14 @@ class MediaConversion extends Model implements InteractWithFiles
     }
 
     /**
-     * @return BelongsTo<Media, $this>
+     * @return BelongsTo<TMedia, $this>
      */
     public function media(): BelongsTo
     {
-        return $this->belongsTo(MediaServiceProvider::getMediaModel());
+        /** @var class-string<TMedia> $model */
+        $model = MediaServiceProvider::getMediaModel();
+
+        return $this->belongsTo($model);
     }
 
     /**
