@@ -66,15 +66,26 @@ class File
 
     }
 
+    /**
+     * The extension is lowercased and only kept when it is strictly alphanumeric
+     * (1 to 10 chars). Otherwise it is guessed from the file content, so a crafted
+     * name can never inject unexpected characters into a stored path.
+     */
     public static function extension(string|HttpFile|UploadedFile $file): ?string
     {
         $file = static::asFile($file);
 
-        if ($file instanceof UploadedFile) {
-            return $file->getClientOriginalExtension() ?: $file->guessExtension();
+        $extension = strtolower(
+            $file instanceof UploadedFile
+                ? $file->getClientOriginalExtension()
+                : $file->getExtension()
+        );
+
+        if (preg_match('/^[a-z0-9]{1,10}$/D', $extension)) {
+            return $extension;
         }
 
-        return $file->getExtension() ?: $file->guessExtension();
+        return $file->guessExtension();
     }
 
     public static function type(string $path): MediaType
