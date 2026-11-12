@@ -861,6 +861,11 @@ class Video extends FFMpeg
      * BT.2020 primaries (required by BT.2100 for HDR), the BT.709 transfer (also used by BT.2020 SDR)
      * and the matrix derived from the primaries (BT.2020 non-constant luminance or BT.709).
      *
+     * The 8-bit conversion is dithered, as rounding 10-bit or float values leaves visible bands in smooth gradients (e.g. skies).
+     *
+     * The HDR metadata of the frames (mastering display, content light level, HDR10+, Dolby Vision, ambient viewing environment)
+     * describes the source signal: it is removed, as encoders would otherwise write it to the SDR output.
+     *
      * Other SDR videos are only converted to 8-bit 4:2:0, keeping their colors untouched.
      */
     protected function sdrFilter(Stream $stream): string
@@ -896,8 +901,19 @@ class Video extends FFMpeg
                 'transfer=bt709',
                 'matrix=bt709',
                 'range=tv',
+                'dither=error_diffusion',
             ]),
             'format=yuv420p',
+            // Removed last, tonemap reading its peak from it
+            ...array_map(fn (string $type) => implode(':', ['sidedata=mode=delete', "type={$type}"]), [
+                'MASTERING_DISPLAY_METADATA',
+                'CONTENT_LIGHT_LEVEL',
+                'DYNAMIC_HDR_PLUS',
+                'DYNAMIC_HDR_VIVID',
+                'DOVI_RPU_BUFFER',
+                'DOVI_METADATA',
+                'AMBIENT_VIEWING_ENVIRONMENT',
+            ]),
         ]));
     }
 
