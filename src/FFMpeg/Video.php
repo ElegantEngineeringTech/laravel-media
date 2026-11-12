@@ -101,6 +101,11 @@ class Video extends FFMpeg
             ...$filters,
             $this->sdrFilter($this->videoStream($input)),
             $this->scaleFilter($width, $height, $upscale),
+            // Hand RGB to the image encoder, so JPEG and WebP get the BT.601 YCbCr their decoders always assume.
+            // YCbCr frames would be written with the source matrix (e.g. BT.709), shifting colors,
+            // and RGB frames still tagged with it would be converted back with it.
+            'format=rgb24',
+            'setparams=colorspace=gbr',
         ]);
 
         return $this->ffmpeg([
@@ -840,10 +845,16 @@ class Video extends FFMpeg
      * Filters converting a video stream to 8-bit SDR BT.709 (yuv420p), the format every browser and device can decode.
      *
      * HDR (PQ or HLG) and wide gamut (BT.2020) videos go through zscale, which reads the source transfer,
-     * primaries and matrix from the frame metadata: the signal is linearized (1.0 = 100 nits, the SDR reference
-     * white expected by tonemap), converted to BT.709 primaries, then encoded back to BT.709.
-     * HDR highlights are compressed in between with the Möbius curve, which keeps SDR-range content almost unchanged.
-     * Its peak defaults to 1000 nits, the BT.2100 nominal peak of HLG (e.g. iPhone videos) and the usual HDR10 mastering peak.
+     * primaries and matrix from the frame metadata, converts them to BT.709 primaries in linear light,
+     * then encodes them back to BT.709.
+     *
+     * HLG is scene-referred: its signal encodes the light of the scene, the display deciding how bright its peak is.
+     * It is rendered as on an SDR display, its peak becoming SDR white, see hlgFilters().
+     *
+     * PQ is display-referred: its signal encodes absolute luminance, linearized with 1.0 = 100 nits, the SDR reference
+     * white expected by tonemap. HDR highlights are then compressed with the Möbius curve, which keeps SDR-range
+     * content almost unchanged. Its peak is read from the frame metadata (content light level or mastering display),
+     * defaulting to 1000 nits, the usual HDR10 mastering peak.
      *
      * zscale cannot convert from an unspecified matrix, primaries or transfer ("no path between colorspaces"),
      * so the ones missing from the source (e.g. "yuv420p(tv, unknown/bt2020/arib-std-b67)") are set beforehand:
@@ -861,21 +872,70 @@ class Video extends FFMpeg
             return 'format=yuv420p';
         }
 
+        $colorTransfer = $stream->colorTransfer();
+
         $unspecified = array_filter([
             $stream->colorSpace() === null ? 'colorspace=chroma-derived-nc' : null,
             $stream->colorPrimaries() === null ? 'color_primaries=bt2020' : null,
-            $stream->colorTransfer() === null ? 'color_trc=bt709' : null,
+            $colorTransfer === null ? 'color_trc=bt709' : null,
         ]);
 
         return implode(',', array_filter([
             $unspecified ? 'setparams='.implode(':', $unspecified) : null,
-            'zscale=transfer=linear:npl=100',
-            'format=gbrpf32le',
-            'zscale=primaries=bt709',
-            $stream->isHdr() ? 'tonemap=tonemap=mobius:desat=0' : null,
-            'zscale=transfer=bt709:matrix=bt709:range=tv',
+            ...($colorTransfer === 'arib-std-b67' ? $this->hlgFilters() : [
+                implode(':', [
+                    'zscale=transfer=linear',
+                    'npl=100',
+                ]),
+                'format=gbrpf32le',
+                'zscale=primaries=bt709',
+                $stream->isHdr() ? implode(':', ['tonemap=tonemap=mobius', 'desat=0']) : null,
+            ]),
+            implode(':', [
+                'zscale=primaries=bt709',
+                'transfer=bt709',
+                'matrix=bt709',
+                'range=tv',
+            ]),
             'format=yuv420p',
         ]));
+    }
+
+    /**
+     * Filters rendering HLG as on an SDR display, the way Apple devices show iPhone HDR videos on SDR screens.
+     *
+     * HLG peaks at 1000 nits on its reference display. Treating it as absolute luminance and mapping 100 or 203 nits
+     * (the BT.2408 HDR reference white) to SDR white leaves no room for the upper part of the signal, where most
+     * of a well-exposed phone video sits: it gets compressed against white and the video looks too bright and washed out.
+     *
+     * Instead, each display maps the HLG peak to its own peak (BT.2100), with a system gamma decreasing with the display
+     * brightness, from 1.2 at 1000 nits to about 1.0 for dim displays. The light of the scene, decoded by
+     * the HLG inverse OETF, is shown as is: its peak becomes SDR white and it goes through the BT.1886 EOTF (2.4 gamma).
+     * This matches the SDR rendering of iPhone videos by AVFoundation.
+     *
+     * zscale only decodes HLG for its 1000 nits reference display (system gamma 1.2), so the inverse OETF is applied
+     * by lutrgb on 16-bit RGB. The scene light is stored with the 2.4 gamma, keeping precision in the shadows,
+     * so the values are BT.709 encoded and zscale only has to convert their primaries.
+     *
+     * @return string[]
+     */
+    protected function hlgFilters(): array
+    {
+        // BT.2100 HLG inverse OETF, the signal and scene light being normalized to [0, 1]
+        $signal = 'val/maxval';
+        $sceneLight = "if(lte({$signal}\\,0.5)\\,pow({$signal}\\,2)/3\\,(exp(({$signal}-0.55991073)/0.17883277)+0.28466892)/12)";
+        $expression = "maxval*pow({$sceneLight}\\,1/2.4)";
+
+        return [
+            'zscale',
+            'format=gbrp16le',
+            implode(':', [
+                "lutrgb=r={$expression}",
+                "g={$expression}",
+                "b={$expression}",
+            ]),
+            'setparams=color_trc=bt709',
+        ];
     }
 
     /**
