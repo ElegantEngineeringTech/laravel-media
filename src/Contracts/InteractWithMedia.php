@@ -86,7 +86,7 @@ interface InteractWithMedia
     /**
      * @return $this
      */
-    public function deleteMedia(int $mediaId): static;
+    public function deleteMedia(Media|int $media): static;
 
     /**
      * @param  array<array-key, string|int>  $except
