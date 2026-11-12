@@ -159,7 +159,7 @@ class Audio extends FFMpeg
         string $input,
         string $output,
     ): string {
-        $extension = strtolower(pathinfo($output, PATHINFO_EXTENSION));
+        $extension = mb_strtolower(pathinfo($output, PATHINFO_EXTENSION));
 
         return match ($extension) {
             'mp3' => $this->mp3($input, $output),

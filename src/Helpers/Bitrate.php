@@ -33,7 +33,7 @@ class Bitrate implements Stringable
 
         if (is_string($value)) {
 
-            preg_match('/^(?<value>\d+(?:\.\d+)?)(?<unit>[kmg])?$/', strtolower(trim($value)), $matches);
+            preg_match('/^(?<value>\d+(?:\.\d+)?)(?<unit>[kmg])?$/', mb_strtolower(mb_trim($value)), $matches);
 
             $value = (float) ($matches['value'] ?? null);
             $unit = $matches['unit'] ?? null;

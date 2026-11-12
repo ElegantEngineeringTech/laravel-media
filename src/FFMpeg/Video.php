@@ -197,7 +197,7 @@ class Video extends FFMpeg
 
         $directory = dirname($output);
         $name = pathinfo($output, PATHINFO_FILENAME);
-        $format = strtolower($format);
+        $format = mb_strtolower($format);
 
         $encoder = match ($format) {
             'jpg', 'jpeg' => 'mjpeg',
@@ -546,7 +546,7 @@ class Video extends FFMpeg
             $this->scaleFilter($width, $height, $upscale),
         ]);
 
-        $extension = strtolower(pathinfo($output, PATHINFO_EXTENSION));
+        $extension = mb_strtolower(pathinfo($output, PATHINFO_EXTENSION));
 
         $isWebm = $extension === 'webm';
 
@@ -634,7 +634,7 @@ class Video extends FFMpeg
         int|float $keyframeInterval = 2,
         bool $stripMetadata = true,
     ): false|Hls {
-        $output = rtrim(rtrim($output), DIRECTORY_SEPARATOR);
+        $output = mb_rtrim(mb_rtrim($output), DIRECTORY_SEPARATOR);
         $renditions ??= MediaServiceProvider::getVideoHlsRenditions();
 
         $streams = $this->decodableStreams($input);

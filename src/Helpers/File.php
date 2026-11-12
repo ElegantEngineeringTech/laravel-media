@@ -75,7 +75,7 @@ class File
     {
         $file = static::asFile($file);
 
-        $extension = strtolower(
+        $extension = mb_strtolower(
             $file instanceof UploadedFile
                 ? $file->getClientOriginalExtension()
                 : $file->getExtension()

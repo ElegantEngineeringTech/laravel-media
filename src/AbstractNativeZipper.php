@@ -69,7 +69,7 @@ abstract class AbstractNativeZipper implements Responsable
 
     public function getFolder(): string
     {
-        return trim($this->folder ?? pathinfo($this->fileName, PATHINFO_FILENAME), '/');
+        return mb_trim($this->folder ?? pathinfo($this->fileName, PATHINFO_FILENAME), '/');
     }
 
     /**

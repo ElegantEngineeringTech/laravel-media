@@ -45,7 +45,7 @@ class GenerateMediaConversionsCommand extends Command
         $conversions = (array) $this->option('conversions');
         /** @var string[] $models */
         $models = array_map(
-            fn (string $model): string => ltrim($model, '\\'),
+            fn (string $model): string => mb_ltrim($model, '\\'),
             (array) $this->option('models'),
         );
         /** @var string[] $collections */

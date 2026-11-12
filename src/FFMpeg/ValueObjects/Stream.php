@@ -58,7 +58,7 @@ class Stream
 
             // The avcC configuration starts with its version, then the profile, constraints and level of the stream
             return $configuration !== null && $configuration[0] === "\x01"
-                ? 'avc1.'.bin2hex(substr($configuration, 1, 3))
+                ? 'avc1.'.bin2hex(mb_substr($configuration, 1, 3))
                 : null;
         }
 
