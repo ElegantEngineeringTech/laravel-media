@@ -262,8 +262,10 @@ trait HasMedia
     /**
      * @return $this
      */
-    public function deleteMedia(int $mediaId): static
+    public function deleteMedia(Media|int $media): static
     {
+        $mediaId = $media instanceof Media ? $media->id : $media;
+
         $this->media->find($mediaId)?->delete();
 
         $this->setRelation(
