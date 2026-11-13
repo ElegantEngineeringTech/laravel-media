@@ -7,4 +7,8 @@ return [
         'unreadable' => 'Kentän :attribute tiedosto on vioittunut tai se ei ole video. Vie se uudelleen ja yritä uudestaan.',
         'no_video_stream' => ':Attribute ei sisällä videota.',
     ],
+    'filename' => [
+        'empty' => ':Attribute on sisällettävä vähintään yksi kirjain tai numero.',
+        'too_long' => ':Attribute saa olla enintään :max merkkiä pitkä.',
+    ],
 ];

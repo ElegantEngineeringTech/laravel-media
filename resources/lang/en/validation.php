@@ -7,4 +7,8 @@ return [
         'unreadable' => 'The :attribute is corrupted or is not a video file. Please export it again and retry.',
         'no_video_stream' => 'The :attribute does not contain a video.',
     ],
+    'filename' => [
+        'empty' => 'The :attribute must contain at least one letter or number.',
+        'too_long' => 'The :attribute must not be longer than :max characters.',
+    ],
 ];

@@ -7,4 +7,8 @@ return [
         'unreadable' => 'Die Datei im Feld :attribute ist beschädigt oder kein Video. Bitte exportieren Sie sie erneut und versuchen Sie es noch einmal.',
         'no_video_stream' => 'Das Feld :attribute enthält kein Video.',
     ],
+    'filename' => [
+        'empty' => 'Das Feld :attribute muss mindestens einen Buchstaben oder eine Ziffer enthalten.',
+        'too_long' => 'Das Feld :attribute darf nicht länger als :max Zeichen sein.',
+    ],
 ];
