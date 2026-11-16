@@ -246,7 +246,7 @@ trait HasFile
     }
 
     /**
-     * @param  string|UploadedFile|HttpFile|resource  $file
+     * @param  string|UploadedFile|HttpFile|resource  $file  A path, an url, a data url, a resource or a file
      * @param  null|(Closure(UploadedFile|HttpFile $file, TemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
      */
     public function storeFile(
@@ -260,7 +260,7 @@ trait HasFile
             return $this->storeFileFromHttpFile($file, $destination, $name, $disk, $before);
         }
 
-        if (! is_string($file) || filter_var($file, FILTER_VALIDATE_URL)) {
+        if (! is_string($file) || HttpFileDownloader::isDataUrl($file) || filter_var($file, FILTER_VALIDATE_URL)) {
             return TemporaryDirectory::callback(function ($tmp) use ($before, $file, $destination, $name, $disk) {
                 $path = HttpFileDownloader::download($file, $tmp->path());
 

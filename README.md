@@ -328,6 +328,7 @@ class Channel extends Model implements InteractWithMedia
 Add media to your model, using the `addMedia` method, from various sources:
 
 - an url
+- a data url (ex: `data:image/png;base64,iVBORw0KGgo...`)
 - a resource or stream
 - a `\Illuminate\Http\UploadedFile` instance
 - a `\Illuminate\Http\File` instance
@@ -391,6 +392,28 @@ use Elegantly\Media\Exceptions\InvalidMimeTypeException;
         collectionName: 'videos',
         name: "BigBuckBunny"
     );
+} catch (InvalidMimeTypeException $exception){
+    // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
+}
+```
+
+#### From a Data Url
+
+Base64 encoded data urls, like the ones produced by a canvas or a clipboard paste, are supported.
+The extension and MIME type are guessed from the decoded content, not from the media type declared in the url.
+
+```php
+use Elegantly\Media\Exceptions\InvalidDataUrlException;
+use Elegantly\Media\Exceptions\InvalidMimeTypeException;
+
+try {
+    $channel->addMedia(
+        file: $request->string('avatar')->value(), // "data:image/png;base64,iVBORw0KGgo..."
+        collectionName: 'avatar',
+        name: "{$channel->name}-avatar"
+    );
+} catch (InvalidDataUrlException $exception){
+    // Will throw an error if the data url is malformed or its base64 content is invalid.
 } catch (InvalidMimeTypeException $exception){
     // Will throw an error if the mime type is not included in the collection's `acceptedMimeTypes` parameter.
 }

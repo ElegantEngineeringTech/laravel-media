@@ -48,7 +48,7 @@ interface InteractWithFiles
     ): string;
 
     /**
-     * @param  string|UploadedFile|HttpFile|resource  $file
+     * @param  string|UploadedFile|HttpFile|resource  $file  A path, an url, a data url, a resource or a file
      * @param  null|(Closure(UploadedFile|HttpFile $file, TemporaryDirectory $temporaryDirectory):(UploadedFile|HttpFile))  $before
      */
     public function storeFile(

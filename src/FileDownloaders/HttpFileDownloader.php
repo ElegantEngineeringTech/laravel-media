@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Elegantly\Media\FileDownloaders;
 
+use Elegantly\Media\Exceptions\InvalidDataUrlException;
 use Elegantly\Media\Helpers\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class HttpFileDownloader
 {
@@ -24,15 +26,54 @@ class HttpFileDownloader
             ->timeout(60 * 10)
             ->get($url);
 
-        if ($extension = File::extension($path)) {
-            $pathWithExtension = "{$path}.{$extension}";
+        return static::renameWithExtension($path);
+    }
 
-            rename($path, $pathWithExtension);
+    /**
+     * Whether the value is a data URL (RFC 2397), e.g. "data:image/png;base64,iVBORw0KGgo..."
+     */
+    public static function isDataUrl(string $value): bool
+    {
+        return strncasecmp($value, 'data:', 5) === 0;
+    }
 
-            return $pathWithExtension;
+    /**
+     * Writes the content of a data URL (RFC 2397) to a temporary file.
+     * The declared media type is ignored: the extension is guessed from the content,
+     * so it can't be spoofed.
+     *
+     * @throws InvalidDataUrlException
+     */
+    public static function fromDataUrl(
+        string $url,
+        string $destination,
+    ): string {
+        $comma = mb_strpos($url, ',');
+
+        if ($comma === false) {
+            throw InvalidDataUrlException::missingComma();
         }
 
-        return $path;
+        $header = mb_substr($url, 0, $comma);
+        $data = mb_substr($url, $comma + 1);
+
+        if (str_ends_with(mb_strtolower($header), ';base64')) {
+            $data = base64_decode($data, true);
+
+            if ($data === false) {
+                throw InvalidDataUrlException::invalidBase64();
+            }
+        } else {
+            $data = rawurldecode($data);
+        }
+
+        $path = tempnam($destination, 'media-');
+
+        if (file_put_contents($path, $data) === false) {
+            throw new RuntimeException("Can't write the data URL content to {$path}.");
+        }
+
+        return static::renameWithExtension($path);
     }
 
     /**
@@ -56,17 +97,26 @@ class HttpFileDownloader
     }
 
     /**
-     * @param  resource|string  $file
+     * @param  resource|string  $file  A resource, an url or a data url
      */
     public static function download(
         $file,
         string $destination
     ): string {
         if (is_string($file)) {
+
+            if (static::isDataUrl($file)) {
+                return static::fromDataUrl(
+                    url: $file,
+                    destination: $destination
+                );
+            }
+
             return static::fromUrl(
                 url: $file,
                 destination: $destination
             );
+
         }
 
         return static::fromResource(
@@ -74,5 +124,21 @@ class HttpFileDownloader
             destination: $destination
         );
 
+    }
+
+    /**
+     * Renames the file with the extension guessed from its content.
+     */
+    protected static function renameWithExtension(string $path): string
+    {
+        if ($extension = File::extension($path)) {
+            $pathWithExtension = "{$path}.{$extension}";
+
+            rename($path, $pathWithExtension);
+
+            return $pathWithExtension;
+        }
+
+        return $path;
     }
 }

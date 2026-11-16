@@ -80,7 +80,7 @@ trait HasAdditionalFiles
     }
 
     /**
-     * @param  string|UploadedFile|HttpFile|resource  $file
+     * @param  string|UploadedFile|HttpFile|resource  $file  A path, an url, a data url, a resource or a file
      */
     public function storeAdditionalFile(
         mixed $file,
@@ -92,7 +92,7 @@ trait HasAdditionalFiles
             return $this->storeAdditionalFileFromHttpFile($file, $destination, $name, $disk);
         }
 
-        if (! is_string($file) || filter_var($file, FILTER_VALIDATE_URL)) {
+        if (! is_string($file) || HttpFileDownloader::isDataUrl($file) || filter_var($file, FILTER_VALIDATE_URL)) {
             return TemporaryDirectory::callback(function ($temporaryDirectory) use ($file, $destination, $name, $disk) {
                 $path = HttpFileDownloader::download(
                     file: $file,
