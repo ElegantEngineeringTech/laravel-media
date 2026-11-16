@@ -100,6 +100,27 @@ it('adds a new media with additional files to the default collection', function 
     expect($media->additional_files[1]->extension)->toBe('jpg');
 });
 
+it('adds a new media from a base64 data url', function () {
+    Storage::fake('media');
+    $model = new TestCollections;
+    $model->save();
+
+    $content = file_get_contents($this->getTestFile('images/800x900.png'));
+
+    $media = $model->addMedia(
+        file: 'data:image/png;base64,'.base64_encode($content),
+        disk: 'media'
+    );
+
+    expect($media->exists)->toBe(true);
+    expect($media->extension)->toBe('png');
+    expect($media->mime_type)->toBe('image/png');
+    expect($media->width)->toBe(800);
+    expect($media->height)->toBe(900);
+
+    expect(Storage::disk('media')->get($media->path))->toBe($content);
+});
+
 it('adds a new media to the specified collection', function () {
     Storage::fake('media');
     $model = new TestCollections;
