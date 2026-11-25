@@ -34,7 +34,7 @@ jobs:
           sudo apt-get install imagemagick
 
       - name: Fix Imagick Policy
-        run: sudo sed -i 's/none/read|write/g' /etc/ImageMagick-6/policy.xml
+        run: sudo sed -i 's/none/read|write/g' /etc/ImageMagick-7/policy.xml
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
