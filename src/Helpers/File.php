@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Symfony\Component\Mime\MimeTypes;
 
 class File
@@ -31,15 +32,18 @@ class File
         return new HttpFile($path, false);
     }
 
+    /**
+     * The name of the file without its extension, or null when there is none (e.g. ".htaccess").
+     */
     public static function name(string|HttpFile|UploadedFile $file): ?string
     {
         $file = static::asFile($file);
 
-        if ($file instanceof UploadedFile) {
-            return SupportFile::name($file->getClientOriginalName());
-        }
+        $name = SupportFile::name(
+            $file instanceof UploadedFile ? $file->getClientOriginalName() : $file->getPathname()
+        );
 
-        return SupportFile::name($file->getPathname());
+        return $name === '' ? null : $name;
     }
 
     /**
@@ -76,19 +80,27 @@ class File
     {
         $file = static::asFile($file);
 
-        $extension = mb_strtolower(
-            $file instanceof UploadedFile
-                ? $file->getClientOriginalExtension()
-                : $file->getExtension()
+        $extension = static::validExtension(
+            $file instanceof UploadedFile ? $file->getClientOriginalExtension() : $file->getExtension()
         );
 
-        if (preg_match('/^[a-z0-9]{1,10}$/D', $extension)) {
+        if ($extension !== null) {
             return $extension;
         }
 
         $mimeType = $file->getMimeType();
 
         return $mimeType ? static::extensionFromMimeType($mimeType) : null;
+    }
+
+    /**
+     * The lowercased extension when it is strictly alphanumeric (1 to 10 chars), null otherwise.
+     */
+    protected static function validExtension(string $extension): ?string
+    {
+        $extension = mb_strtolower($extension);
+
+        return preg_match('/^[a-z0-9]{1,10}$/D', $extension) ? $extension : null;
     }
 
     /**
@@ -161,23 +173,45 @@ class File
         };
     }
 
-    public static function sanitizeFilename(string $fileName): string
+    /**
+     * Sanitizes the name of a file, without its extension, e.g. "My Video" becomes "my_video".
+     *
+     * @param  string  $default  Returned as is when nothing is left of the name once sanitized, e.g. "🎉" or "!!!"
+     */
+    public static function sanitizeFilename(string $fileName, string $default = ''): string
     {
-        return Str::slug(
+        $name = Str::slug(
             $fileName,
             separator: '_',
             dictionary: ['@' => 'at', '+' => '_']
         );
+
+        return $name === '' ? $default : $name;
     }
 
     /**
-     * Sanitizes the name of a file while keeping its extension, e.g. "My Video.mp4" becomes "my_video.mp4".
+     * Sanitizes the name of a file while keeping its extension, e.g. "My Video.MP4" becomes "my_video.mp4".
+     *
+     * The extension is lowercased and only kept when it is strictly alphanumeric (1 to 10 chars).
+     * Otherwise it is sanitized as a part of the name, e.g. "foo.b@r" becomes "foob_at_r".
+     *
+     * @throws InvalidArgumentException When nothing is left of the name once sanitized, e.g. "🎉.png" or ".mp4"
      */
     public static function sanitizeBasename(string $basename): string
     {
-        $name = static::sanitizeFilename(pathinfo($basename, PATHINFO_FILENAME));
+        $basename = basename(mb_trim($basename));
 
-        return static::withExtension($name, pathinfo($basename, PATHINFO_EXTENSION));
+        $extension = static::validExtension(pathinfo($basename, PATHINFO_EXTENSION));
+
+        $name = static::sanitizeFilename(
+            $extension === null ? $basename : pathinfo($basename, PATHINFO_FILENAME)
+        );
+
+        if ($name === '') {
+            throw new InvalidArgumentException("The file name '{$basename}' is empty after sanitization.");
+        }
+
+        return static::withExtension($name, $extension);
     }
 
     /**

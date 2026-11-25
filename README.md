@@ -57,7 +57,7 @@ I developed this package with the highest degree of flexibility possible and I h
 
 ## Requirements
 
-- PHP 8.1+
+- PHP 8.4+
 - Laravel 11.0+
 - `spatie/image` for image conversions
 - `spatie/pdf-to-image` for PDF to image conversions

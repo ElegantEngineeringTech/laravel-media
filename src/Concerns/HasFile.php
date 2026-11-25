@@ -211,7 +211,7 @@ trait HasFile
 
         $destination = Str::rtrim($destination, '/');
         $extension = File::extension($file);
-        $name = File::sanitizeFilename($name);
+        $name = File::sanitizeFilename($name, default: mb_strtolower(Str::random(6)));
         $size = $file->getSize();
         $mimeType = File::mimeType($file);
         $type = rescue(fn () => File::type($pathname), MediaType::Other);
