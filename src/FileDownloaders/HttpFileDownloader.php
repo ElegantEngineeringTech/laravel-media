@@ -132,7 +132,7 @@ class HttpFileDownloader
     protected static function renameWithExtension(string $path): string
     {
         if ($extension = File::extension($path)) {
-            $pathWithExtension = "{$path}.{$extension}";
+            $pathWithExtension = File::withExtension($path, $extension);
 
             rename($path, $pathWithExtension);
 

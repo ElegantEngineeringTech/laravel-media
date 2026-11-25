@@ -34,7 +34,7 @@ trait HasAdditionalFiles
         $destination = Str::rtrim($destination, '/');
         $extension = File::extension($file);
         $name = File::sanitizeFilename($name);
-        $fileName = $extension ? "{$name}.{$extension}" : $name;
+        $fileName = File::withExtension($name, $extension);
         $mimeType = File::mimeType($file);
         $size = $file->getSize();
 

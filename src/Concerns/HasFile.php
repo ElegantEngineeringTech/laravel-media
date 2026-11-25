@@ -157,7 +157,7 @@ trait HasFile
             throw new InvalidArgumentException('The new file name is empty after sanitization.');
         }
 
-        $fileName = $this->extension ? "{$name}.{$this->extension}" : $name;
+        $fileName = File::withExtension($name, $this->extension);
         $dirname = dirname($path);
 
         return $this->moveFileTo(
@@ -218,7 +218,7 @@ trait HasFile
         $duration = rescue(fn () => $type->duration($pathname));
         $dimension = rescue(fn () => $type->dimension($pathname));
 
-        $fileName = $extension ? "{$name}.{$extension}" : $name;
+        $fileName = File::withExtension($name, $extension);
 
         $path = Storage::disk($disk)->putFileAs($destination, $file, $fileName);
 

@@ -11,6 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\Mime\MimeTypes;
 
 class File
 {
@@ -85,7 +86,48 @@ class File
             return $extension;
         }
 
-        return $file->guessExtension();
+        $mimeType = $file->getMimeType();
+
+        return $mimeType ? static::extensionFromMimeType($mimeType) : null;
+    }
+
+    /**
+     * Sets the extension of a path or a file name, replacing the existing one or adding it when missing,
+     * e.g. "videos/movie.mov" becomes "videos/movie.mp4" and "movie" becomes "movie.mp4".
+     *
+     * Only the last extension is replaced ("archive.tar.gz" becomes "archive.tar.zip") and
+     * the leading dot of a dotfile is not an extension (".env" becomes ".env.txt").
+     *
+     * @param  null|string  $extension  With or without the leading dot. Null or an empty value removes the extension.
+     */
+    public static function withExtension(string $path, ?string $extension): string
+    {
+        $basename = basename($path);
+        $directory = mb_substr($path, 0, (int) mb_strrpos($path, $basename));
+
+        $dot = mb_strrpos($basename, '.');
+        $name = $dot ? mb_substr($basename, 0, $dot) : $basename;
+
+        $extension = mb_ltrim($extension ?? '', '.');
+
+        return $extension === ''
+            ? "{$directory}{$name}"
+            : "{$directory}{$name}.{$extension}";
+    }
+
+    /**
+     * The default extension of a MIME type, e.g. "image/jpeg" gives "jpg".
+     * Parameters are ignored, so "text/plain; charset=utf-8" gives "txt".
+     */
+    public static function extensionFromMimeType(string $mimeType): ?string
+    {
+        $mimeType = mb_strtolower(mb_trim(Str::before($mimeType, ';')));
+
+        if ($mimeType === '') {
+            return null;
+        }
+
+        return MimeTypes::getDefault()->getExtensions($mimeType)[0] ?? null;
     }
 
     public static function type(string $path): MediaType
@@ -134,9 +176,8 @@ class File
     public static function sanitizeBasename(string $basename): string
     {
         $name = static::sanitizeFilename(pathinfo($basename, PATHINFO_FILENAME));
-        $extension = pathinfo($basename, PATHINFO_EXTENSION);
 
-        return $extension ? "{$name}.{$extension}" : $name;
+        return static::withExtension($name, pathinfo($basename, PATHINFO_EXTENSION));
     }
 
     /**
