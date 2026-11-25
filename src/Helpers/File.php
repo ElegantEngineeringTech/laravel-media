@@ -47,34 +47,65 @@ class File
     }
 
     /**
-     * Depending on the operating system, the guessed mimType for m3u8 files
-     * can be unrelable (audio/x-mpegurl, text/plain...)
+     * The MIME type guessed from the content of the file, never from what the client sent.
+     * Null when the file is missing or can not be read.
+     *
+     * Depending on the operating system, the guessed MIME type of m3u8 playlists
+     * is unreliable (audio/x-mpegurl, text/plain...), so they are read instead.
      */
     public static function mimeType(string|HttpFile|UploadedFile $file): ?string
     {
         $file = static::asFile($file);
 
+        if (! $file->isFile() || ! $file->isReadable()) {
+            return null;
+        }
+
         $extension = static::extension($file);
 
-        if ($extension === 'm3u8') {
-            $lines = SupportFile::lines($file->getPathname());
-            $isHls = (bool) $lines->first(fn ($line) => is_string($line) && str_starts_with($line, '#EXT-X-'));
+        return match ($extension) {
+            'm3u8' => static::playlistMimeType($file->getPathname()) ?? $file->getMimeType(),
+            default => $file->getMimeType(),
+        };
+    }
 
-            return $isHls ? 'application/vnd.apple.mpegurl' : 'audio/x-mpegurl';
+    /**
+     * The MIME type of an extended M3U playlist, which always starts with "#EXTM3U":
+     * HLS when it has "#EXT-X-" tags, a plain playlist otherwise.
+     * Null when the file is not an extended M3U playlist.
+     */
+    protected static function playlistMimeType(string $path): ?string
+    {
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            return null;
         }
 
-        if ($file instanceof UploadedFile) {
-            return $file->getMimeType() ?? $file->getClientMimeType();
+        try {
+            if (! str_starts_with((string) fgets($handle, 16), '#EXTM3U')) {
+                return null;
+            }
+
+            // Lines are read in chunks so a crafted file without line breaks is never loaded at once
+            while (($line = fgets($handle, 4096)) !== false) {
+                if (str_starts_with($line, '#EXT-X-')) {
+                    return 'application/vnd.apple.mpegurl';
+                }
+            }
+
+            return 'audio/x-mpegurl';
+        } finally {
+            fclose($handle);
         }
-
-        return $file->getMimeType();
-
     }
 
     /**
      * The extension is lowercased and only kept when it is strictly alphanumeric
      * (1 to 10 chars). Otherwise it is guessed from the file content, so a crafted
      * name can never inject unexpected characters into a stored path.
+     *
+     * Null when it can not be guessed, e.g. when the file is missing or can not be read.
      */
     public static function extension(string|HttpFile|UploadedFile $file): ?string
     {
@@ -86,6 +117,10 @@ class File
 
         if ($extension !== null) {
             return $extension;
+        }
+
+        if (! $file->isFile() || ! $file->isReadable()) {
+            return null;
         }
 
         $mimeType = $file->getMimeType();
@@ -240,17 +275,30 @@ class File
 
         } else {
             $stream = $source->readStream($path);
-            $moved = $stream && $target->writeStream($destination, $stream);
 
-            if (is_resource($stream)) {
-                fclose($stream);
-            }
-
-            if ($moved) {
-                rescue(fn () => $source->delete($path));
-            } else {
+            if (! $stream) {
                 throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
             }
+
+            $moved = false;
+
+            try {
+                $moved = $target->writeStream($destination, $stream);
+            } finally {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+
+                if (! $moved) {
+                    rescue(fn () => $target->delete($destination));
+                }
+            }
+
+            if (! $moved) {
+                throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
+            }
+
+            rescue(fn () => $source->delete($path));
         }
 
     }
