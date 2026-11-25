@@ -57,7 +57,7 @@ class File
     {
         $file = static::asFile($file);
 
-        if (! $file->isFile() || ! $file->isReadable()) {
+        if (! static::isReadable($file)) {
             return null;
         }
 
@@ -119,13 +119,27 @@ class File
             return $extension;
         }
 
-        if (! $file->isFile() || ! $file->isReadable()) {
+        if (! static::isReadable($file)) {
             return null;
         }
 
         $mimeType = $file->getMimeType();
 
         return $mimeType ? static::extensionFromMimeType($mimeType) : null;
+    }
+
+    /**
+     * Whether the file exists and can be read.
+     *
+     * The path is taken from getPathname() rather than from the SplFileInfo checks (isFile(), isReadable()),
+     * which look at the path given to the constructor. Some uploads, like the temporary ones of Livewire,
+     * are built on a placeholder path and override getPathname() to point at the real file.
+     */
+    protected static function isReadable(HttpFile|UploadedFile $file): bool
+    {
+        $pathname = $file->getPathname();
+
+        return is_file($pathname) && is_readable($pathname);
     }
 
     /**

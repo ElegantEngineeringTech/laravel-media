@@ -7,7 +7,6 @@ namespace Elegantly\Media\FileDownloaders;
 use Elegantly\Media\Exceptions\InvalidDataUrlException;
 use Elegantly\Media\Helpers\File;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class HttpFileDownloader
@@ -77,6 +76,10 @@ class HttpFileDownloader
     }
 
     /**
+     * Writes the whole content of a resource to a temporary file.
+     * A seekable resource is rewound first, so one that has just been written
+     * or already read is not stored as an empty or truncated file.
+     *
      * @param  resource  $resource
      */
     public static function fromResource(
@@ -86,14 +89,15 @@ class HttpFileDownloader
 
         $path = tempnam($destination, 'media-');
 
-        $storage = Storage::build([
-            'driver' => 'local',
-            'root' => $destination,
-        ]);
+        if (stream_get_meta_data($resource)['seekable']) {
+            rewind($resource);
+        }
 
-        $storage->writeStream($path, $resource);
+        if (file_put_contents($path, $resource) === false) {
+            throw new RuntimeException("Can't write the resource content to {$path}.");
+        }
 
-        return $path;
+        return static::renameWithExtension($path);
     }
 
     /**
