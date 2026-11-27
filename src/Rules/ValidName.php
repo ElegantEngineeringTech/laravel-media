@@ -13,9 +13,9 @@ use Illuminate\Contracts\Validation\ValidationRule;
  *
  * Fails when the sanitized name is empty (e.g. "!!!") or when the stored file name would exceed `$max` characters.
  *
- * @see File::sanitizeFilename()
+ * @see File::sanitizeName()
  */
-class ValidFilename implements ValidationRule
+class ValidName implements ValidationRule
 {
     /**
      * Room kept for the extension, see File::extension().
@@ -37,13 +37,13 @@ class ValidFilename implements ValidationRule
             return;
         }
 
-        $name = File::sanitizeFilename($value);
+        $name = File::sanitizeName($value);
         $max = $this->max - self::EXTENSION_MAX_LENGTH;
 
-        if ($name === '') {
-            $fail('media::validation.filename.empty')->translate();
+        if ($name === null) {
+            $fail('media::validation.name.empty')->translate();
         } elseif (mb_strlen($name) > $max) {
-            $fail('media::validation.filename.too_long')->translate(['max' => $max]);
+            $fail('media::validation.name.too_long')->translate(['max' => $max]);
         }
     }
 }

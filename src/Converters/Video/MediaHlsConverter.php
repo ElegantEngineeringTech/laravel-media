@@ -7,7 +7,6 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
-use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Helpers\Hls;
 use Elegantly\Media\Helpers\VideoRenditionCollection;
 use Elegantly\Media\MediaServiceProvider;
@@ -41,8 +40,6 @@ class MediaHlsConverter extends MediaConverter
         public string $playlist = 'master.m3u8',
     ) {
         parent::__construct($media);
-
-        $this->playlist = File::sanitizeBasename($playlist);
     }
 
     public function canExecute(Media $media, ?MediaConversion $parent): bool

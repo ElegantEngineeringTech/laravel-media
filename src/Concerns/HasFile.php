@@ -151,9 +151,9 @@ trait HasFile
             return $this;
         }
 
-        $name = File::sanitizeFilename($name);
+        $name = File::sanitizeName($name);
 
-        if ($name === '') {
+        if ($name === null) {
             throw new InvalidArgumentException('The new file name is empty after sanitization.');
         }
 
@@ -174,23 +174,28 @@ trait HasFile
      */
     public function moveFileTo(string $disk, string $path): static
     {
-        $fromDisk = $this->disk;
-        $fromPath = $this->path;
+        $sourceDisk = $this->disk;
+        $sourcePath = $this->path;
 
-        if (! $fromDisk || ! $fromPath) {
+        if ($sourceDisk === null || $sourcePath === null) {
             return $this;
         }
 
-        if ($disk === $fromDisk && $path === $fromPath) {
+        if ($sourceDisk === $disk && $sourcePath === $path) {
             return $this;
         }
 
-        File::move($fromDisk, $fromPath, $disk, $path);
+        File::move(
+            disk: $sourceDisk,
+            path: $sourcePath,
+            destinationDisk: $disk,
+            destinationPath: $path
+        );
 
         $this->disk = $disk;
         $this->path = $path;
         $this->file_name = basename($path);
-        $this->name = pathinfo($path, PATHINFO_FILENAME);
+        $this->name = pathinfo($path, PATHINFO_FILENAME) ?: null;
         $this->extension = pathinfo($path, PATHINFO_EXTENSION) ?: null;
 
         $this->save();
@@ -211,7 +216,7 @@ trait HasFile
 
         $destination = Str::rtrim($destination, '/');
         $extension = File::extension($file);
-        $name = File::sanitizeFilename($name, default: mb_strtolower(Str::random(6)));
+        $name = File::sanitizeName($name) ?? mb_strtolower(Str::random(6));
         $size = $file->getSize();
         $mimeType = File::mimeType($file);
         $type = rescue(fn () => File::type($pathname), MediaType::Other);
@@ -333,7 +338,7 @@ trait HasFile
     public function transformFile(Closure $transform): static
     {
 
-        TemporaryDirectory::callback(function ($temporaryDirectory) use ($transform) {
+        return TemporaryDirectory::callback(function ($temporaryDirectory) use ($transform) {
             /** Used to delete the old file at the end */
             $clone = clone $this;
 
@@ -353,8 +358,10 @@ trait HasFile
                 return;
             }
 
-            $file = new HttpFile($storage->path($copy), false);
-            $file = $transform($file, $temporaryDirectory);
+            $file = $transform(
+                File::asFile($storage->path($copy)),
+                $temporaryDirectory
+            );
 
             $result = $this->putFile(
                 disk: $disk,
@@ -363,15 +370,18 @@ trait HasFile
                 name: $name
             );
 
-            if ($result && $clone->path !== $this->path) {
+            $this->save();
+
+            if (
+                $result &&
+                $clone->path !== $this->path
+            ) {
                 $clone->deleteFile();
             }
 
-            $this->save();
+            return $this;
 
         });
-
-        return $this;
     }
 
     public function humanReadableSize(

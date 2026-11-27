@@ -11,7 +11,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File as SupportFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
+use League\Flysystem\CorruptedPathDetected;
+use League\Flysystem\PathTraversalDetected;
+use League\Flysystem\WhitespacePathNormalizer;
 use Symfony\Component\Mime\MimeTypes;
 
 class File
@@ -111,7 +113,7 @@ class File
     {
         $file = static::asFile($file);
 
-        $extension = static::validExtension(
+        $extension = static::sanitizeExtension(
             $file instanceof UploadedFile ? $file->getClientOriginalExtension() : $file->getExtension()
         );
 
@@ -143,11 +145,14 @@ class File
     }
 
     /**
-     * The lowercased extension when it is strictly alphanumeric (1 to 10 chars), null otherwise.
+     * Sanitizes an extension, with or without its leading dot, e.g. ".MP4" becomes "mp4".
+     *
+     * Null when it is not strictly alphanumeric (1 to 10 chars), so a crafted extension
+     * can never inject unexpected characters into a stored path.
      */
-    protected static function validExtension(string $extension): ?string
+    public static function sanitizeExtension(string $extension): ?string
     {
-        $extension = mb_strtolower($extension);
+        $extension = mb_strtolower(mb_ltrim(mb_trim($extension), '.'));
 
         return preg_match('/^[a-z0-9]{1,10}$/D', $extension) ? $extension : null;
     }
@@ -225,42 +230,57 @@ class File
     /**
      * Sanitizes the name of a file, without its extension, e.g. "My Video" becomes "my_video".
      *
-     * @param  string  $default  Returned as is when nothing is left of the name once sanitized, e.g. "🎉" or "!!!"
+     * Non-Latin scripts are transliterated, e.g. "報告書 2024" becomes "bao_gao_shu_2024",
+     * and dots, slashes and plus signs separate words, e.g. "v1.2.3" becomes "v1_2_3".
+     *
+     * Null when nothing is left of the name once sanitized, e.g. "🎉" or "!!!".
      */
-    public static function sanitizeFilename(string $fileName, string $default = ''): string
+    public static function sanitizeName(string $name): ?string
     {
         $name = Str::slug(
-            $fileName,
+            Str::transliterate($name),
             separator: '_',
-            dictionary: ['@' => 'at', '+' => '_']
+            dictionary: ['@' => 'at', '&' => 'and', '+' => '', '.' => '', '/' => '', '\\' => '']
         );
 
-        return $name === '' ? $default : $name;
+        return $name === '' ? null : $name;
     }
 
     /**
-     * Sanitizes the name of a file while keeping its extension, e.g. "My Video.MP4" becomes "my_video.mp4".
+     * Sanitizes a file name, both its name and its extension, e.g. "My Video.MP4" becomes "my_video.mp4".
      *
-     * The extension is lowercased and only kept when it is strictly alphanumeric (1 to 10 chars).
-     * Otherwise it is sanitized as a part of the name, e.g. "foo.b@r" becomes "foob_at_r".
+     * An extension that is not valid is sanitized as a part of the name, e.g. "foo.b@r" becomes "foo_b_at_r".
      *
-     * @throws InvalidArgumentException When nothing is left of the name once sanitized, e.g. "🎉.png" or ".mp4"
+     * Null when nothing is left of the name once sanitized, e.g. "🎉.png" or ".mp4".
+     *
+     * @see File::sanitizeName()
+     * @see File::sanitizeExtension()
      */
-    public static function sanitizeBasename(string $basename): string
+    public static function sanitizeFilename(string $filename): ?string
     {
-        $basename = basename(mb_trim($basename));
+        $filename = basename(mb_trim($filename));
 
-        $extension = static::validExtension(pathinfo($basename, PATHINFO_EXTENSION));
+        $extension = static::sanitizeExtension(pathinfo($filename, PATHINFO_EXTENSION));
 
-        $name = static::sanitizeFilename(
-            $extension === null ? $basename : pathinfo($basename, PATHINFO_FILENAME)
+        $name = static::sanitizeName(
+            $extension === null ? $filename : pathinfo($filename, PATHINFO_FILENAME)
         );
 
-        if ($name === '') {
-            throw new InvalidArgumentException("The file name '{$basename}' is empty after sanitization.");
-        }
+        return $name === null ? null : static::withExtension($name, $extension);
+    }
 
-        return static::withExtension($name, $extension);
+    /**
+     * The path as the storage writes it, e.g. "/uploads//a/./b/movie.mp4" becomes "uploads/a/b/movie.mp4".
+     *
+     * Every path given to a disk is normalized this way before it is used, so a path saved as it was given
+     * could differ from the one of the file, and break what is built from it like the urls.
+     *
+     * @throws PathTraversalDetected When the path leaves the root of the disk, e.g. "../movie.mp4"
+     * @throws CorruptedPathDetected When the path contains control characters
+     */
+    public static function normalizePath(string $path): string
+    {
+        return (new WhitespacePathNormalizer)->normalizePath($path);
     }
 
     /**
@@ -272,44 +292,44 @@ class File
         string $disk,
         string $path,
         string $destinationDisk,
-        string $destination,
+        string $destinationPath,
     ): void {
         $source = Storage::disk($disk);
         $target = Storage::disk($destinationDisk);
 
-        if ($target->exists($destination)) {
-            throw MediaFileStorageException::moveTargetExists($path, $disk, $destination, $destinationDisk);
+        if ($target->exists($destinationPath)) {
+            throw MediaFileStorageException::moveTargetExists($path, $disk, $destinationPath, $destinationDisk);
         }
 
         if ($disk === $destinationDisk) {
 
-            if (! $source->move($path, $destination)) {
-                throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
+            if (! $source->move($path, $destinationPath)) {
+                throw MediaFileStorageException::moveFailed($path, $disk, $destinationPath, $destinationDisk);
             }
 
         } else {
             $stream = $source->readStream($path);
 
             if (! $stream) {
-                throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
+                throw MediaFileStorageException::moveFailed($path, $disk, $destinationPath, $destinationDisk);
             }
 
             $moved = false;
 
             try {
-                $moved = $target->writeStream($destination, $stream);
+                $moved = $target->writeStream($destinationPath, $stream);
             } finally {
                 if (is_resource($stream)) {
                     fclose($stream);
                 }
 
                 if (! $moved) {
-                    rescue(fn () => $target->delete($destination));
+                    rescue(fn () => $target->delete($destinationPath));
                 }
             }
 
             if (! $moved) {
-                throw MediaFileStorageException::moveFailed($path, $disk, $destination, $destinationDisk);
+                throw MediaFileStorageException::moveFailed($path, $disk, $destinationPath, $destinationDisk);
             }
 
             rescue(fn () => $source->delete($path));

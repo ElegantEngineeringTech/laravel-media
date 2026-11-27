@@ -7,7 +7,6 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
-use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Helpers\Spritesheet;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
@@ -50,8 +49,6 @@ class MediaSpritesheetConverter extends MediaConverter
         public int $rows = 10,
     ) {
         parent::__construct($media);
-
-        $this->filename = File::sanitizeBasename($filename);
     }
 
     public function canExecute(Media $media, ?MediaConversion $parent): bool

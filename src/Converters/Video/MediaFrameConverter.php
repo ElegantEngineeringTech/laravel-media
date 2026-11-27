@@ -7,7 +7,6 @@ namespace Elegantly\Media\Converters\Video;
 use Elegantly\Media\Converters\MediaConverter;
 use Elegantly\Media\Enums\MediaType;
 use Elegantly\Media\Facades\FFMpeg;
-use Elegantly\Media\Helpers\File;
 use Elegantly\Media\Models\Media;
 use Elegantly\Media\Models\MediaConversion;
 use Elegantly\Media\TemporaryDirectory;
@@ -23,8 +22,6 @@ class MediaFrameConverter extends MediaConverter
         public ?int $height = null,
     ) {
         parent::__construct($media);
-
-        $this->filename = File::sanitizeBasename($filename);
     }
 
     protected function getTimecode(Media $media, ?MediaConversion $parent): int|float|string
