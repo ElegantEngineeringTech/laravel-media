@@ -355,7 +355,7 @@ trait HasFile
             $copy = $this->copyFileTo($storage, $path);
 
             if (! $copy) {
-                return;
+                return $this;
             }
 
             $file = $transform(
